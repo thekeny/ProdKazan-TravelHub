@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Next Template
 
-## Getting Started
+## Быстрый старт
 
-First, run the development server:
-
-```bash
+```sh
+npm i
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Структура проекта
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```text
+src/
+├── api/             # HTTP-клиент и запросы к бэкенду
+│   └── client.ts    # Настроенный инстанс ky и типизированные методы
+├── app/             # App Router (страницы, layout, роутинг)
+├── components/      # React-компоненты
+│   ├── ui/          # Базовые UI-компоненты (кнопки, инпуты и т.д.)
+│   ├── layouts/     # Лайауты
+│   ├── providers/   # Провайдеры для обертки
+│   └── [page]/      # Компоненты под конкретные страницы (landing, dashboard и др.)
+├── configs/         # Конфигурации, пути и константы
+│   ├── paths/       # Пути страниц, ссылки, пути к изображениям
+│   ├── consts/      # Константы (API URL и др.)
+│   └── types/       # Общие типы конфигураций
+├── hooks/           # Кастомные React-хуки
+└── lib/             # Вспомогательные утилиты (cn, форматтеры и т.д.)
+```
 
-## Learn More
+### Описание основных директорий
 
-To learn more about Next.js, take a look at the following resources:
+- **`src/configs`** — выносятся ссылки, роуты, статические пути и константы. Нужно для быстрого изменения в одном месте, масштабирования и чтобы не хардкодить/дублировать строки по всему проекту.
+- **`src/components`** — под каждую страницу создаётся своя папка с её компонентами (например, `landing/`, `dashboard/`), а переиспользуемые атомарные элементы хранятся в `ui/`.
+- **`src/api`** — слой работы с сетевыми запросами.
+- **`src/hooks`** — переиспользуемые кастомные React-хуки.
+- **`src/lib`** — утилиты общего назначения (хелперы, `utils.ts` с `cn` и т.д.).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Работа с API (`src/api/client.ts`)
 
-## Deploy on Vercel
+Клиент построен поверх библиотеки [`ky`](https://github.com/sindresorhus/ky).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Использование типизированных хелперов
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```ts
+import { get, post, put, patch, del } from "@/api/client";
+
+// GET
+const users = await get<User[]>("/users");
+
+// POST
+const newUser = await post<User, CreateUserDto>("/users", {
+  name: "John",
+});
+
+// PUT / PATCH
+const updated = await patch<User>("/users/1", { name: "Jane" });
+
+// DELETE
+await del("/users/1");
+```
+
+### Использование напрямую через инстанс `api`
+
+```ts
+import { api } from "@/api/client";
+
+const data = await api.get("users").json<User[]>();
+```
+
+---
+
+## Полезные утилиты
+
+- **Knip** — находит мёртвый код: неиспользуемые файлы, экспорты и лишние зависимости в `package.json`.
+  ```sh
+  npm run knip
+  ```
+
+- **Repomix** — упаковывает кодовую базу репозитория в единый файл для удобной передачи контекста в AI/LLM.
+  ```sh
+  npm run repomix
+  ```
