@@ -10,6 +10,7 @@
     "format": "biome format --write",
     "test": "vitest run",
     "test:watch": "vitest",
+    "openapi": "openapi-ts",
     "knip": "knip",
     "repomix": "repomix"
   },
@@ -27,6 +28,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
+    "@hey-api/openapi-ts": "0.99.0",
+    "@next/env": "15.5.27",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.20.5",
     "@types/react": "^19",

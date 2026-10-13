@@ -9,7 +9,9 @@
 - `src/components/ui/` — reusable primitive UI elements
 - `src/components/[page]/` — page-specific component folders (e.g. `landing`, `dashboard`)
 - `src/configs/` — central store for routes (`paths/`), constants (`consts/`), and config types
-- `src/api/client.ts` — Ky-based HTTP client (`api` instance & typed helpers: `get`, `post`, etc.)
+- `src/api/generated/` — auto-generated Hey API SDK + types from the backend OpenAPI spec (never edit by hand; regenerate with `npm run openapi`)
+- `src/api/hey-api.ts` — runtime config for the generated Ky client (baseUrl, timeout, retries)
+- `openapi-ts.config.ts` — Hey API generator config (spec input, output path, plugins)
 - `src/hooks/` — custom React hooks
 - `src/lib/` — utility functions (`cn`, helpers)
 - `src/tests/` — Vitest tests (mirror the `src/` structure, e.g. `src/tests/lib/utils.test.ts`); run with `npm test`

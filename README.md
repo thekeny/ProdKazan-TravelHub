@@ -13,8 +13,9 @@ npm run dev
 
 ```text
 src/
-├── api/             # HTTP-клиент и запросы к бэкенду
-│   └── client.ts    # Настроенный инстанс ky и типизированные методы
+├── api/                  # HTTP-слой
+│   ├── hey-api.ts        # конфиг сгенерированного клиента (baseUrl, таймаут, ретраи)
+│   └── generated/        # автогенерированный SDK (не редактировать вручную)
 ├── app/             # App Router (страницы, layout, роутинг)
 ├── components/      # React-компоненты
 │   ├── ui/          # Базовые UI-компоненты (кнопки, инпуты и т.д.)
@@ -39,37 +40,34 @@ src/
 
 ---
 
-## Работа с API (`src/api/client.ts`)
+## Работа с API (автогенерированный SDK)
 
-Клиент построен поверх библиотеки [`ky`](https://github.com/sindresorhus/ky).
+SDK генерируется из OpenAPI-спеки бэкенда через [Hey API](https://heyapi.dev/) на клиенте [`ky`](https://github.com/sindresorhus/ky). Пакет `@hey-api/client-ky` встроен в `@hey-api/openapi-ts`.
 
-### Использование типизированных хелперов
+### Генерация
+
+```sh
+npm run openapi
+```
+
+Спека берётся из `${NEXT_PUBLIC_API_URL}/openapi.json` (переменная `NEXT_PUBLIC_API_URL` из `.env`). Сгенерированный код лежит в `src/api/generated/` и коммитится в репозиторий. **Не редактируйте его вручную** — изменения будут перезаписаны.
+
+Конфиг генератора — `openapi-ts.config.ts`. Настройки клиента (baseUrl, таймаут, ретраи) — в `src/api/hey-api.ts`, они берутся из `src/configs/consts/api.const.ts`.
+
+### Использование в компонентах
 
 ```ts
-import { get, post, put, patch, del } from "@/api/client";
+import { getUsers, createUser } from "@/api/generated";
+import type { User } from "@/api/generated";
 
 // GET
-const users = await get<User[]>("/users");
+const { data } = await getUsers({ query: { page: 1 } });
 
 // POST
-const newUser = await post<User, CreateUserDto>("/users", {
-  name: "John",
-});
-
-// PUT / PATCH
-const updated = await patch<User>("/users/1", { name: "Jane" });
-
-// DELETE
-await del("/users/1");
+const { data: created } = await createUser({ body: { name: "John" } });
 ```
 
-### Использование напрямую через инстанс `api`
-
-```ts
-import { api } from "@/api/client";
-
-const data = await api.get("users").json<User[]>();
-```
+Параметры группируются по типу (`path`, `query`, `body`, `header`). Типы описываются автоматически. Для интерактивных запросов удобно оборачивать функции в TanStack Query или вызывать из Server Actions / RSC.
 
 ---
 
