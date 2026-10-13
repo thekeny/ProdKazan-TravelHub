@@ -73,6 +73,19 @@ const data = await api.get("users").json<User[]>();
 
 ---
 
+## Тестирование (Vitest)
+
+Тесты на [Vitest](https://vitest.dev/) с окружением `jsdom`. Все тесты — в `src/tests/`, структура повторяет `src/`.
+
+```sh
+npm test          # однократный прогон
+npm run test:watch # режим наблюдения
+```
+
+Пример: `src/tests/lib/utils.test.ts`. Конфиг — `vitest.config.ts`.
+
+---
+
 ## Полезные утилиты
 
 - **Knip** — находит мёртвый код: неиспользуемые файлы, экспорты и лишние зависимости в `package.json`.

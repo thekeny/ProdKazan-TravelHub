@@ -12,6 +12,7 @@
 - `src/api/client.ts` — Ky-based HTTP client (`api` instance & typed helpers: `get`, `post`, etc.)
 - `src/hooks/` — custom React hooks
 - `src/lib/` — utility functions (`cn`, helpers)
+- `src/tests/` — Vitest tests (mirror the `src/` structure, e.g. `src/tests/lib/utils.test.ts`); run with `npm test`
 - `src/middleware.ts` — Next.js middleware
 
 ## Rules for Agents
