@@ -37,8 +37,12 @@
   "overrides": [
     {
       "includes": ["src/api/generated/**"],
-      "linter": { "enabled": false },
-      "assist": { "enabled": false }
+      "linter": {
+        "enabled": false
+      },
+      "assist": {
+        "enabled": false
+      }
     }
   ]
 }

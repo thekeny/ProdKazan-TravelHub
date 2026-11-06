@@ -1,0 +1,119 @@
+include:
+  - local: .gitlab/ci/rules.yml
+  - local: .gitlab/ci/spirit.yml
+  - local: .gitlab/ci/build.yml
+  - local: .gitlab/ci/teleport.yml
+  - local: .gitlab/ci/configure-docker.yml
+
+stages:
+  - check
+  - build
+  - deploy
+
+variables:
+  IMAGE_REPO: ${DOCKER_ARTIFACTORY_REGISTRY}/${CI_PROJECT_ROOT_NAMESPACE}/${CI_PROJECT_NAME}
+  NODE_IMAGE: public.ecr.aws/docker/library/node:24.22.0-alpine3.24
+
+.check:
+  stage: check
+  interruptible: true
+  image: $NODE_IMAGE
+  variables:
+    npm_config_cache: $CI_PROJECT_DIR/.npm
+    NEXT_TELEMETRY_DISABLED: "1"
+  cache:
+    key:
+      files: [package-lock.json]
+    paths: [.npm]
+  before_script:
+    - npm ci --no-audit --no-fund --prefer-offline
+
+lint:
+  extends: .check
+  script:
+    - npm run --silent lint -- --reporter=gitlab > code-quality-report.json
+  artifacts:
+    when: always
+    reports:
+      codequality: $CI_PROJECT_DIR/code-quality-report.json
+
+typecheck:
+  extends: .check
+  script:
+    - npx tsc --noEmit
+
+test:
+  extends: .check
+  script:
+    - npm test -- --passWithNoTests
+
+build:next:
+  extends:
+    - .check
+    - .rules-merge-or-master
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - .next/standalone
+      - .next/static
+
+.build:image:
+  extends: .dp_build
+  needs: [build:next]
+  variables:
+    IMAGE_NAME: ${IMAGE_REPO}:${CI_COMMIT_SHORT_SHA}
+
+build:mr:
+  extends:
+    - .build:image
+    - .rules-merge
+  variables:
+    KANIKO_CACHE: "false"
+    KANIKO_ARGS: --no-push
+
+build:image:
+  extends:
+    - .build:image
+    - .rules-master
+  before_script:
+    - test -n "$DOCKER_ARTIFACTORY_REGISTRY" || { echo "DOCKER_ARTIFACTORY_REGISTRY is empty - set it in CI variables"; exit 1; }
+    - !reference [.dp_build, before_script]
+
+deploy:
+  extends:
+    - .configure_docker
+    - .rules-master-manual
+  stage: deploy
+  needs: [build:image]
+  resource_group: production-frontend
+  environment:
+    name: production-frontend
+  variables:
+    IMAGE_TAG: ${CI_COMMIT_SHORT_SHA}
+    FRONTEND_DIR: ${DEPLOY_DIR}/frontend
+    FRONTEND_PORT: "3000"
+  script:
+    - !reference [.configure_docker, script]
+    - |
+      tsh ssh "${DEPLOY_SSH_USER}@${DEPLOY_VM}" "sudo install -d -o '${DEPLOY_SSH_USER}' '${FRONTEND_DIR}'"
+      tsh scp docker-compose.prod.yml "${DEPLOY_SSH_USER}@${DEPLOY_VM}:${FRONTEND_DIR}/docker-compose.yml"
+    - |
+      tsh ssh "${DEPLOY_SSH_USER}@${DEPLOY_VM}" "sudo bash -s" <<EOF
+      set -euo pipefail
+      cd '${FRONTEND_DIR}'
+      export DOCKER_CONFIG='${DEPLOY_DIR}/.docker' IMAGE='${IMAGE_REPO}' IMAGE_TAG='${IMAGE_TAG}' FRONTEND_PORT='${FRONTEND_PORT}'
+      docker compose pull web
+      docker compose up -d --wait web
+      for i in 1 2 3 4 5 6 7 8 9 10; do
+        if curl -fsS -o /dev/null http://127.0.0.1:${FRONTEND_PORT}/; then
+          echo "deployed ${IMAGE_TAG}"
+          exit 0
+        fi
+        sleep 3
+      done
+      echo "smoke test failed: http://127.0.0.1:${FRONTEND_PORT}/ is not responding"
+      exit 1
+      EOF
