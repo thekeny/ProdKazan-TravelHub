@@ -16,7 +16,7 @@ export function Logo({ large = false }: { large?: boolean }) {
         width={2048}
         height={523}
         priority
-      className={`${large ? "w-72 sm:w-96" : "w-32 sm:w-40"} h-auto invert`}
+        className={`${large ? "w-72 sm:w-96" : "w-32 sm:w-40"} h-auto`}
       />
     </Link>
   );
