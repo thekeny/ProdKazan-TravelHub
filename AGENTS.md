@@ -1,24 +1,36 @@
-# Project Guidelines
+# Правила проекта
 
-## Stack
-- Next.js (App Router, Turbopack), React 19, TypeScript
-- Tailwind CSS v4, Base UI / Shadcn, Biome (linter & formatter), Ky (HTTP client)
+## О проекте
 
-## Structure
-- `src/app/` — routes, layouts, server/client pages
-- `src/components/ui/` — reusable primitive UI elements
-- `src/components/[page]/` — page-specific component folders (e.g. `landing`, `dashboard`)
-- `src/configs/` — central store for routes (`paths/`), constants (`consts/`), and config types
-- `src/api/generated/` — auto-generated Hey API SDK + types from the backend OpenAPI spec (never edit by hand; regenerate with `npm run openapi`)
-- `src/api/hey-api.ts` — runtime config for the generated Ky client (baseUrl, timeout, retries)
-- `openapi-ts.config.ts` — Hey API generator config (spec input, output path, plugins)
-- `src/hooks/` — custom React hooks
-- `src/lib/` — utility functions (`cn`, helpers)
-- `src/tests/` — Vitest tests (mirror the `src/` structure, e.g. `src/tests/lib/utils.test.ts`); run with `npm test`
-- `src/middleware.ts` — Next.js middleware
+TravelHub — приложение для планирования поездок и сохранения их истории: маршрутов, событий, фотографий, билетов и заметок. Описание продукта находится в `docs/`. Сейчас приложение использует браузерную демосессию: пароли не сохраняются и не проверяются, клиентские проверки маршрутов не являются авторизацией.
 
-## Rules for Agents
-- Keep code clean: avoid redundant, explanatory, or trivial comments unless strictly necessary.
-- Maintain consistent coding style and project conventions.
-- Keep `src/configs/` as the single source of truth for URLs, route paths, and static constants.
-- Update this `AGENTS.md` file whenever adding architectural decisions, new tooling, or project conventions.
+Стек: Next.js (App Router, Turbopack), React 19, TypeScript, Tailwind CSS v4, Base UI / Shadcn, Ky. Проверки и форматирование — Biome, тесты — Vitest.
+
+## Структура
+
+- `src/app/` — маршруты, страницы, layouts; `src/middleware.ts` — middleware Next.js.
+- `src/components/` — UI по областям: `auth`, `trips`, `landing`; `dashboard` — оболочка приложения, `layout` — общие компоненты раскладки, `ui` — переиспользуемые примитивы.
+- `src/configs/` — единый источник маршрутов и URL (`paths/`), констант и статических данных (`consts/`), общих доменных типов (`types/`).
+- `src/providers/` — общее состояние и контексты; `src/hooks/` — пользовательские React-хуки; `src/lib/` — чистые функции, утилиты и работа с хранилищем.
+- `src/api/generated/` — SDK и типы из OpenAPI; `src/api/hey-api.ts` — настройки HTTP-клиента; `openapi-ts.config.ts` — настройки генерации.
+- `src/tests/` — тесты, повторяющие структуру `src/`.
+- `.prototype/` — автономный HTML/CSS/JS-прототип без сборки и внешних зависимостей; не входит в сборку Next.js. Поддерживать в соответствии с `docs/`, см. `.prototype/README.md`.
+
+## Организация кода
+
+- Перед изменениями изучай связанные файлы и существующие решения. Следуй принятым именам и стилю, переиспользуй компоненты и функции.
+- У каждого файла должна быть понятная ответственность. Страницы оставляй тонкими: они собирают интерфейс из компонентов. Самостоятельные части интерфейса выноси в отдельные файлы внутри соответствующей области `components/`.
+- Отделяй отображение от логики: повторяемую React-логику выноси в хуки, чистые вычисления и преобразования — в `lib/`, общее состояние — в провайдеры. Не собирай страницу, данные, хранение и бизнес-логику в одном компоненте.
+- Деление определяй по смыслу и ответственности, без формальных лимитов строк. Не дроби простые выражения на файлы и не создавай универсальные абстракции без реальной необходимости.
+- Маршруты, URL, повторяемые значения, лимиты, статические списки и демоданные выноси в тематические файлы `configs/paths/` и `configs/consts/`. Не дублируй их в компонентах и не создавай один общий файл для несвязанных данных.
+- Общие доменные типы размещай в тематических файлах `configs/types/`. Типы пропсов и другие типы, нужные только одному компоненту или модулю, оставляй рядом с ним. Сгенерированные API-типы используй из SDK без ручного дублирования.
+- Используй строгие типы; избегай `any`, необоснованных приведений типов, магических значений и дублирования логики. Давай переменным и функциям имена, отражающие назначение.
+- Соблюдай границы Server и Client Components. Добавляй `"use client"` только там, где нужны хуки, обработчики событий или браузерные API.
+- Обрабатывай ошибки, загрузку и пустые состояния на соответствующем уровне. Комментариями объясняй только неочевидные причины и ограничения, а не очевидные действия кода.
+
+## Ограничения и проверка
+
+- `src/providers/travel-provider.tsx` управляет сессией, поездками отдельных аккаунтов и активным выбором. Работа с браузерным хранилищем изолирована в `src/lib/travel-storage.ts`: не обновляй состояние в памяти, если запись не удалась.
+- Не редактируй `src/api/generated/` вручную; для обновления используй `npm run openapi`.
+- Проверяй изменения соразмерно задаче: `npm run lint` — стиль и статические проверки, `npm test` — тесты, `npm run build` — сборка при изменениях, влияющих на неё. Добавляй содержательные тесты изменённой логики; не пиши тесты, лишь повторяющие реализацию.
+- При добавлении архитектурных решений, инструментов или соглашений обновляй этот `AGENTS.md`.
