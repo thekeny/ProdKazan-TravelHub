@@ -15,7 +15,9 @@ const event: EventValues = {
   start: "2026-05-01T23:00",
   end: "2026-05-02T01:00",
   description: "",
-  place: null,
+  pointId: null,
+  materials: [],
+  bookingUrl: "",
 };
 
 describe("trip events", () => {
@@ -28,7 +30,7 @@ describe("trip events", () => {
       0,
     );
   });
-  it("rejects invalid calendar dates, times, boundaries and coordinates", () => {
+  it("rejects invalid calendar dates, times, boundaries and points", () => {
     for (const patch of [
       { title: " " },
       { start: "2026-02-30T12:00" },
@@ -36,11 +38,15 @@ describe("trip events", () => {
       { start: "2026-04-30T12:00" },
       { end: "2026-05-04T01:00" },
       { end: "2026-05-01T22:00" },
-      { place: { name: "Место", lat: 91, lng: 0 } },
-      { place: { name: "Место", lat: 0, lng: Number.NaN } },
     ]) {
       expect(validateEvent({ ...event, ...patch }, trip)).toBeTruthy();
     }
+    expect(
+      validateEvent({ ...event, pointId: "missing" }, trip, new Set(["other"])),
+    ).toBeTruthy();
+    expect(
+      validateEvent({ ...event, pointId: "point" }, trip, new Set(["point"])),
+    ).toBeNull();
   });
   it("sorts chronologically and lists inclusive trip dates", () => {
     const early = { ...event, id: "early", start: "2026-05-01T09:00" };

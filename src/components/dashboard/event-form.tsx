@@ -1,66 +1,111 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
-import { Trash2 } from "lucide-react";
-import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
+import { MaterialGrid } from "@/components/materials/material-grid";
+import { MaterialUploader } from "@/components/materials/material-uploader";
 import { Button } from "@/components/ui/button";
 import { Field, inputClass } from "@/components/ui/field";
 import { EVENT_TYPES } from "@/configs/consts/events.const";
+import { MATERIAL_LIMITS } from "@/configs/consts/materials.const";
 import type { EventValues, TripEvent } from "@/configs/types/event.type";
+import type { Material } from "@/configs/types/material.type";
 import type { Trip } from "@/configs/types/travel.type";
+import { deleteMaterialFiles } from "@/lib/material-storage";
 import { validateEvent } from "@/lib/travel-events";
-
-const EMPTY_EVENTS: TripEvent[] = [];
-
-const TripMap = dynamic(() => import("./trip-map"), {
-  ssr: false,
-  loading: () => (
-    <output className="block h-[360px] animate-pulse rounded-xl bg-muted">
-      Загрузка карты…
-    </output>
-  ),
-});
 
 export function EventForm({
   trip,
   event,
   day,
+  time,
+  initialPointId,
   onClose,
   onSave,
 }: {
   trip: Trip;
   event?: TripEvent;
   day: string;
+  time?: string;
+  initialPointId?: string | null;
   onClose: () => void;
-  onSave: (values: EventValues) => void;
+  onSave: (values: EventValues) => void | Promise<void>;
 }) {
   const [values, setValues] = useState<EventValues>(
     event ?? {
       title: "",
       type: "walk",
-      start: `${day || trip.startDate}T09:00`,
+      start: `${day || trip.startDate}T${time ?? "09:00"}`,
       end: "",
       description: "",
-      place: null,
+      pointId: initialPointId ?? null,
+      materials: [],
+      bookingUrl: "",
     },
   );
   const [error, setError] = useState<string | null>(null);
-  const [lat, setLat] = useState(event?.place?.lat.toString() ?? "");
-  const [lng, setLng] = useState(event?.place?.lng.toString() ?? "");
+  const [pending, setPending] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const pendingRef = useRef(false);
+  const uploadingRef = useRef(false);
+  const errorId = useId();
+  const points = trip.points ?? [];
+  const newMaterialIds = useRef<string[]>([]);
+  const removedMaterialIds = useRef<string[]>([]);
+
+  function close() {
+    if (pendingRef.current || uploadingRef.current) return;
+    if (newMaterialIds.current.length)
+      void deleteMaterialFiles(newMaterialIds.current);
+    newMaterialIds.current = [];
+    onClose();
+  }
+
+  function setUploadBusy(busy: boolean) {
+    uploadingRef.current = busy;
+    setUploading(busy);
+  }
+
   function update<K extends keyof EventValues>(key: K, value: EventValues[K]) {
     setValues((current) => ({ ...current, [key]: value }));
   }
+
+  function addMaterial(material: Material) {
+    newMaterialIds.current.push(material.id);
+    setValues((current) => ({
+      ...current,
+      materials: [...current.materials, material],
+    }));
+  }
+
+  function removeMaterial(material: Material) {
+    if (newMaterialIds.current.includes(material.id)) {
+      newMaterialIds.current = newMaterialIds.current.filter(
+        (id) => id !== material.id,
+      );
+      void deleteMaterialFiles([material.id]);
+    } else {
+      removedMaterialIds.current.push(material.id);
+    }
+    setValues((current) => ({
+      ...current,
+      materials: current.materials.filter((item) => item.id !== material.id),
+    }));
+  }
+
+  const describedBy = error ? errorId : undefined;
+
   return (
     <Dialog.Root
       open
+      disablePointerDismissal
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open) close();
       }}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay/35" />
-        <Dialog.Popup className="fixed inset-3 z-50 mx-auto max-w-3xl overflow-y-auto rounded-xl border bg-background p-5 shadow-xl sm:inset-y-8 sm:p-8">
+        <Dialog.Backdrop className="fixed inset-0 z-[60] bg-overlay/35" />
+        <Dialog.Popup className="fixed inset-3 z-[60] mx-auto max-w-3xl overflow-y-auto rounded-xl border bg-background p-5 shadow-xl sm:inset-y-8 sm:p-8">
           <Dialog.Title className="text-xl font-semibold">
             {event ? "Редактировать событие" : "Новое событие"}
           </Dialog.Title>
@@ -69,29 +114,32 @@ export function EventForm({
           </Dialog.Description>
           <form
             className="mt-6 grid gap-5"
-            onSubmit={(e) => {
+            aria-busy={pending}
+            onSubmit={async (e) => {
               e.preventDefault();
-              const next = {
-                ...values,
-                place: values.place
-                  ? {
-                      ...values.place,
-                      lat: lat.trim() ? Number(lat) : Number.NaN,
-                      lng: lng.trim() ? Number(lng) : Number.NaN,
-                    }
-                  : null,
-              };
-              const validation = validateEvent(next, trip);
+              if (pendingRef.current || uploadingRef.current) return;
+              const validation = validateEvent(
+                values,
+                trip,
+                new Set(points.map((point) => point.id)),
+              );
               if (validation) {
                 setError(validation);
                 return;
               }
+              pendingRef.current = true;
+              setPending(true);
+              setError(null);
               try {
-                onSave(next);
-              } catch (error) {
+                await onSave(values);
+                newMaterialIds.current = [];
+                void deleteMaterialFiles(removedMaterialIds.current);
+              } catch (saveError) {
+                pendingRef.current = false;
+                setPending(false);
                 setError(
-                  error instanceof Error
-                    ? error.message
+                  saveError instanceof Error
+                    ? saveError.message
                     : "Не удалось сохранить событие.",
                 );
               }
@@ -102,7 +150,10 @@ export function EventForm({
                 <input
                   id={id}
                   required
+                  maxLength={120}
                   className={inputClass}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={describedBy}
                   value={values.title}
                   onChange={(e) => update("title", e.target.value)}
                 />
@@ -113,6 +164,8 @@ export function EventForm({
                 <select
                   id={id}
                   className={inputClass}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={describedBy}
                   value={values.type}
                   onChange={(e) => {
                     const type = e.target.value;
@@ -138,6 +191,8 @@ export function EventForm({
                     min={`${trip.startDate}T00:00`}
                     max={`${trip.endDate}T23:59`}
                     className={inputClass}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={describedBy}
                     value={values.start}
                     onChange={(e) => update("start", e.target.value)}
                   />
@@ -151,6 +206,8 @@ export function EventForm({
                     min={values.start}
                     max={`${trip.endDate}T23:59`}
                     className={inputClass}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={describedBy}
                     value={values.end}
                     onChange={(e) => update("end", e.target.value)}
                   />
@@ -161,125 +218,108 @@ export function EventForm({
               {(id) => (
                 <textarea
                   id={id}
+                  maxLength={2000}
                   className={`${inputClass} h-24 py-3`}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={describedBy}
                   value={values.description}
                   onChange={(e) => update("description", e.target.value)}
                 />
               )}
             </Field>
-            <fieldset className="grid min-w-0 gap-4">
-              <legend className="mb-3 text-sm font-medium">
-                Место · необязательно
-              </legend>
-              <TripMap
-                events={EMPTY_EVENTS}
-                selectedId={null}
-                onSelect={() => {}}
-                draftPlace={
-                  values.place &&
-                  lat.trim() !== "" &&
-                  lng.trim() !== "" &&
-                  Number.isFinite(Number(lat)) &&
-                  Number.isFinite(Number(lng)) &&
-                  Math.abs(Number(lat)) <= 90 &&
-                  Math.abs(Number(lng)) <= 180
-                    ? { ...values.place, lat: Number(lat), lng: Number(lng) }
-                    : null
-                }
-                onPlace={(place) => {
-                  update("place", {
-                    ...place,
-                    name: values.place?.name || place.name,
-                  });
-                  setLat(String(place.lat));
-                  setLng(String(place.lng));
-                }}
-              />
-              {!values.place ? (
-                <Button
-                  variant="outline"
-                  className="h-11 justify-self-start"
-                  onClick={() => update("place", { name: "", lat: 0, lng: 0 })}
+            <Field label="Точка маршрута · необязательно">
+              {(id) => (
+                <select
+                  id={id}
+                  className={inputClass}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={describedBy}
+                  value={values.pointId ?? ""}
+                  onChange={(e) => update("pointId", e.target.value || null)}
                 >
-                  Ввести координаты
-                </Button>
-              ) : (
-                <>
-                  <Field label="Название места">
-                    {(id) => (
-                      <input
-                        id={id}
-                        required
-                        className={inputClass}
-                        value={values.place?.name ?? ""}
-                        onChange={(e) => {
-                          if (values.place)
-                            update("place", {
-                              ...values.place,
-                              name: e.target.value,
-                            });
-                        }}
-                      />
-                    )}
-                  </Field>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="Широта">
-                      {(id) => (
-                        <input
-                          id={id}
-                          required
-                          type="number"
-                          step="any"
-                          min={-90}
-                          max={90}
-                          className={inputClass}
-                          value={lat}
-                          onChange={(e) => setLat(e.target.value)}
-                        />
-                      )}
-                    </Field>
-                    <Field label="Долгота">
-                      {(id) => (
-                        <input
-                          id={id}
-                          required
-                          type="number"
-                          step="any"
-                          min={-180}
-                          max={180}
-                          className={inputClass}
-                          value={lng}
-                          onChange={(e) => setLng(e.target.value)}
-                        />
-                      )}
-                    </Field>
-                  </div>
-                  <Button
-                    variant="destructive"
-                    className="h-11 justify-self-start"
-                    onClick={() => {
-                      update("place", null);
-                      setLat("");
-                      setLng("");
-                    }}
-                  >
-                    <Trash2 />
-                    Убрать место
-                  </Button>
-                </>
+                  <option value="">Без места на карте</option>
+                  {points.map((point) => (
+                    <option key={point.id} value={point.id}>
+                      {point.name}
+                    </option>
+                  ))}
+                </select>
               )}
-            </fieldset>
+            </Field>
+            <Field
+              label="Ссылка на билет или бронирование · необязательно"
+              hint="Например, ссылка на подтверждение брони или электронный билет."
+            >
+              {(id, describedByField) => (
+                <input
+                  id={id}
+                  type="url"
+                  inputMode="url"
+                  maxLength={500}
+                  placeholder="https://…"
+                  className={inputClass}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={
+                    [describedBy, describedByField].filter(Boolean).join(" ") ||
+                    undefined
+                  }
+                  value={values.bookingUrl}
+                  onChange={(e) => update("bookingUrl", e.target.value)}
+                />
+              )}
+            </Field>
+            {points.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Сохраните событие без места, затем добавьте точку в «Маршруте» и
+                привяжите её при редактировании.
+              </p>
+            )}
+            <section className="grid gap-3" aria-label="Материалы события">
+              <div>
+                <h3 className="text-sm font-medium">Материалы</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Фотографии и изображения билетов хранятся в этом браузере.
+                </p>
+              </div>
+              <MaterialGrid
+                materials={values.materials}
+                onRemove={removeMaterial}
+              />
+              <MaterialUploader
+                remaining={
+                  MATERIAL_LIMITS.MAX_PER_EVENT - values.materials.length
+                }
+                defaultKind={values.materials.at(-1)?.kind ?? "photo"}
+                onUploaded={addMaterial}
+                onError={setError}
+                onBusyChange={setUploadBusy}
+              />
+            </section>
             {error && (
-              <p role="alert" className="text-sm text-destructive">
+              <p id={errorId} role="alert" className="text-sm text-destructive">
                 {error}
               </p>
             )}
             <div className="flex justify-end gap-3">
-              <Button variant="outline" className="h-11" onClick={onClose}>
+              <Button
+                variant="outline"
+                className="h-11"
+                type="button"
+                disabled={pending || uploading}
+                onClick={close}
+              >
                 Отмена
               </Button>
-              <Button type="submit" className="h-11">
-                Сохранить событие
+              <Button
+                type="submit"
+                className="h-11"
+                disabled={pending || uploading}
+              >
+                {uploading
+                  ? "Дождитесь загрузки…"
+                  : pending
+                    ? "Сохраняем…"
+                    : "Сохранить событие"}
               </Button>
             </div>
           </form>

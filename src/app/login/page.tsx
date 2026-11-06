@@ -1,9 +1,10 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { Field, inputClass } from "@/components/ui/field";
+import { DEMO_USER } from "@/configs/consts/demo.const";
 import { pages } from "@/configs/paths/pages.path";
 import { useTravel } from "@/providers/travel-provider";
 export default function Page() {
@@ -11,6 +12,7 @@ export default function Page() {
   const router = useRouter();
   const [mode, setMode] = useState("login");
   const [error, setError] = useState<string | null>(null);
+  const errorId = useId();
   useEffect(() => {
     if (ready && username) router.replace(pages.TRIPS);
   }, [ready, username, router]);
@@ -53,7 +55,7 @@ export default function Page() {
             setError(null);
             const values = new FormData(event.currentTarget);
             const name = String(values.get("username")).trim();
-            if (name.length < 3) {
+            if (name.length < 3 || name.length > 32) {
               setError(
                 "Имя пользователя должно содержать от 3 до 32 символов.",
               );
@@ -86,6 +88,8 @@ export default function Page() {
                 autoComplete="username"
                 autoCapitalize="none"
                 spellCheck={false}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? errorId : undefined}
               />
             )}
           </Field>
@@ -96,12 +100,14 @@ export default function Page() {
                 className={inputClass}
                 name="password"
                 type="password"
-                required
-                minLength={8}
+                required={mode === "register"}
+                minLength={mode === "register" ? 8 : undefined}
                 maxLength={128}
                 autoComplete={
                   mode === "login" ? "current-password" : "new-password"
                 }
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? errorId : undefined}
               />
             )}
           </Field>
@@ -117,22 +123,41 @@ export default function Page() {
                   minLength={8}
                   maxLength={128}
                   autoComplete="new-password"
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? errorId : undefined}
                 />
               )}
             </Field>
           )}
           {(error || storageWarning) && (
-            <p role="alert" className="text-sm text-destructive">
+            <p id={errorId} role="alert" className="text-sm text-destructive">
               {error || storageWarning}
             </p>
           )}
           <Button type="submit" disabled={!ready} className="mt-2 h-11">
             {mode === "login" ? "Войти" : "Зарегистрироваться"}
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11"
+            disabled={!ready}
+            onClick={() => {
+              try {
+                login(DEMO_USER);
+                router.replace(pages.TRIPS);
+              } catch (demoError) {
+                setError((demoError as Error).message);
+              }
+            }}
+          >
+            Попробовать демо
+          </Button>
         </form>
         <p className="mt-5 text-xs leading-relaxed text-muted-foreground">
-          Демоверсия: вход без проверки пароля. Данные сохраняются только в этом
-          браузере. Используйте вымышленный пароль.
+          Демоверсия: пароль не сохраняется и не проверяется. Данные хранятся
+          только в этом браузере. Кнопка «Попробовать демо» сразу открывает
+          готовую поездку.
         </p>
       </section>
     </main>

@@ -13,7 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Sidebar />
       </aside>
       <div className="lg:pl-72">
-        <header className="flex h-20 items-center justify-between bg-background px-5 lg:hidden">
+        <header className="flex h-16 items-center justify-between bg-background px-5 lg:hidden">
           <Logo />
           <Dialog.Root open={open} onOpenChange={setOpen}>
             <Dialog.Trigger
@@ -44,7 +44,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Dialog.Portal>
           </Dialog.Root>
         </header>
-        <main className="p-6 sm:p-10">{children}</main>
+        <main className="h-[calc(100dvh-4rem)] overflow-hidden lg:h-dvh">
+          {children}
+        </main>
       </div>
     </div>
   );

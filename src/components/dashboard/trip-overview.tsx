@@ -1,27 +1,67 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
-import { CalendarDays, Plus } from "lucide-react";
+import { CalendarDays, List, Plus, Route as RouteIcon, X } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { DayFeed } from "@/components/dashboard/day-feed";
+import { EventDetails } from "@/components/dashboard/event-details";
 import { EventForm } from "@/components/dashboard/event-form";
-import { EventTimeline } from "@/components/dashboard/event-timeline";
+import { LegForm } from "@/components/dashboard/leg-form";
+import { PointDetails } from "@/components/dashboard/point-details";
+import { PointForm } from "@/components/dashboard/point-form";
+import { RoutePanel } from "@/components/dashboard/route-panel";
+import { ScheduleCheckDialog } from "@/components/dashboard/schedule-check";
+import { TripTimeline } from "@/components/dashboard/trip-timeline";
+import { StorageWarning } from "@/components/layout/storage-warning";
+import { TripActions } from "@/components/trips/trip-actions";
 import { Button } from "@/components/ui/button";
-import { Field, inputClass } from "@/components/ui/field";
+import { StatusToast } from "@/components/ui/status-toast";
 import type { TripEvent } from "@/configs/types/event.type";
+import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
 import type { Trip } from "@/configs/types/travel.type";
-import { eventsForDay, tripDays } from "@/lib/travel-events";
-import { formatTripDates } from "@/lib/travel-format";
+import { tripDays } from "@/lib/travel-events";
+import { formatTripDates, todayIso } from "@/lib/travel-format";
+import {
+  buildTimeline,
+  firstItemMinutes,
+  itemStartMinutes,
+  legsForDay,
+  minutesToTime,
+  pointsForDay,
+  positionAtTime,
+  timeToMinutes,
+} from "@/lib/travel-route";
+import type { ScheduleIssue } from "@/lib/travel-schedule";
 import { useTravel } from "@/providers/travel-provider";
 
 const TripMap = dynamic(() => import("./trip-map"), {
   ssr: false,
   loading: () => (
-    <output className="block h-[360px] animate-pulse rounded-xl border bg-muted p-5 sm:h-[500px] xl:h-[640px]">
+    <output className="grid h-full animate-pulse place-items-center bg-muted text-sm text-muted-foreground">
       Загрузка карты…
     </output>
   ),
 });
+
+type Deletion =
+  | { kind: "event"; event: TripEvent }
+  | { kind: "point"; point: RoutePoint }
+  | { kind: "leg"; leg: TripLeg };
+
+const deletionTitle: Record<Deletion["kind"], string> = {
+  event: "Удалить событие?",
+  point: "Удалить точку маршрута?",
+  leg: "Удалить перемещение?",
+};
+
+function deletionText(deletion: Deletion) {
+  if (deletion.kind === "event")
+    return `«${deletion.event.title}» будет удалено из хронологии и с карты. Прикреплённые материалы тоже удалятся.`;
+  if (deletion.kind === "leg")
+    return "Перемещение исчезнет с карты и из хронологии. Точки маршрута останутся.";
+  return `«${deletion.point.name}» будет удалена с карты. Связанные перемещения исчезнут, а события останутся без места.`;
+}
 
 export function TripOverview() {
   const { trips, activeId } = useTravel();
@@ -30,136 +70,583 @@ export function TripOverview() {
 }
 
 function Overview({ trip }: { trip: Trip }) {
-  const { saveEvent, deleteEvent } = useTravel();
-  const [day, setDay] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [editor, setEditor] = useState<{ event?: TripEvent } | null>(null);
-  const [deleting, setDeleting] = useState<TripEvent | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const events = useMemo(
-    () => eventsForDay(trip.events ?? [], day),
-    [trip.events, day],
-  );
+  const { saveEvent, deleteEvent, savePoint, deletePoint, saveLeg, deleteLeg } =
+    useTravel();
+  const points = trip.points ?? [];
+  const legs = trip.legs ?? [];
+  const events = trip.events ?? [];
   const days = useMemo(() => tripDays(trip), [trip]);
+  const [day, setDay] = useState(days[0] ?? trip.startDate);
+  const [minutes, setMinutes] = useState(() =>
+    firstItemMinutes(events, legs, days[0] ?? trip.startDate),
+  );
+  const [showAll, setShowAll] = useState(false);
+  const [routeOpen, setRouteOpen] = useState(false);
+  const [feedOpen, setFeedOpen] = useState(false);
+  const [eventEditor, setEventEditor] = useState<{
+    event?: TripEvent;
+    pointId?: string | null;
+  } | null>(null);
+  const [pointEditor, setPointEditor] = useState<{ point?: RoutePoint } | null>(
+    null,
+  );
+  const [legEditor, setLegEditor] = useState<{ leg?: TripLeg } | null>(null);
+  const [deletion, setDeletion] = useState<Deletion | null>(null);
+  const [detailsEvent, setDetailsEvent] = useState<TripEvent | null>(null);
+  const [detailsPointId, setDetailsPointId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [timelineInset, setTimelineInset] = useState(176);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const initializedRef = useRef(false);
+
+  const dayLegs = useMemo(() => legsForDay(legs, day), [legs, day]);
+  const allLegs = useMemo(
+    () =>
+      [...legs].sort(
+        (a, b) => a.start.localeCompare(b.start) || a.id.localeCompare(b.id),
+      ),
+    [legs],
+  );
+  const visiblePoints = useMemo(
+    () => (showAll ? points : pointsForDay(points, events, legs, day)),
+    [showAll, points, events, legs, day],
+  );
+  const visibleLegs = showAll ? allLegs : dayLegs;
+  const timeline = useMemo(
+    () => buildTimeline(events, legs, day),
+    [events, legs, day],
+  );
+  const position = useMemo(
+    () => positionAtTime(timeline, points, day, minutes),
+    [timeline, points, day, minutes],
+  );
+  const detailsPoint = detailsPointId
+    ? (points.find((point) => point.id === detailsPointId) ?? null)
+    : null;
+
+  useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const eventId = params.get("event");
+    const targetEvent = eventId
+      ? events.find((event) => event.id === eventId)
+      : undefined;
+    if (targetEvent) {
+      setDay(targetEvent.start.slice(0, 10));
+      setShowAll(false);
+      setMinutes(timeToMinutes(targetEvent.start));
+      setDetailsEvent(targetEvent);
+      return;
+    }
+    const requestedDay = params.get("day");
+    if (requestedDay && days.includes(requestedDay)) {
+      setDay(requestedDay);
+      setShowAll(false);
+      setMinutes(firstItemMinutes(events, legs, requestedDay));
+      return;
+    }
+    const today = todayIso();
+    if (days.includes(today)) {
+      setDay(today);
+      setMinutes(firstItemMinutes(events, legs, today));
+    }
+  }, [days, events, legs]);
+
+  useEffect(() => {
+    if (days.includes(day)) return;
+    const next = days[0] ?? trip.startDate;
+    setDay(next);
+    setMinutes(firstItemMinutes(events, legs, next));
+  }, [days, day, events, legs, trip.startDate]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("day", day);
+    if (detailsEvent) url.searchParams.set("event", detailsEvent.id);
+    else url.searchParams.delete("event");
+    window.history.replaceState(
+      null,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  }, [day, detailsEvent]);
+
+  function changeDay(value: string) {
+    setDay(value);
+    setShowAll(false);
+    setDetailsEvent(null);
+    setMinutes(firstItemMinutes(events, legs, value));
+  }
+
+  function openEvent(event: TripEvent) {
+    setDay(event.start.slice(0, 10));
+    setShowAll(false);
+    setMinutes(timeToMinutes(event.start));
+    setDetailsEvent(event);
+  }
+
+  function showIssue(issue: ScheduleIssue) {
+    const event = events.find((item) => issue.itemIds.includes(item.id));
+    if (event) {
+      openEvent(event);
+      return;
+    }
+    const leg = legs.find((item) => issue.itemIds.includes(item.id));
+    if (!leg) return;
+    setDay(leg.start.slice(0, 10));
+    setShowAll(false);
+    setMinutes(timeToMinutes(leg.start));
+    setFeedOpen(true);
+  }
+
+  function jumpToPoint(pointId: string) {
+    const item = timeline.find((entry) =>
+      entry.kind === "event"
+        ? entry.event.pointId === pointId
+        : entry.leg.fromPointId === pointId || entry.leg.toPointId === pointId,
+    );
+    if (item) {
+      setMinutes(itemStartMinutes(item));
+      return;
+    }
+    const source =
+      events.find((event) => event.pointId === pointId)?.start ??
+      legs.find(
+        (leg) => leg.fromPointId === pointId || leg.toPointId === pointId,
+      )?.start;
+    if (!source) return;
+    setDay(source.slice(0, 10));
+    setShowAll(false);
+    setMinutes(timeToMinutes(source));
+  }
+
+  function jumpToLeg(legId: string) {
+    const item = timeline.find(
+      (entry) => entry.kind === "leg" && entry.id === legId,
+    );
+    if (item) {
+      setMinutes(itemStartMinutes(item));
+      return;
+    }
+    const leg = legs.find((entry) => entry.id === legId);
+    if (!leg) return;
+    setDay(leg.start.slice(0, 10));
+    setShowAll(false);
+    setMinutes(timeToMinutes(leg.start));
+  }
+
+  function confirmDelete() {
+    if (!deletion) return;
+    try {
+      if (deletion.kind === "event") deleteEvent(trip.id, deletion.event.id);
+      if (deletion.kind === "point") deletePoint(trip.id, deletion.point.id);
+      if (deletion.kind === "leg") deleteLeg(trip.id, deletion.leg.id);
+      setStatus(
+        deletion.kind === "event"
+          ? "Событие удалено."
+          : deletion.kind === "point"
+            ? "Точка удалена. Связанные события остались без места."
+            : "Перемещение удалено.",
+      );
+      setDeletion(null);
+      setError(null);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Не удалось удалить запись.",
+      );
+    }
+  }
+
+  function openEventEditor(event?: TripEvent, pointId?: string | null) {
+    setDetailsEvent(null);
+    setEventEditor({ event, pointId });
+  }
+
+  function openPointEditor(point?: RoutePoint) {
+    setDetailsPointId(null);
+    setPointEditor({ point });
+  }
+
   return (
-    <div className="mx-auto max-w-[1600px]">
-      <header className="flex flex-wrap items-start justify-between gap-5">
-        <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">Обзор путешествия</p>
-          <h1 className="mt-2 break-words text-3xl font-semibold tracking-tight sm:text-4xl">
-            {trip.name}
-          </h1>
-          <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-            <CalendarDays className="size-4" />
-            {formatTripDates(trip)}
-          </p>
-        </div>
-        <Button className="h-11" onClick={() => setEditor({})}>
-          <Plus />
-          Добавить событие
-        </Button>
-      </header>
-      <div className="my-7 max-w-xs">
-        <Field label="События поездки">
-          {(id) => (
-            <select
-              id={id}
-              className={inputClass}
-              value={day}
-              onChange={(e) => {
-                setDay(e.target.value);
-                setSelectedId(null);
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <header className="shrink-0 border-b bg-background px-4 py-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <p className="hidden text-xs text-muted-foreground sm:block">
+              Обзор путешествия
+            </p>
+            <div className="flex min-w-0 items-center gap-2">
+              <h1 className="min-w-0 truncate text-lg font-semibold tracking-tight sm:text-2xl">
+                {trip.name}
+              </h1>
+              {trip.isDemo && (
+                <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-primary-strong">
+                  Демо
+                </span>
+              )}
+            </div>
+            <p className="mt-0.5 flex min-w-0 items-center gap-1.5 truncate text-[11px] whitespace-nowrap text-muted-foreground">
+              <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
+              {formatTripDates(trip)}
+            </p>
+            {trip.description && (
+              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                {trip.description}
+              </p>
+            )}
+          </div>
+          <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto sm:shrink-0">
+            <TripActions
+              trip={trip}
+              onSaved={() => setStatus("Поездка обновлена.")}
+              onCheckSchedule={() => setScheduleOpen(true)}
+            />
+            <Button
+              variant="outline"
+              className="h-9"
+              aria-expanded={routeOpen}
+              aria-controls="route-panel"
+              aria-label={
+                routeOpen
+                  ? "Скрыть редактор маршрута"
+                  : "Открыть редактор маршрута"
+              }
+              onClick={() => {
+                setRouteOpen((value) => !value);
+                setFeedOpen(false);
               }}
             >
-              <option value="">Все дни</option>
-              {days.map((value, index) => (
-                <option key={value} value={value}>
-                  День {index + 1} · {value.split("-").reverse().join(".")}
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
-      </div>
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
-        <section className="min-w-0">
-          <h2 className="mb-3 text-lg font-semibold">Карта поездки</h2>
-          <TripMap
-            events={events}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-          />
-        </section>
-        <section className="min-w-0">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Хронология</h2>
-            <span className="text-sm text-muted-foreground">
-              {events.length}
-            </span>
-          </div>
-          {events.length ? (
-            <EventTimeline
-              events={events}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              onEdit={(event) => setEditor({ event })}
-              onDelete={(event) => {
-                setError(null);
-                setDeleting(event);
+              <RouteIcon />
+              <span className="hidden sm:inline">Маршрут</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-9"
+              aria-expanded={feedOpen}
+              aria-label="Открыть ленту дня"
+              onClick={() => {
+                setFeedOpen(true);
+                setRouteOpen(false);
               }}
-            />
-          ) : (
-            <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed bg-background p-6 text-center">
-              <CalendarDays className="mb-4 size-8 text-muted-foreground" />
-              <h3 className="font-medium">
-                {day
-                  ? "В этот день пока нет событий"
-                  : "История поездки начинается здесь"}
-              </h3>
-              <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-                Добавьте первую прогулку, встречу или заселение. Места событий
-                появятся на карте.
-              </p>
-              <Button
-                variant="outline"
-                className="mt-5 h-11"
-                onClick={() => setEditor({})}
-              >
-                <Plus />
-                Добавить событие
-              </Button>
-            </div>
-          )}
-        </section>
-      </div>
-      {editor && (
-        <EventForm
-          trip={trip}
-          event={editor.event}
+            >
+              <List />
+              <span className="hidden sm:inline">Лента</span>
+            </Button>
+            <Button
+              className="h-9"
+              aria-label="Добавить событие"
+              onClick={() => openEventEditor()}
+            >
+              <Plus />
+              <span className="hidden sm:inline">Добавить событие</span>
+              <span className="sm:hidden">Событие</span>
+            </Button>
+          </div>
+        </div>
+        <div className="mt-1.5 flex items-center gap-2">
+          <div className="flex min-w-0 gap-1.5 overflow-x-auto pb-0.5">
+            {days.map((value, index) => {
+              const active = day === value && !showAll;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={active}
+                  className={`min-h-8 shrink-0 rounded-md border px-2.5 py-1 text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                    active
+                      ? "border-primary-strong bg-primary-strong text-primary-foreground"
+                      : "border-border bg-surface text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                  }`}
+                  onClick={() => changeDay(value)}
+                >
+                  <span className="font-medium">День {index + 1}</span>
+                  <span
+                    className={`ml-1.5 tabular-nums ${active ? "opacity-80" : "opacity-70"}`}
+                  >
+                    {value.slice(8, 10)}.{value.slice(5, 7)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            aria-pressed={showAll}
+            title="Показать на карте весь маршрут"
+            className={`ml-auto min-h-8 shrink-0 rounded-md border px-2.5 py-1 text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+              showAll
+                ? "border-primary-strong bg-primary-strong text-primary-foreground"
+                : "border-border bg-surface text-muted-foreground hover:border-primary/50 hover:text-foreground"
+            }`}
+            onClick={() => setShowAll((value) => !value)}
+          >
+            {showAll ? "Только день" : "Все дни"}
+          </button>
+        </div>
+      </header>
+      <StorageWarning className="mx-4 mt-2 shrink-0" />
+
+      <section className="relative min-h-0 flex-1">
+        <TripMap
+          className="h-full rounded-none border-0"
+          points={visiblePoints}
+          legs={visibleLegs}
+          selectedPointId={position.pointId}
+          selectedLegId={position.legId}
+          currentPosition={
+            position.lat !== null && position.lng !== null
+              ? { lat: position.lat, lng: position.lng }
+              : null
+          }
+          onSelectPoint={(pointId) => {
+            setDetailsPointId(pointId);
+            jumpToPoint(pointId);
+          }}
+          onSelectLeg={jumpToLeg}
+          overlayInset={timelineInset}
+        />
+        <TripTimeline
+          items={timeline}
           day={day}
-          onClose={() => setEditor(null)}
-          onSave={(values) => {
-            saveEvent(trip.id, values, editor.event?.id);
-            setEditor(null);
-            setDay("");
-            setSelectedId(editor.event?.id ?? null);
+          minutes={minutes}
+          position={position}
+          onScrub={setMinutes}
+          onSelectEvent={openEvent}
+          onSelectLeg={(leg) => jumpToLeg(leg.id)}
+          onEditEvent={(event) => openEventEditor(event)}
+          onDeleteEvent={(event) => {
+            setError(null);
+            setDetailsEvent(null);
+            setDeletion({ kind: "event", event });
+          }}
+          onEditLeg={(leg) => {
+            setDetailsEvent(null);
+            setLegEditor({ leg });
+          }}
+          onDeleteLeg={(leg) => {
+            setError(null);
+            setDetailsEvent(null);
+            setDeletion({ kind: "leg", leg });
+          }}
+          onHeightChange={setTimelineInset}
+        />
+        {visiblePoints.length === 0 && (
+          <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center px-4 pb-40">
+            <div className="pointer-events-auto max-w-sm rounded-xl border bg-surface/95 p-4 text-center shadow-lg">
+              <p className="text-sm font-medium">
+                {points.length
+                  ? "В этом дне нет привязанных точек"
+                  : "В поездке пока нет точек"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {points.length
+                  ? "Покажите все дни на карте или добавьте события, чтобы привязать точки к выбранному дню."
+                  : "Начните с точки маршрута, затем добавьте события и перемещения."}
+              </p>
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                {points.length > 0 && (
+                  <Button className="h-10" onClick={() => setShowAll(true)}>
+                    Все дни
+                  </Button>
+                )}
+                <Button
+                  variant={points.length > 0 ? "outline" : "default"}
+                  className="h-10"
+                  onClick={() => {
+                    if (points.length === 0) {
+                      openPointEditor();
+                      return;
+                    }
+                    setRouteOpen(true);
+                    setFeedOpen(false);
+                  }}
+                >
+                  <RouteIcon />
+                  {points.length > 0 ? "Открыть маршрут" : "Добавить точку"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        <Dialog.Root open={routeOpen} onOpenChange={setRouteOpen}>
+          <Dialog.Portal>
+            <Dialog.Backdrop className="fixed inset-0 z-40 bg-overlay/20" />
+            <Dialog.Popup
+              id="route-panel"
+              className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l bg-background shadow-xl outline-none"
+            >
+              <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
+                <div>
+                  <Dialog.Title className="text-lg font-semibold">
+                    Редактор маршрута
+                  </Dialog.Title>
+                  <Dialog.Description className="mt-0.5 text-xs text-muted-foreground">
+                    Точки и перемещения поездки.
+                  </Dialog.Description>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-10"
+                  aria-label="Закрыть панель маршрута"
+                  onClick={() => setRouteOpen(false)}
+                >
+                  <X />
+                </Button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                <RoutePanel
+                  points={points}
+                  legs={legs}
+                  selectedPointId={position.pointId}
+                  selectedLegId={position.legId}
+                  onSelectPoint={jumpToPoint}
+                  onSelectLeg={jumpToLeg}
+                  onAddPoint={() => openPointEditor()}
+                  onEditPoint={(point) => openPointEditor(point)}
+                  onDeletePoint={(point) => {
+                    setError(null);
+                    setDeletion({ kind: "point", point });
+                  }}
+                  onAddLeg={() => setLegEditor({})}
+                  onEditLeg={(leg) => setLegEditor({ leg })}
+                  onDeleteLeg={(leg) => {
+                    setError(null);
+                    setDeletion({ kind: "leg", leg });
+                  }}
+                />
+              </div>
+            </Dialog.Popup>
+          </Dialog.Portal>
+        </Dialog.Root>
+      </section>
+
+      {detailsEvent && (
+        <EventDetails
+          event={detailsEvent}
+          points={points}
+          onClose={() => setDetailsEvent(null)}
+          onEdit={() => openEventEditor(detailsEvent)}
+          onDelete={() => {
+            setError(null);
+            setDetailsEvent(null);
+            setDeletion({ kind: "event", event: detailsEvent });
           }}
         />
       )}
+      {detailsPoint && (
+        <PointDetails
+          point={detailsPoint}
+          events={events}
+          onClose={() => setDetailsPointId(null)}
+          onSelectEvent={(event) => {
+            setDetailsPointId(null);
+            openEvent(event);
+          }}
+          onAddEvent={() => {
+            setDetailsPointId(null);
+            openEventEditor(undefined, detailsPoint.id);
+          }}
+          onEdit={() => openPointEditor(detailsPoint)}
+          onDelete={() => {
+            setError(null);
+            setDetailsPointId(null);
+            setDeletion({ kind: "point", point: detailsPoint });
+          }}
+        />
+      )}
+      {feedOpen && (
+        <DayFeed
+          items={timeline}
+          day={day}
+          points={points}
+          onClose={() => setFeedOpen(false)}
+          onSelectEvent={(event) => {
+            setFeedOpen(false);
+            openEvent(event);
+          }}
+          onSelectLeg={(leg) => {
+            setFeedOpen(false);
+            jumpToLeg(leg.id);
+          }}
+          onAddEvent={() => {
+            setFeedOpen(false);
+            openEventEditor();
+          }}
+        />
+      )}
+      {eventEditor && (
+        <EventForm
+          trip={trip}
+          event={eventEditor.event}
+          day={day}
+          time={minutesToTime(minutes)}
+          initialPointId={eventEditor.pointId}
+          onClose={() => setEventEditor(null)}
+          onSave={(values) => {
+            saveEvent(trip.id, values, eventEditor.event?.id);
+            setEventEditor(null);
+            setDay(values.start.slice(0, 10));
+            setShowAll(false);
+            setMinutes(timeToMinutes(values.start));
+            setStatus("Событие сохранено.");
+          }}
+        />
+      )}
+      {pointEditor && (
+        <PointForm
+          points={points}
+          point={pointEditor.point}
+          onClose={() => setPointEditor(null)}
+          onSave={(values) => {
+            savePoint(trip.id, values, pointEditor.point?.id);
+            setPointEditor(null);
+            setStatus("Точка сохранена.");
+          }}
+        />
+      )}
+      {legEditor && (
+        <LegForm
+          trip={trip}
+          points={points}
+          leg={legEditor.leg}
+          day={day}
+          onClose={() => setLegEditor(null)}
+          onSave={(values) => {
+            saveLeg(trip.id, values, legEditor.leg?.id);
+            setLegEditor(null);
+            setDay(values.start.slice(0, 10));
+            setShowAll(false);
+            setMinutes(timeToMinutes(values.start));
+            setStatus("Перемещение сохранено.");
+          }}
+        />
+      )}
+      <StatusToast message={status} onClose={() => setStatus(null)} />
+      <ScheduleCheckDialog
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+        events={events}
+        legs={legs}
+        points={points}
+        onShowIssue={showIssue}
+      />
       <Dialog.Root
-        open={!!deleting}
+        open={!!deletion}
         onOpenChange={(open) => {
-          if (!open) setDeleting(null);
+          if (!open) setDeletion(null);
         }}
       >
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay/35" />
           <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background p-6 shadow-xl">
             <Dialog.Title className="text-lg font-semibold">
-              Удалить событие?
+              {deletion ? deletionTitle[deletion.kind] : ""}
             </Dialog.Title>
             <Dialog.Description className="mt-2 break-words text-sm text-muted-foreground">
-              «{deleting?.title}» будет удалено из ленты и с карты.
+              {deletion ? deletionText(deletion) : ""}
             </Dialog.Description>
             {error && (
               <p role="alert" className="mt-3 text-sm text-destructive">
@@ -170,27 +657,14 @@ function Overview({ trip }: { trip: Trip }) {
               <Button
                 variant="outline"
                 className="h-11"
-                onClick={() => setDeleting(null)}
+                onClick={() => setDeletion(null)}
               >
                 Отмена
               </Button>
               <Button
                 variant="destructive"
                 className="h-11"
-                onClick={() => {
-                  if (!deleting) return;
-                  try {
-                    deleteEvent(trip.id, deleting.id);
-                    if (selectedId === deleting.id) setSelectedId(null);
-                    setDeleting(null);
-                  } catch (error) {
-                    setError(
-                      error instanceof Error
-                        ? error.message
-                        : "Не удалось удалить событие.",
-                    );
-                  }
-                }}
+                onClick={confirmDelete}
               >
                 Удалить
               </Button>

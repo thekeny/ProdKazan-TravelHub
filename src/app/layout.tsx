@@ -19,8 +19,12 @@ const interSans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "TravelHub",
-  description: "Путешествие как история",
+  title: {
+    default: "TravelHub — путешествие как история",
+    template: "%s · TravelHub",
+  },
+  description:
+    "Планируйте поездки, стройте маршруты на карте и сохраняйте события, фотографии и билеты в одной хронологии.",
   icons: {
     icon: [{ url: "/favicon.png", type: "image/png" }],
   },

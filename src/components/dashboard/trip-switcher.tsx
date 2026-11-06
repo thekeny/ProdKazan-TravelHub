@@ -1,5 +1,5 @@
 "use client";
-import { Check, ChevronsUpDown, Plus, Settings2 } from "lucide-react";
+import { Check, ChevronsUpDown, Luggage, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -18,7 +18,7 @@ import { useTravel } from "@/providers/travel-provider";
 const itemClassName =
   "min-h-14 w-full cursor-pointer rounded-md px-3 py-2.5 transition-colors duration-150 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground";
 
-export function TripSwitcher() {
+export function TripSwitcher({ onNavigate }: { onNavigate?: () => void }) {
   const { trips, activeId, selectTrip } = useTravel();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -29,6 +29,7 @@ export function TripSwitcher() {
     try {
       selectTrip(value);
       setError(null);
+      onNavigate?.();
     } catch (error) {
       setError((error as Error).message);
     }
@@ -70,7 +71,14 @@ export function TripSwitcher() {
                 className={itemClassName}
               >
                 <span className="min-w-0 flex-1 pr-6 break-words [overflow-wrap:anywhere]">
-                  <span className="block font-semibold">{trip.name}</span>
+                  <span className="flex items-center gap-2">
+                    <span className="min-w-0 font-semibold">{trip.name}</span>
+                    {trip.isDemo && (
+                      <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-primary-strong">
+                        Демо
+                      </span>
+                    )}
+                  </span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
                     {formatTripDates(trip)}
                   </span>
@@ -83,15 +91,24 @@ export function TripSwitcher() {
           </DropdownMenuRadioGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => router.push(pages.NEW_TRIP)}
+            onClick={() => {
+              onNavigate?.();
+              router.push(pages.NEW_TRIP);
+            }}
             className={itemClassName}
           >
             <Plus className="size-4 shrink-0" />
             Создать путешествие
           </DropdownMenuItem>
-          <DropdownMenuItem className={itemClassName}>
-            <Settings2 className="size-4 shrink-0" />
-            Настройки путешествия
+          <DropdownMenuItem
+            onClick={() => {
+              onNavigate?.();
+              router.push(pages.TRIPS);
+            }}
+            className={itemClassName}
+          >
+            <Luggage className="size-4 shrink-0" />
+            Все путешествия
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

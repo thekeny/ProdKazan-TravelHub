@@ -40,6 +40,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-strong: var(--primary-strong);
   --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
@@ -56,6 +57,7 @@
 
 :root {
   --primary: #4f8a68;
+  --primary-strong: color-mix(in srgb, var(--primary) 78%, var(--text));
   --green: #7bae7f;
   --water: #8ecae6;
   --background: #f7f5ef;
@@ -63,6 +65,19 @@
   --road: #e6d8b5;
   --border: #d8d8d8;
   --text: #2f3a33;
+
+  --transport-walk: var(--green);
+  --transport-car: var(--text);
+  --transport-train: var(--primary);
+  --transport-plane: var(--water);
+  --transport-bus: color-mix(in srgb, var(--road) 45%, var(--text));
+
+  --event-walk: var(--green);
+  --event-tour: var(--primary);
+  --event-stay: var(--water);
+  --event-restaurant: color-mix(in srgb, var(--road) 45%, var(--text));
+  --event-meeting: color-mix(in srgb, var(--water) 55%, var(--primary));
+  --event-other: color-mix(in srgb, var(--text) 45%, var(--background));
 
   --foreground: var(--text);
   --card: var(--surface);
@@ -108,8 +123,13 @@
   --accent: color-mix(in srgb, var(--water) 20%, var(--surface));
   --accent-foreground: var(--foreground);
   --primary-foreground: var(--foreground);
+  --primary-strong: color-mix(in srgb, var(--primary) 72%, var(--foreground));
   --destructive: oklch(0.704 0.191 22.216);
   --border: color-mix(in srgb, var(--foreground) 20%, var(--surface));
+  --transport-car: var(--foreground);
+  --transport-bus: color-mix(in srgb, var(--road) 45%, var(--foreground));
+  --event-restaurant: color-mix(in srgb, var(--road) 55%, var(--foreground));
+  --event-other: color-mix(in srgb, var(--foreground) 45%, var(--background));
   --sidebar-foreground: var(--foreground);
   --sidebar-accent-foreground: var(--foreground);
 }
@@ -133,6 +153,10 @@
   .flow-card {
     @apply w-full max-w-md rounded-xl border border-border/60 bg-card p-6 sm:p-8;
   }
+}
+
+.leaflet-container .leaflet-bottom.leaflet-right {
+  bottom: var(--map-bottom-overlay, 0px);
 }
 
 @media (prefers-reduced-motion: reduce) {
