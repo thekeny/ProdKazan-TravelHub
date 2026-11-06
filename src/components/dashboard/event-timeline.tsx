@@ -36,7 +36,9 @@ export function EventTimeline({
         <article
           key={event.id}
           data-selected={selectedId === event.id}
-          className={`rounded-xl border border-border p-4 transition-colors ${selectedId === event.id ? "bg-muted" : "bg-card"}`}
+          className={`rounded-xl border border-border p-4 transition-colors ${
+            selectedId === event.id ? "bg-muted" : "bg-card"
+          }`}
         >
           <button
             type="button"
