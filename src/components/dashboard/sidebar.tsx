@@ -32,8 +32,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="pt-2">
         <Logo />
       </div>
+      <p className="mt-2 text-[10px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+        Дневник путешествий
+      </p>
       <TripSwitcher onNavigate={onNavigate} />
-      <nav aria-label="Разделы путешествия" className="mt-6 grid gap-1">
+      <p className="mt-6 mb-2 px-1 text-[10px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+        Разделы
+      </p>
+      <nav aria-label="Разделы путешествия" className="grid gap-1">
         {links.map((link) => {
           const Icon = link.icon;
           const active = pathname === link.href;
@@ -57,7 +63,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <DemoNotice className="mt-5" />
       <div className="mt-auto pt-10">
         <div className="flex items-center gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary-strong">
             <UserRound className="size-5" />
           </span>
           <span className="min-w-0 flex-1 truncate text-sm font-medium">

@@ -271,14 +271,14 @@ function Overview({ trip }: { trip: Trip }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <header className="shrink-0 border-b bg-background px-4 py-2">
+      <header className="shrink-0 border-b border-border/60 bg-background/90 px-4 py-2.5 backdrop-blur">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
-            <p className="hidden text-xs text-muted-foreground sm:block">
+            <p className="hidden text-[10px] font-semibold tracking-[0.18em] text-primary-strong uppercase sm:block">
               Обзор путешествия
             </p>
             <div className="flex min-w-0 items-center gap-2">
-              <h1 className="min-w-0 truncate text-lg font-semibold tracking-tight sm:text-2xl">
+              <h1 className="min-w-0 truncate text-xl leading-tight sm:text-3xl">
                 {trip.name}
               </h1>
               {trip.isDemo && (
@@ -354,9 +354,9 @@ function Overview({ trip }: { trip: Trip }) {
                   key={value}
                   type="button"
                   aria-pressed={active}
-                  className={`min-h-8 shrink-0 rounded-md border px-2.5 py-1 text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                  className={`min-h-8 shrink-0 rounded-full border px-3 py-1 text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                     active
-                      ? "border-primary-strong bg-primary-strong text-primary-foreground"
+                      ? "border-primary-strong bg-primary-strong text-primary-foreground shadow-sm"
                       : "border-border bg-surface text-muted-foreground hover:border-primary/50 hover:text-foreground"
                   }`}
                   onClick={() => changeDay(value)}
@@ -375,9 +375,9 @@ function Overview({ trip }: { trip: Trip }) {
             type="button"
             aria-pressed={showAll}
             title="Показать на карте весь маршрут"
-            className={`ml-auto min-h-8 shrink-0 rounded-md border px-2.5 py-1 text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+            className={`ml-auto min-h-8 shrink-0 rounded-full border px-3 py-1 text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
               showAll
-                ? "border-primary-strong bg-primary-strong text-primary-foreground"
+                ? "border-primary-strong bg-primary-strong text-primary-foreground shadow-sm"
                 : "border-border bg-surface text-muted-foreground hover:border-primary/50 hover:text-foreground"
             }`}
             onClick={() => setShowAll((value) => !value)}

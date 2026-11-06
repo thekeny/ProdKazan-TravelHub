@@ -1,20 +1,30 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { images } from "@/configs/paths/images.path";
 import { TravelProvider } from "@/providers/travel-provider";
 
-const interSans = localFont({
+const lora = localFont({
   src: [
     {
-      path: "../../public/fonts/InterVariable.woff2",
+      path: "../../public/fonts/Lora-Variable.ttf",
       style: "normal",
+      weight: "400 700",
     },
     {
-      path: "../../public/fonts/InterVariable-Italic.woff2",
+      path: "../../public/fonts/Lora-Italic-Variable.ttf",
       style: "italic",
+      weight: "400 700",
     },
   ],
-  variable: "--font-sans",
+  variable: "--font-lora",
+  display: "swap",
+});
+
+const pangolin = localFont({
+  src: "../../public/fonts/Pangolin-Regular.ttf",
+  weight: "400",
+  variable: "--font-pangolin",
   display: "swap",
 });
 
@@ -26,7 +36,8 @@ export const metadata: Metadata = {
   description:
     "Планируйте поездки, стройте маршруты на карте и сохраняйте события, фотографии и билеты в одной хронологии.",
   icons: {
-    icon: [{ url: "/favicon.png", type: "image/png" }],
+    icon: [{ url: images.FAVICON, type: "image/png" }],
+    apple: [{ url: images.FAVICON, type: "image/png" }],
   },
 };
 
@@ -36,8 +47,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={interSans.variable}>
-      <body className={`${interSans.className} antialiased`}>
+    <html lang="ru" className={`${lora.variable} ${pangolin.variable}`}>
+      <body className="antialiased">
         <TravelProvider>{children}</TravelProvider>
       </body>
     </html>
