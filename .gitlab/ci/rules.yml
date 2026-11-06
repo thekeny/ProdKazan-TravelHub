@@ -1,7 +1,7 @@
 .rules-merge-or-master:
   rules:
     - if: "$CI_COMMIT_REF_NAME == $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
-    - if: '$CI_COMMIT_REF_NAME == "master"'
+    - if: '$CI_COMMIT_REF_NAME == "main"'
 
 .rules-merge:
   rules:
@@ -9,9 +9,9 @@
 
 .rules-master:
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "master"'
+    - if: '$CI_COMMIT_REF_NAME == "main"'
 
 .rules-master-manual:
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "master"'
+    - if: '$CI_COMMIT_REF_NAME == "main"'
       when: manual
