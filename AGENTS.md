@@ -19,6 +19,9 @@
 - `.prototype/` — standalone clickable HTML/CSS/JS prototype of the TravelHub product (screens, map, timeline, gallery, team overview). It is not part of the Next.js build; see `.prototype/README.md`.
 
 ## Rules for Agents
+- TravelHub currently uses a browser-only demo session; passwords are never stored or verified. Do not treat client route guards as real authorization.
+- `src/providers/travel-provider.tsx` owns session, account-scoped trips and active selection. Browser persistence is isolated in `src/lib/travel-storage.ts`; failed writes must not update in-memory state.
+- Keep route pages thin, page-specific UI in `src/components/auth`, `src/components/trips`, and `src/components/landing`, and shared application chrome in `src/components/layout`.
 - Keep code clean: avoid redundant, explanatory, or trivial comments unless strictly necessary.
 - Maintain consistent coding style and project conventions.
 - Keep `src/configs/` as the single source of truth for URLs, route paths, and static constants.

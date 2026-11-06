@@ -1,3 +1,4 @@
-export default function Root() {
-  return <div className="text-red-500">Helo word</div>;
+import { LandingPage } from "@/components/landing/landing-page";
+export default function Page() {
+  return <LandingPage />;
 }
