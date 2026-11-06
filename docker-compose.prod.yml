@@ -1,0 +1,7 @@
+name: frontend
+
+services:
+  web:
+    image: ${IMAGE:?IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
+    ports: ["${FRONTEND_PORT:-3000}:3000"]
+    restart: unless-stopped
