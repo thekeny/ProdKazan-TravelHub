@@ -35,7 +35,7 @@ export default function Page() {
               key={value}
               variant="ghost"
               aria-pressed={mode === value}
-              className={`h-10 ${mode === value ? "bg-white shadow-sm" : ""}`}
+              className={`h-10 ${mode === value ? "bg-surface shadow-sm" : ""}`}
               onClick={() => {
                 setMode(value);
                 setError(null);

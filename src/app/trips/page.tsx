@@ -44,7 +44,7 @@ export default function Page() {
                     style={{ backgroundImage: `url(${trip.cover})` }}
                   />
                 ) : (
-                  <span className="grid size-12 shrink-0 place-items-center rounded-md border bg-white">
+                  <span className="grid size-12 shrink-0 place-items-center rounded-md border bg-surface">
                     <MapIcon className="size-5 text-muted-foreground" />
                   </span>
                 )}

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { APP } from "@/configs/consts/app.const";
+import type { TripEvent } from "@/configs/types/event.type";
 import {
   emptyState,
   normalizeUsername,
@@ -31,6 +32,47 @@ describe("travel validation", () => {
   });
 });
 describe("travel storage", () => {
+  it("restores event data and rejects malformed or duplicate events", () => {
+    const event: TripEvent = {
+      id: "event",
+      title: "Музей",
+      type: "tour",
+      start: "2026-05-01T10:00",
+      end: "",
+      description: "",
+      place: { name: "Кремль", lat: 55.8, lng: 49.1 },
+    };
+    const state = {
+      username: "alice",
+      accounts: {
+        alice: {
+          trips: [{ ...trip, id: "trip", events: [event] }],
+          activeId: "trip",
+        },
+      },
+    };
+    writeState(state);
+    expect(readState()).toEqual(state);
+    for (const events of [
+      [{ ...event, place: { ...event.place, lat: "55" } }],
+      [{ ...event, start: "bad" }],
+      [event, event],
+    ]) {
+      localStorage.setItem(
+        APP.STORAGE_KEY,
+        JSON.stringify({
+          ...state,
+          accounts: {
+            alice: {
+              ...state.accounts.alice,
+              trips: [{ ...trip, id: "trip", events }],
+            },
+          },
+        }),
+      );
+      expect(readState).toThrow();
+    }
+  });
   it("starts empty and normalizes usernames", () => {
     expect(readState()).toEqual(emptyState());
     expect(normalizeUsername(" Alice ")).toBe("alice");

@@ -1,5 +1,6 @@
 import { APP } from "@/configs/consts/app.const";
 import type { DemoState, TripValues } from "@/configs/types/travel.type";
+import { validateEvent } from "@/lib/travel-events";
 
 export function normalizeUsername(value: string) {
   return value.trim().toLowerCase();
@@ -54,6 +55,27 @@ export function readState(): DemoState {
         validateTrip(trip)
       )
         throw new Error("invalid trip");
+      if (trip.events !== undefined) {
+        if (!Array.isArray(trip.events)) throw new Error("invalid events");
+        const ids = new Set<string>();
+        for (const event of trip.events) {
+          if (
+            !event ||
+            typeof event.id !== "string" ||
+            ids.has(event.id) ||
+            typeof event.title !== "string" ||
+            typeof event.type !== "string" ||
+            typeof event.start !== "string" ||
+            typeof event.end !== "string" ||
+            typeof event.description !== "string" ||
+            (event.place !== null &&
+              (!event.place || typeof event.place.name !== "string")) ||
+            validateEvent(event, trip)
+          )
+            throw new Error("invalid event");
+          ids.add(event.id);
+        }
+      }
     }
   }
   return value as DemoState;

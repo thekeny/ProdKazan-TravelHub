@@ -5,6 +5,12 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-green: var(--green);
+  --color-water: var(--water);
+  --color-surface: var(--surface);
+  --color-road: var(--road);
+  --color-text: var(--text);
+  --color-overlay: var(--text);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -49,72 +55,63 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --primary: #4f8a68;
+  --green: #7bae7f;
+  --water: #8ecae6;
+  --background: #f7f5ef;
+  --surface: #ffffff;
+  --road: #e6d8b5;
+  --border: #d8d8d8;
+  --text: #2f3a33;
+
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: var(--surface);
+  --secondary: color-mix(in srgb, var(--green) 20%, var(--surface));
+  --secondary-foreground: var(--text);
+  --muted: color-mix(in srgb, var(--road) 25%, var(--background));
+  --muted-foreground: color-mix(in srgb, var(--text) 80%, var(--background));
+  --accent: color-mix(in srgb, var(--water) 25%, var(--surface));
+  --accent-foreground: var(--text);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --input: var(--border);
+  --ring: var(--primary);
+  --chart-1: var(--primary);
+  --chart-2: var(--green);
+  --chart-3: var(--water);
+  --chart-4: var(--road);
+  --chart-5: var(--text);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: color-mix(in srgb, var(--text) 85%, black);
+  --surface: var(--text);
+  --foreground: #f7f5ef;
+  --card-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --secondary: color-mix(in srgb, var(--green) 20%, var(--surface));
+  --secondary-foreground: var(--foreground);
+  --muted: color-mix(in srgb, var(--road) 10%, var(--surface));
+  --muted-foreground: color-mix(in srgb, var(--foreground) 75%, var(--surface));
+  --accent: color-mix(in srgb, var(--water) 20%, var(--surface));
+  --accent-foreground: var(--foreground);
+  --primary-foreground: var(--foreground);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --border: color-mix(in srgb, var(--foreground) 20%, var(--surface));
+  --sidebar-foreground: var(--foreground);
+  --sidebar-accent-foreground: var(--foreground);
 }
 
 @layer base {
@@ -131,7 +128,7 @@
 
 @layer components {
   .flow-background {
-    @apply grid min-h-dvh place-items-center bg-muted/60 px-4 py-10;
+    @apply grid min-h-dvh place-items-center bg-background px-4 py-10;
   }
   .flow-card {
     @apply w-full max-w-md rounded-xl border border-border/60 bg-card p-6 sm:p-8;

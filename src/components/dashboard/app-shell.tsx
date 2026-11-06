@@ -23,7 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Menu />
             </Dialog.Trigger>
             <Dialog.Portal>
-              <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/30" />
+              <Dialog.Backdrop className="fixed inset-0 z-40 bg-overlay/30" />
               <Dialog.Popup className="fixed inset-y-0 left-0 z-50 w-80 max-w-[90vw] overflow-y-auto bg-background outline-none">
                 <Dialog.Title className="sr-only">Навигация</Dialog.Title>
                 <Dialog.Close

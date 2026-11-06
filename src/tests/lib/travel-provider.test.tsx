@@ -41,6 +41,49 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 describe("demo session flow", () => {
+  it("persists event changes and isolates trips and accounts", async () => {
+    await act(async () => travel.login("alice"));
+    await act(async () => travel.createTrip(values));
+    const tripId = travel.activeId as string;
+    const event = {
+      title: "Прогулка",
+      type: "walk" as const,
+      start: "2026-05-01T09:00",
+      end: "",
+      description: "",
+      place: null,
+    };
+    await act(async () => travel.saveEvent(tripId, event));
+    const eventId = travel.trips[0].events?.[0].id as string;
+    await act(async () =>
+      travel.saveEvent(tripId, { ...event, title: "Музей" }, eventId),
+    );
+    await act(async () => root.unmount());
+    await mount();
+    expect(travel.trips[0].events?.[0].title).toBe("Музей");
+    await act(async () => travel.createTrip({ ...values, name: "Москва" }));
+    expect(() => travel.saveEvent(tripId, event)).toThrow();
+    expect(() =>
+      travel.deleteEvent(travel.activeId as string, eventId),
+    ).toThrow();
+    await act(async () => travel.login("bob"));
+    expect(() => travel.deleteEvent(tripId, eventId)).toThrow();
+    await act(async () => travel.login("alice"));
+    await act(async () => travel.selectTrip(tripId));
+    const saved = travel.trips;
+    const spy = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("quota");
+      });
+    expect(() => travel.deleteEvent(tripId, eventId)).toThrow();
+    expect(() => travel.saveEvent(tripId, event, eventId)).toThrow();
+    expect(() => travel.saveEvent(tripId, event)).toThrow();
+    expect(travel.trips).toBe(saved);
+    spy.mockRestore();
+    await act(async () => travel.deleteEvent(tripId, eventId));
+    expect(travel.trips.find((trip) => trip.id === tripId)?.events).toEqual([]);
+  });
   it("creates and switches trips, then restores selection after remount", async () => {
     await act(async () => travel.login(" Alice "));
     expect(travel.username).toBe("alice");

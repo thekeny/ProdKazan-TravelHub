@@ -21,7 +21,9 @@ const interSans = localFont({
 export const metadata: Metadata = {
   title: "TravelHub",
   description: "Путешествие как история",
-  icons: { icon: "/favicon.png" },
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({
