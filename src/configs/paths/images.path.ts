@@ -1,4 +1,4 @@
-export const images = { 
-    LOGO: "/logo.png", 
-    ICON: "/icon.png" 
+export const images = {
+  LOGO: "/logo.png",
+  ICON: "/icon.png",
 };

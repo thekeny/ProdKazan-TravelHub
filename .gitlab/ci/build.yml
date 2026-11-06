@@ -35,10 +35,11 @@
             return 0
           fi
 
-          if [ "$attempt" -lt 3 ] && echo "$out" | grep -Eq "CANCEL; received from peer|failed to get filesystem from image"; then
-            echo ">> registry stream dropped, retrying ($attempt/3)"
+          if [ "$attempt" -lt 3 ] && echo "$out" | grep -Eq "TOOMANYREQUESTS|429 Too Many Requests|CANCEL; received from peer|failed to get filesystem from image"; then
+            delay=$((attempt * 30))
+            echo ">> temporary registry error, retrying in ${delay}s ($attempt/3)"
+            sleep "$delay"
             attempt=$((attempt + 1))
-            sleep $((attempt * 5))
             continue
           fi
 

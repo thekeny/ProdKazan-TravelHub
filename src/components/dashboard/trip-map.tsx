@@ -126,7 +126,10 @@ export default function TripMap(props: Props) {
         </p>
       )}
       {failed && (
-        <output className="absolute right-3 bottom-8 left-3 z-[1000] flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background p-3 text-sm">
+        <div
+          role="alert"
+          className="absolute right-3 bottom-8 left-3 z-[1000] flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background p-3 text-sm"
+        >
           <span>Не удалось загрузить карту. События доступны в ленте.</span>
           <Button
             variant="outline"
@@ -138,7 +141,7 @@ export default function TripMap(props: Props) {
           >
             Повторить
           </Button>
-        </output>
+        </div>
       )}
     </section>
   );
