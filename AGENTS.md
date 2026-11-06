@@ -16,9 +16,11 @@
 - `src/lib/` — utility functions (`cn`, helpers)
 - `src/tests/` — Vitest tests (mirror the `src/` structure, e.g. `src/tests/lib/utils.test.ts`); run with `npm test`
 - `src/middleware.ts` — Next.js middleware
+- `.prototype/` — standalone clickable HTML/CSS/JS prototype of the TravelHub product (screens, map, timeline, gallery, team overview). It is not part of the Next.js build; see `.prototype/README.md`.
 
 ## Rules for Agents
 - Keep code clean: avoid redundant, explanatory, or trivial comments unless strictly necessary.
 - Maintain consistent coding style and project conventions.
 - Keep `src/configs/` as the single source of truth for URLs, route paths, and static constants.
+- Keep `.prototype/` in sync with product docs in `docs/`. The prototype is a demo artifact: no build step, no external dependencies.
 - Update this `AGENTS.md` file whenever adding architectural decisions, new tooling, or project conventions.
