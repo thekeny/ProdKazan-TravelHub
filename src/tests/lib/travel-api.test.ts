@@ -18,7 +18,7 @@ describe("backend adapters", () => {
     expect(() => apiId("../auth/me")).toThrow();
     expect(() => apiId("9223372036854775808")).toThrow();
   });
-  it("keeps event times naive and transfer clock digits independent of the browser timezone", () => {
+  it("sends event and ship times in UTC without shifting the form clock", () => {
     const values = {
       title: "Museum",
       type: "tour" as const,
@@ -30,7 +30,8 @@ describe("backend adapters", () => {
       bookingUrl: "",
     };
     const event = eventBody(values);
-    expect(event.startedAt).toBe(values.start);
+    expect(event.startedAt).toBe("2026-11-07T23:30:00Z");
+    expect(event.endedAt).toBe("2026-11-08T00:30:00Z");
     expect(
       mapEvent({ ...event, id: "1", waypointId: values.pointId }).start,
     ).toBe(values.start);
@@ -38,7 +39,7 @@ describe("backend adapters", () => {
       ...values,
       fromPointId: values.pointId,
       toPointId: "2",
-      transport: "walk",
+      transport: "ship",
     });
     expect(leg.startedAt).toBe("2026-11-07T23:30:00Z");
     expect(
@@ -47,8 +48,8 @@ describe("backend adapters", () => {
         id: "3",
         startsAtWaypointId: values.pointId,
         endsAtWaypointId: "2",
-      }).end,
-    ).toBe(values.end);
+      }),
+    ).toMatchObject({ end: values.end, transport: "ship" });
   });
   it("turns authorization and validation failures into actionable errors", async () => {
     await expect(

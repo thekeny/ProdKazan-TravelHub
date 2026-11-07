@@ -51,16 +51,19 @@ export async function proxyBackend(request: NextRequest, path: string[]) {
         { status: 403 },
       );
   }
+  const route = path.join("/");
   if (
     !/^(auth\/(login|register|refresh|logout|me(?:\/password)?)|health|trips(?:\/\d+(?:\/(?:(?:points|events|transfers)(?:\/\d+)?|cover(?:\/[a-zA-Z0-9._-]+)?))?)?)$/.test(
-      path.join("/"),
+      route,
+    ) &&
+    !/^trips\/(?:import|\d+\/(?:export|tickets\/(?:preview|apply)))$/.test(
+      route,
     )
   )
     return new NextResponse(null, { status: 404 });
 
   try {
     const base = backendUrl();
-    const route = path.join("/");
     let access = request.cookies.get(ACCESS_COOKIE)?.value;
     let refresh = request.cookies.get(REFRESH_COOKIE)?.value;
     let rotated = false;
@@ -186,6 +189,8 @@ export async function proxyBackend(request: NextRequest, path: string[]) {
     }
     const retryAfter = response.headers.get("Retry-After");
     if (retryAfter) result.headers.set("Retry-After", retryAfter);
+    const download = response.headers.get("Content-Disposition");
+    if (download) result.headers.set("Content-Disposition", download);
     return result;
   } catch {
     return NextResponse.json(

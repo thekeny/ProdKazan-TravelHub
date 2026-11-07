@@ -157,20 +157,22 @@ export function eventBody(values: EventValues) {
     title: values.title.trim(),
     type: values.type,
     description: values.description.trim() || null,
-    startedAt: values.start,
-    endedAt: values.end || null,
+    startedAt: formTimestamp(values.start),
+    endedAt: values.end ? formTimestamp(values.end) : null,
     bookingUrl: values.bookingUrl.trim() || null,
     waypointId: values.pointId ? apiId(values.pointId) : null,
   };
+}
+// Preserve the wall-clock digits used by the trip form in the API's UTC format.
+function formTimestamp(value: string) {
+  return `${value}:00Z`;
 }
 export function legBody(values: TripLegValues) {
   return {
     transportType: values.transport,
     description: values.description.trim() || null,
-    // Transfers require aware timestamps, while events require naive timestamps.
-    // Use a fixed offset to preserve the trip's wall-clock digits in any browser.
-    startedAt: `${values.start}:00Z`,
-    endedAt: values.end ? `${values.end}:00Z` : null,
+    startedAt: formTimestamp(values.start),
+    endedAt: values.end ? formTimestamp(values.end) : null,
     startsAtWaypointId: apiId(values.fromPointId),
     endsAtWaypointId: apiId(values.toPointId),
   };

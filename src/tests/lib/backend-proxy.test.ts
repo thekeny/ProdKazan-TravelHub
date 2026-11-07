@@ -184,6 +184,31 @@ describe("backend proxy", () => {
     ).toBe(404);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+  it.each([
+    ["POST", "trips/import"],
+    ["GET", "trips/123/export"],
+    ["POST", "trips/123/tickets/preview"],
+    ["POST", "trips/123/tickets/apply"],
+  ])(
+    "proxies %s %s with its session and download headers",
+    async (method, path) => {
+      const download = 'attachment; filename="trip-123.json"';
+      fetchMock.mockResolvedValueOnce(
+        new Response("{}", { headers: { "Content-Disposition": download } }),
+      );
+      const response = await proxyBackend(
+        request(path, method, "travelhub_access=access"),
+        path.split("/"),
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Content-Disposition")).toBe(download);
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toBe(`https://backend.example/api/v1/${path}`);
+      expect(new Headers(options?.headers).get("Authorization")).toBe(
+        "Bearer access",
+      );
+    },
+  );
   it("clears cookies on logout and masks network failures", async () => {
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
     const logout = await proxyBackend(

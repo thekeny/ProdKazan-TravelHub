@@ -122,7 +122,7 @@ try {
     {
       title: "Museum",
       type: "tour",
-      startedAt: "2026-11-07T10:00",
+      startedAt: "2026-11-07T10:00:00Z",
       endedAt: null,
       waypointId: point.id,
       bookingUrl: "https://example.com/ticket",
@@ -141,7 +141,7 @@ try {
     `${base}/transfers`,
     "POST",
     {
-      transportType: "walk",
+      transportType: "ship",
       startedAt: "2026-11-07T11:00:00Z",
       endedAt: "2026-11-07T11:30:00Z",
       startsAtWaypointId: point.id,
