@@ -29,7 +29,8 @@ test("blocked permission shows instructions without prompting again", async ({
   await expect(
     page.getByRole("complementary", { name: "Подключение уведомлений" }),
   ).not.toBeVisible();
-  await page.getByRole("button", { name: "Настройки пользователя" }).click();
+  await page.getByRole("button", { name: "Меню аккаунта" }).click();
+  await page.getByRole("menuitem", { name: "Настройки аккаунта" }).click();
   const settings = page.getByRole("region", { name: "Уведомления" });
   await expect(settings).toContainText("Уведомления запрещены");
   await expect(
@@ -136,7 +137,8 @@ for (const [device, viewport] of Object.entries({
         keys: { p256Dh: "key", auth: "auth" },
       },
     ]);
-    await page.getByRole("button", { name: "Настройки пользователя" }).click();
+    await page.getByRole("button", { name: "Меню аккаунта" }).click();
+    await page.getByRole("menuitem", { name: "Настройки аккаунта" }).click();
     const settings = page.getByRole("region", { name: "Уведомления" });
     await expect(settings).toContainText("Уведомления подключены");
     await settings.getByRole("button", { name: "Отправить тестовое" }).click();

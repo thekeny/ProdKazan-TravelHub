@@ -12,9 +12,11 @@ import { MaterialPreview } from "./material-preview";
 export function MaterialGrid({
   materials,
   onRemove,
+  emptyLabel = "Материалов пока нет",
 }: {
   materials: readonly Material[];
   onRemove?: (material: Material) => void;
+  emptyLabel?: string;
 }) {
   const [removing, setRemoving] = useState<Material | null>(null);
   const list = useMemo(() => [...materials], [materials]);
@@ -79,7 +81,7 @@ export function MaterialGrid({
       {!list.length && (
         <p className="flex items-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
           <ImageOff aria-hidden="true" className="size-4" />
-          Материалов пока нет
+          {emptyLabel}
         </p>
       )}
     </>

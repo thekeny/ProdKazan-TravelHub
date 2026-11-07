@@ -2,7 +2,7 @@
 import { LogOut, Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { TripSwitcher } from "@/components/dashboard/trip-switcher";
 import { UserSettings } from "@/components/dashboard/user-settings";
@@ -10,8 +10,7 @@ import { Logo } from "@/components/layout/logo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { TRIP_NAVIGATION } from "@/configs/consts/navigation.const";
 import { images } from "@/configs/paths/images.path";
-import { pages } from "@/configs/paths/pages.path";
-import { actionToast } from "@/lib/action-toast";
+import { useAccountLogout } from "@/hooks/use-account-logout";
 import { useTravel } from "@/providers/travel-provider";
 
 export function Sidebar({
@@ -21,12 +20,10 @@ export function Sidebar({
   onNavigate?: () => void;
   hideLogo?: boolean;
 }) {
-  const [loggingOut, setLoggingOut] = useState(false);
-  const { username, logout } = useTravel();
-  const router = useRouter();
+  const { signOut, pending: loggingOut } = useAccountLogout();
+  const { username } = useTravel();
   const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   return (
     <div className="flex min-h-full flex-col p-5">
       {!hideLogo && (
@@ -35,8 +32,7 @@ export function Sidebar({
         </div>
       )}
       <TripSwitcher onNavigate={onNavigate} />
-      <p className="section-label mt-6 mb-2 px-1">Разделы</p>
-      <nav aria-label="Разделы путешествия" className="grid gap-1">
+      <nav aria-label="Разделы путешествия" className="mt-6 grid gap-1">
         {TRIP_NAVIGATION.map((link) => {
           const Icon = link.icon;
           const active = pathname === link.href;
@@ -79,26 +75,7 @@ export function Sidebar({
               aria-label="Выйти из аккаунта"
               title="Выйти"
               disabled={loggingOut}
-              onClick={async () => {
-                if (loggingOut) return;
-                setLoggingOut(true);
-                try {
-                  await actionToast(
-                    () => logout(),
-                    "Выходим…",
-                    "Вы вышли из аккаунта.",
-                  );
-                  router.replace(pages.LOGIN);
-                } catch (logoutError) {
-                  setError(
-                    logoutError instanceof Error
-                      ? logoutError.message
-                      : "Не удалось выйти из аккаунта.",
-                  );
-                } finally {
-                  setLoggingOut(false);
-                }
-              }}
+              onClick={() => void signOut()}
             >
               <LogOut className="size-4" />
             </Button>
@@ -115,11 +92,6 @@ export function Sidebar({
         </div>
         {settingsOpen && (
           <UserSettings onClose={() => setSettingsOpen(false)} />
-        )}
-        {error && (
-          <p role="alert" className="mt-2 text-sm text-destructive">
-            {error}
-          </p>
         )}
       </div>
     </div>

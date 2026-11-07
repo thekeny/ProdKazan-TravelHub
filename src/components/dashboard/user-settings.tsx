@@ -65,11 +65,6 @@ export function UserSettings({
           <Dialog.Title className="pr-10 text-xl">
             Настройки пользователя
           </Dialog.Title>
-          <Dialog.Description className="mt-2 text-sm text-muted-foreground">
-            {remote
-              ? "Здесь можно изменить пароль. Имя пользователя изменить пока нельзя."
-              : "Данные вашего аккаунта."}
-          </Dialog.Description>
           <FormProvider {...form}>
             <form
               noValidate
@@ -120,7 +115,11 @@ export function UserSettings({
                 }
               }}
             >
-              <Field name="username" label="Имя пользователя">
+              <Field
+                name="username"
+                label="Имя пользователя"
+                hint={remote ? "Изменение имени пока недоступно." : undefined}
+              >
                 {(id) => (
                   <Input
                     data-field-control

@@ -73,8 +73,15 @@ export function TripOverview() {
 }
 
 function Overview({ trip }: { trip: Trip }) {
-  const { saveEvent, deleteEvent, savePoint, deletePoint, saveLeg, deleteLeg } =
-    useTravel();
+  const {
+    saveEvent,
+    deleteEvent,
+    savePoint,
+    deletePoint,
+    saveLeg,
+    deleteLeg,
+    addEventType,
+  } = useTravel();
   const points = trip.points ?? [];
   const legs = trip.legs ?? [];
   const events = trip.events ?? [];
@@ -391,9 +398,6 @@ function Overview({ trip }: { trip: Trip }) {
                   <Dialog.Title className="text-lg font-semibold">
                     Редактор маршрута
                   </Dialog.Title>
-                  <Dialog.Description className="mt-0.5 text-xs text-muted-foreground">
-                    Точки и перемещения поездки.
-                  </Dialog.Description>
                 </div>
                 <Button
                   variant="ghost"
@@ -489,6 +493,7 @@ function Overview({ trip }: { trip: Trip }) {
           day={day}
           time={minutesToTime(minutes)}
           initialPointId={eventEditor.pointId}
+          onAddEventType={(name) => addEventType(trip.id, name)}
           onClose={() => setEventEditor(null)}
           onSave={async (values) => {
             await saveEvent(trip.id, values, eventEditor.event?.id);

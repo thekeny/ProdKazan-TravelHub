@@ -29,6 +29,7 @@ export type TravelContextValue = TravelData & {
   ) => Promise<void>;
   createTrip: (values: TripValues) => void | Promise<void>;
   saveTrip: (tripId: string, values: TripValues) => void | Promise<void>;
+  addEventType: (tripId: string, name: string) => void | Promise<void>;
   deleteTrip: (tripId: string) => void | Promise<void>;
   selectTrip: (id: string) => void;
   saveEvent: (

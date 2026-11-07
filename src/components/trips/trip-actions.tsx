@@ -7,11 +7,11 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { TripDeleteConfirmation } from "@/components/trips/trip-delete-confirmation";
 import { TripSettings } from "@/components/trips/trip-settings";
 import { TripSharing } from "@/components/trips/trip-sharing";
 import { Button } from "@/components/ui/button";
-import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Trip } from "@/configs/types/travel.type";
-import { actionToast } from "@/lib/action-toast";
+import { useTripDeletion } from "@/hooks/use-trip-deletion";
 import { useTravel } from "@/providers/travel-provider";
 
 export function TripActions({
@@ -34,31 +34,11 @@ export function TripActions({
   onDeleted?: () => void;
   onCheckSchedule?: () => void;
 }) {
-  const { deleteTrip, remote } = useTravel();
+  const { remote } = useTravel();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [sharingOpen, setSharingOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const deletingRef = useRef(false);
-
-  const remove = async () => {
-    if (deletingRef.current) return;
-    deletingRef.current = true;
-    setDeleting(true);
-    try {
-      await actionToast(
-        () => deleteTrip(trip.id),
-        "Удаляем путешествие…",
-        "Путешествие удалено.",
-      );
-      setDeleteOpen(false);
-      onDeleted?.();
-    } catch {
-      deletingRef.current = false;
-      setDeleting(false);
-    }
-  };
+  const deletion = useTripDeletion(trip.id, onDeleted);
 
   return (
     <div className="shrink-0">
@@ -116,7 +96,7 @@ export function TripActions({
             className="min-h-10 cursor-pointer px-3"
             onClick={() => {
               setMenuOpen(false);
-              setDeleteOpen(true);
+              deletion.request();
             }}
           >
             <Trash2 />
@@ -130,6 +110,7 @@ export function TripActions({
           trip={trip}
           onClose={() => setEditorOpen(false)}
           onSaved={onSaved}
+          onDeleted={onDeleted}
         />
       )}
 
@@ -137,16 +118,7 @@ export function TripActions({
         <TripSharing trip={trip} onClose={() => setSharingOpen(false)} />
       )}
 
-      <ConfirmDelete
-        open={deleteOpen}
-        title="Удалить путешествие?"
-        busy={deleting}
-        onClose={() => setDeleteOpen(false)}
-        onConfirm={remove}
-      >
-        «{trip.name}» будет удалено вместе с точками, перемещениями, событиями и
-        материалами. Действие нельзя отменить.
-      </ConfirmDelete>
+      <TripDeleteConfirmation trip={trip} deletion={deletion} />
     </div>
   );
 }

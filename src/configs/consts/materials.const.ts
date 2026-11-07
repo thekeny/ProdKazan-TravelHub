@@ -3,6 +3,11 @@ export const MATERIAL_KINDS = {
   document: "Билет или документ",
 } as const;
 
+export const MATERIAL_TABS = [
+  { value: "photo", label: "Фото" },
+  { value: "document", label: "Документы" },
+] as const;
+
 export const MATERIAL_TYPES = [
   "image/jpeg",
   "image/png",

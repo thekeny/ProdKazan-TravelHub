@@ -10,6 +10,7 @@ import type {
   Trip,
 } from "@/configs/types/travel.type";
 import { isConnected } from "@/lib/connectivity";
+import { appendEventType } from "@/lib/event-types";
 import {
   authErrors,
   eventErrors,
@@ -135,6 +136,12 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
         storageWarning,
         dismissStorageWarning() {
           setStorageWarning(null);
+        },
+        addEventType(tripId, name) {
+          updateTripById(tripId, (trip) => ({
+            ...trip,
+            eventTypes: appendEventType(trip.eventTypes ?? [], name),
+          }));
         },
         saveEvent(tripId, values, eventId) {
           const trip = activeTrip(tripId);

@@ -40,6 +40,5 @@ export function useAuthForm() {
     setValues,
     form,
     login,
-    router,
   };
 }

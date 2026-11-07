@@ -133,6 +133,37 @@ afterEach(async () => {
 });
 
 describe("remote travel state", () => {
+  it("adds types immediately without a trip PATCH and persists them across reloads", async () => {
+    const before = travel.trips[0];
+    await act(async () => travel.addEventType(trip.id, " Утренний кофе "));
+    expect(travel.trips[0]).toEqual({
+      ...before,
+      eventTypes: ["Утренний кофе"],
+    });
+    expect(sdk.tripsPatchTrip).not.toHaveBeenCalled();
+    await act(async () => root.unmount());
+    await mount();
+    expect(travel.trips[0].eventTypes).toEqual(["Утренний кофе"]);
+    await expect(travel.addEventType(trip.id, "утренний кофе")).rejects.toThrow(
+      "уже добавлен",
+    );
+    const writer = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("quota");
+      });
+    try {
+      await act(async () => {
+        await expect(travel.addEventType(trip.id, "Музей")).rejects.toThrow(
+          "Не удалось сохранить типы событий",
+        );
+      });
+      expect(travel.trips[0].eventTypes).toEqual(["Утренний кофе"]);
+      expect(sdk.tripsPatchTrip).not.toHaveBeenCalled();
+    } finally {
+      writer.mockRestore();
+    }
+  });
   it("does not restore another account's trips when the current account's loading fails", async () => {
     await act(async () => root.unmount());
     vi.mocked(sdk.authGetSelf).mockResolvedValue(

@@ -216,9 +216,6 @@ export function TripForm({
               {form.formState.errors.eventTypes.message}
             </p>
           )}
-          <p className="text-xs text-muted-foreground">
-            При создании события можно выбрать один из этих типов.
-          </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field name="startDate" label="Дата начала">
               {(id) => (

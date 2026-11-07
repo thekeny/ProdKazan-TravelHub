@@ -8,7 +8,6 @@ import { Input, inputClass } from "@/components/ui/input";
 import { MODES } from "@/configs/consts/auth.const";
 import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import { images } from "@/configs/paths/images.path";
-import { pages } from "@/configs/paths/pages.path";
 import { useAuthForm } from "@/hooks/use-auth-form";
 import { actionToast } from "@/lib/action-toast";
 
@@ -29,7 +28,6 @@ export function AuthForm() {
     setValues,
     form,
     login,
-    router,
   } = useAuthForm();
   return (
     <main className="flow-background !py-4">
@@ -108,7 +106,6 @@ export function AuthForm() {
                     "Подождите…",
                     "Готово.",
                   );
-                  router.replace(pages.TRIPS);
                 } catch (error) {
                   setError(
                     error instanceof Error

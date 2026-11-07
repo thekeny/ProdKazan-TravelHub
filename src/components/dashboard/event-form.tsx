@@ -2,16 +2,14 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { useId, useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
-import { MaterialGrid } from "@/components/materials/material-grid";
-import { MaterialUploader } from "@/components/materials/material-uploader";
+import { EventTypeField } from "@/components/dashboard/event-type-field";
+import { EventMaterials } from "@/components/materials/event-materials";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field } from "@/components/ui/field";
 import { Input, inputClass } from "@/components/ui/input";
 import { TextSelect } from "@/components/ui/text-select";
 import { Textarea } from "@/components/ui/textarea";
-import { EVENT_TYPES } from "@/configs/consts/events.const";
-import { MATERIAL_LIMITS } from "@/configs/consts/materials.const";
 import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import type { EventValues, TripEvent } from "@/configs/types/event.type";
 import type { Material } from "@/configs/types/material.type";
@@ -31,6 +29,7 @@ export function EventForm({
   initialPointId,
   onClose,
   onSave,
+  onAddEventType,
 }: {
   trip: Trip;
   event?: TripEvent;
@@ -39,6 +38,7 @@ export function EventForm({
   initialPointId?: string | null;
   onClose: () => void;
   onSave: (values: EventValues) => void | Promise<void>;
+  onAddEventType: (name: string) => void | Promise<void>;
 }) {
   const [values, setValues, form] = useFormValues<EventValues>(
     event
@@ -61,21 +61,20 @@ export function EventForm({
   const endBounds = dateInputBounds(event?.end, new Date(), trip);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [typeDraft, setTypeDraft] = useState("");
+  const [addingType, setAddingType] = useState(false);
+  const addingTypeRef = useRef(false);
   const pendingRef = useRef(false);
   const uploadingRef = useRef(false);
   const errorId = useId();
   const points = trip.points ?? [];
-  const catalog = trip.eventTypes ?? [];
-  const preservedType = event
-    ? (event.customType ?? EVENT_TYPES[event.type])
-    : null;
   const newMaterialIds = useRef<string[]>([]);
   const removedMaterialIds = useRef<string[]>([]);
 
   function close() {
-    if (pendingRef.current || uploadingRef.current) return;
+    if (pendingRef.current || uploadingRef.current || addingTypeRef.current)
+      return;
     if (newMaterialIds.current.length)
       void deleteMaterialFiles(newMaterialIds.current);
     newMaterialIds.current = [];
@@ -85,6 +84,11 @@ export function EventForm({
   function setUploadBusy(busy: boolean) {
     uploadingRef.current = busy;
     setUploading(busy);
+  }
+
+  function setTypeBusy(busy: boolean) {
+    addingTypeRef.current = busy;
+    setAddingType(busy);
   }
 
   function update<K extends keyof EventValues>(key: K, value: EventValues[K]) {
@@ -115,9 +119,9 @@ export function EventForm({
   }
 
   const { requestClose, confirmation } = useDiscardConfirmation(
-    values,
+    { values, typeDraft },
     close,
-    pending || uploading,
+    pending || uploading || addingType,
   );
   const describedBy = error ? errorId : undefined;
 
@@ -131,17 +135,28 @@ export function EventForm({
       {confirmation}
       <Dialog.Portal>
         <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-[60] bg-overlay/35" />
-        <DialogPopup className="dialog-popup fixed inset-0 z-[60] m-auto flex h-fit max-h-[calc(100dvh-1.5rem)] w-[calc(100%-1.5rem)] max-w-5xl flex-col overflow-hidden rounded-xl border bg-background  outline-none">
+        <DialogPopup className="dialog-popup fixed inset-3 z-[60] mx-auto flex max-w-5xl flex-col overflow-hidden rounded-xl border bg-background outline-none sm:inset-y-6">
           <FormProvider {...form}>
             <form
               noValidate
               className="flex min-h-0 flex-1 flex-col"
-              aria-busy={pending}
+              aria-busy={pending || uploading || addingType}
               onSubmit={async (e) => {
                 e.preventDefault();
+                if (
+                  pendingRef.current ||
+                  uploadingRef.current ||
+                  addingTypeRef.current
+                )
+                  return;
                 if (!(await form.trigger(undefined, { shouldFocus: true })))
                   return;
-                if (pendingRef.current || uploadingRef.current) return;
+                if (
+                  pendingRef.current ||
+                  uploadingRef.current ||
+                  addingTypeRef.current
+                )
+                  return;
                 pendingRef.current = true;
                 setPending(true);
                 setError(null);
@@ -164,8 +179,11 @@ export function EventForm({
                 }
               }}
             >
-              <fieldset disabled={pending || uploading} className="contents">
-                <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
+              <fieldset
+                disabled={pending || uploading || addingType}
+                className="contents"
+              >
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 [overflow-anchor:none] sm:p-7">
                   <Dialog.Title className="pr-10 text-xl font-semibold">
                     {event ? "Редактировать событие" : "Новое событие"}
                   </Dialog.Title>
@@ -188,49 +206,17 @@ export function EventForm({
                         />
                       )}
                     </Field>
-                    <Field
-                      name="customType"
-                      label="Тип события"
-                      hint={
-                        trip.eventTypes?.length
-                          ? undefined
-                          : "Добавьте типы при создании путешествия или в его настройках."
-                      }
-                    >
-                      {(id) => (
-                        <TextSelect
-                          data-field-control
-                          id={id}
-                          value={
-                            values.customType === undefined
-                              ? (preservedType ?? "")
-                              : (values.customType ?? "")
-                          }
-                          disabled={pending || uploading}
-                          options={[
-                            { value: "", label: "Выберите тип события" },
-                            ...(preservedType &&
-                            !catalog.includes(preservedType)
-                              ? [{ value: preservedType, label: preservedType }]
-                              : []),
-                            ...catalog.map((name) => ({
-                              value: name,
-                              label: name,
-                            })),
-                          ]}
-                          onValueChange={(value) =>
-                            update(
-                              "customType",
-                              value === preservedType &&
-                                event?.customType === undefined &&
-                                !catalog.includes(value)
-                                ? undefined
-                                : value || null,
-                            )
-                          }
-                        />
-                      )}
-                    </Field>
+                    <EventTypeField
+                      catalog={trip.eventTypes ?? []}
+                      event={event}
+                      value={values.customType}
+                      draft={typeDraft}
+                      onDraftChange={setTypeDraft}
+                      onChange={(value) => update("customType", value)}
+                      onAdd={onAddEventType}
+                      onBusyChange={setTypeBusy}
+                      disabled={pending || uploading || addingType}
+                    />
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field name="start" label="Начало">
                         {(id) => (
@@ -307,66 +293,16 @@ export function EventForm({
                         />
                       )}
                     </Field>
-                    <Field
-                      name="bookingUrl"
-                      label="Ссылка на билет или бронирование · необязательно"
-                    >
-                      {(id, describedByField) => (
-                        <Input
-                          data-field-control
-                          id={id}
-                          type="url"
-                          inputMode="url"
-                          minLength={TEXT_LIMITS.MIN}
-                          maxLength={TEXT_LIMITS.URL}
-                          placeholder="https://…"
-                          className={inputClass}
-                          aria-describedby={
-                            [describedBy, describedByField]
-                              .filter(Boolean)
-                              .join(" ") || undefined
-                          }
-                          value={values.bookingUrl}
-                          onChange={(e) => update("bookingUrl", e.target.value)}
-                        />
-                      )}
-                    </Field>
-                    <section
-                      className="grid gap-3"
-                      aria-label="Материалы события"
-                    >
-                      <div>
-                        <h3 className="text-sm font-medium">Материалы</h3>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Фотографии и изображения билетов хранятся в этом
-                          браузере.
-                        </p>
-                      </div>
-                      <MaterialGrid
-                        materials={values.materials}
-                        onRemove={removeMaterial}
-                      />
-                      <MaterialUploader
-                        remaining={
-                          MATERIAL_LIMITS.MAX_PER_EVENT -
-                          values.materials.length
-                        }
-                        defaultKind={values.materials.at(-1)?.kind ?? "photo"}
-                        onUploaded={addMaterial}
-                        onError={setUploadError}
-                        onBusyChange={setUploadBusy}
-                      />
-                      {uploadError && (
-                        <p role="alert" className="text-sm text-destructive">
-                          {uploadError}
-                        </p>
-                      )}
-                      {form.formState.errors.materials && (
-                        <p role="alert" className="text-sm text-destructive">
-                          {form.formState.errors.materials.message}
-                        </p>
-                      )}
-                    </section>
+                    <EventMaterials
+                      materials={values.materials}
+                      bookingUrl={values.bookingUrl}
+                      onBookingChange={(url) => update("bookingUrl", url)}
+                      onUploaded={addMaterial}
+                      onRemove={removeMaterial}
+                      onBusyChange={setUploadBusy}
+                      disabled={pending || uploading || addingType}
+                      error={form.formState.errors.materials?.message}
+                    />
                     {error && (
                       <p
                         id={errorId}
@@ -383,7 +319,7 @@ export function EventForm({
                     variant="outline"
                     className="h-11"
                     type="button"
-                    disabled={pending || uploading}
+                    disabled={pending || uploading || addingType}
                     onClick={requestClose}
                   >
                     Отмена
@@ -391,7 +327,7 @@ export function EventForm({
                   <Button
                     type="submit"
                     className="h-11"
-                    disabled={pending || uploading}
+                    disabled={pending || uploading || addingType}
                   >
                     {uploading
                       ? "Дождитесь загрузки…"

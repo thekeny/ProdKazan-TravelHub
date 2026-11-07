@@ -9,6 +9,7 @@ import {
 } from "@/configs/consts/collaboration.const";
 import type { TravelData, Trip } from "@/configs/types/travel.type";
 import { isConnected, setConnected } from "@/lib/connectivity";
+import { appendEventType } from "@/lib/event-types";
 import {
   authErrors,
   eventErrors,
@@ -426,6 +427,14 @@ export function RemoteTravelProvider({
           ],
           activeId: trip.id,
         });
+      }),
+    addEventType: (id, name) =>
+      mutate(async () => {
+        const trip = findTrip(id, false);
+        replace(
+          { ...trip, eventTypes: appendEventType(trip.eventTypes ?? [], name) },
+          true,
+        );
       }),
     saveTrip: (id, values) =>
       mutate(async () => {

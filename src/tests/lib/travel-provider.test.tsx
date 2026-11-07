@@ -82,6 +82,28 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 describe("travel session flow", () => {
+  it("adds types immediately without changing the rest of a trip and preserves them after reload", async () => {
+    await act(async () => travel.login("alice"));
+    await act(async () => travel.createTrip(values));
+    const id = travel.activeId as string;
+    const before = getTrip(id);
+    await act(async () => travel.addEventType(id, "  Утренний кофе  "));
+    expect(getTrip(id)).toEqual({ ...before, eventTypes: ["Утренний кофе"] });
+    expect(() => travel.addEventType(id, "утренний кофе")).toThrow(
+      "уже добавлен",
+    );
+    await act(async () => root.unmount());
+    await mount();
+    expect(getTrip(id).eventTypes).toEqual(["Утренний кофе"]);
+    const writer = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("quota");
+      });
+    expect(() => travel.addEventType(id, "Музей")).toThrow();
+    expect(getTrip(id).eventTypes).toEqual(["Утренний кофе"]);
+    writer.mockRestore();
+  });
   it("rejects invalid input before writing and preserves historical dates after reload", async () => {
     await act(async () => travel.login("alice"));
     await clearTrips();

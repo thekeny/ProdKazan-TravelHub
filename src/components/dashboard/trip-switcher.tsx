@@ -67,9 +67,6 @@ export function TripSwitcher({
           sideOffset={8}
           className="max-h-[60dvh] w-64 max-w-[calc(100vw-2rem)] p-2"
         >
-          <p className="px-3 pt-2 pb-1 text-[11px] text-muted-foreground">
-            Ваши путешествия
-          </p>
           <DropdownMenuRadioGroup
             value={activeId ?? ""}
             onValueChange={(value) => handleSelect(value as string)}
