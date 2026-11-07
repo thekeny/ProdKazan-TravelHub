@@ -12,5 +12,6 @@ export const MAP = {
     marker: "var(--green)",
     fill: "var(--surface)",
     draft: "var(--text)",
+    current: "var(--water)",
   },
 };

@@ -1,8 +1,9 @@
 import { EVENT_TYPES } from "@/configs/consts/events.const";
 import type { EventValues, TripEvent } from "@/configs/types/event.type";
 import type { TripValues } from "@/configs/types/travel.type";
+import { validateBookingUrl, validateMaterials } from "@/lib/materials";
 
-function validDateTime(value: string) {
+export function validDateTime(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return false;
   const date = new Date(`${value}Z`);
   return (
@@ -13,6 +14,7 @@ function validDateTime(value: string) {
 export function validateEvent(
   value: EventValues,
   trip: TripValues,
+  pointIds?: ReadonlySet<string>,
 ): string | null {
   if (!value.title.trim()) return "Укажите название события.";
   if (!Object.hasOwn(EVENT_TYPES, value.type)) return "Выберите тип события.";
@@ -25,15 +27,12 @@ export function validateEvent(
     (value.end || value.start).slice(0, 10) > trip.endDate
   )
     return "Событие должно быть в пределах дат поездки.";
-  if (
-    value.place &&
-    (!value.place.name.trim() ||
-      !Number.isFinite(value.place.lat) ||
-      Math.abs(value.place.lat) > 90 ||
-      !Number.isFinite(value.place.lng) ||
-      Math.abs(value.place.lng) > 180)
-  )
-    return "Укажите название места и корректные координаты.";
+  if (value.pointId && pointIds && !pointIds.has(value.pointId))
+    return "Выберите существующую точку маршрута.";
+  const materialsError = validateMaterials(value.materials);
+  if (materialsError) return materialsError;
+  const bookingError = validateBookingUrl(value.bookingUrl);
+  if (bookingError) return bookingError;
   return null;
 }
 
@@ -62,4 +61,13 @@ export function formatEventDate(value: string) {
     minute: "2-digit",
     timeZone: "UTC",
   }).format(new Date(`${value}Z`));
+}
+
+/** Диапазон события без повтора даты, когда оно заканчивается в тот же день. */
+export function formatEventDateRange(start: string, end?: string | null) {
+  if (!end) return formatEventDate(start);
+  if (start.slice(0, 10) === end.slice(0, 10)) {
+    return `${formatEventDate(start)} — ${end.slice(11, 16)}`;
+  }
+  return `${formatEventDate(start)} — ${formatEventDate(end)}`;
 }

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { EventValues } from "@/configs/types/event.type";
-import { eventsForDay, tripDays, validateEvent } from "@/lib/travel-events";
+import {
+  eventsForDay,
+  formatEventDateRange,
+  tripDays,
+  validateEvent,
+} from "@/lib/travel-events";
 
 const trip = {
   name: "Казань",
@@ -15,7 +20,9 @@ const event: EventValues = {
   start: "2026-05-01T23:00",
   end: "2026-05-02T01:00",
   description: "",
-  place: null,
+  pointId: null,
+  materials: [],
+  bookingUrl: "",
 };
 
 describe("trip events", () => {
@@ -28,7 +35,7 @@ describe("trip events", () => {
       0,
     );
   });
-  it("rejects invalid calendar dates, times, boundaries and coordinates", () => {
+  it("rejects invalid calendar dates, times, boundaries and points", () => {
     for (const patch of [
       { title: " " },
       { start: "2026-02-30T12:00" },
@@ -36,11 +43,15 @@ describe("trip events", () => {
       { start: "2026-04-30T12:00" },
       { end: "2026-05-04T01:00" },
       { end: "2026-05-01T22:00" },
-      { place: { name: "Место", lat: 91, lng: 0 } },
-      { place: { name: "Место", lat: 0, lng: Number.NaN } },
     ]) {
       expect(validateEvent({ ...event, ...patch }, trip)).toBeTruthy();
     }
+    expect(
+      validateEvent({ ...event, pointId: "missing" }, trip, new Set(["other"])),
+    ).toBeTruthy();
+    expect(
+      validateEvent({ ...event, pointId: "point" }, trip, new Set(["point"])),
+    ).toBeNull();
   });
   it("sorts chronologically and lists inclusive trip dates", () => {
     const early = { ...event, id: "early", start: "2026-05-01T09:00" };
@@ -50,5 +61,14 @@ describe("trip events", () => {
       ),
     ).toEqual(["early", "late"]);
     expect(tripDays(trip)).toEqual(["2026-05-01", "2026-05-02", "2026-05-03"]);
+  });
+  it("shortens an event range that ends on the same day", () => {
+    expect(formatEventDateRange("2026-05-01T13:30", "2026-05-01T14:30")).toBe(
+      "1 мая в 13:30 — 14:30",
+    );
+    expect(formatEventDateRange("2026-05-01T23:00", "2026-05-02T01:00")).toBe(
+      "1 мая в 23:00 — 2 мая в 01:00",
+    );
+    expect(formatEventDateRange("2026-05-01T13:30", "")).toBe("1 мая в 13:30");
   });
 });

@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="min-h-dvh bg-muted/50">
-      <aside className="fixed inset-y-0 left-0 hidden w-72 overflow-y-auto bg-background lg:block">
+    <div className="min-h-dvh bg-muted/40">
+      <aside className="fixed inset-y-0 left-0 hidden w-72 overflow-y-auto border-r border-border/60 bg-surface/60 backdrop-blur lg:block">
         <Sidebar />
       </aside>
       <div className="lg:pl-72">
-        <header className="flex h-20 items-center justify-between bg-background px-5 lg:hidden">
+        <header className="flex h-16 items-center justify-between border-b border-border/60 bg-background/90 px-5 backdrop-blur lg:hidden">
           <Logo />
           <Dialog.Root open={open} onOpenChange={setOpen}>
             <Dialog.Trigger
@@ -44,7 +44,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Dialog.Portal>
           </Dialog.Root>
         </header>
-        <main className="p-6 sm:p-10">{children}</main>
+        <main className="h-[calc(100dvh-4rem)] overflow-hidden lg:h-dvh">
+          {children}
+        </main>
       </div>
     </div>
   );

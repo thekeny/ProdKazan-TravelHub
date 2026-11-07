@@ -1,5 +1,5 @@
 "use client";
-import { Check, ChevronsUpDown, Plus, Settings2 } from "lucide-react";
+import { Check, ChevronsUpDown, Luggage, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -18,7 +18,7 @@ import { useTravel } from "@/providers/travel-provider";
 const itemClassName =
   "min-h-14 w-full cursor-pointer rounded-md px-3 py-2.5 transition-colors duration-150 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground";
 
-export function TripSwitcher() {
+export function TripSwitcher({ onNavigate }: { onNavigate?: () => void }) {
   const { trips, activeId, selectTrip } = useTravel();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -29,6 +29,7 @@ export function TripSwitcher() {
     try {
       selectTrip(value);
       setError(null);
+      onNavigate?.();
     } catch (error) {
       setError((error as Error).message);
     }
@@ -40,10 +41,10 @@ export function TripSwitcher() {
       <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
         <DropdownMenuTrigger className="group flex min-h-16 w-full items-center gap-3 rounded-lg bg-muted p-3 text-left outline-none transition-colors duration-150 hover:bg-accent data-[popup-open]:bg-accent focus-visible:ring-2 focus-visible:ring-ring">
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold">
+            <span className="block truncate text-sm font-medium">
               {active?.name}
             </span>
-            <span className="mt-1 block text-xs text-muted-foreground">
+            <span className="mt-1 block text-[11px] text-muted-foreground">
               {active && formatTripDates(active)}
             </span>
           </span>
@@ -52,9 +53,9 @@ export function TripSwitcher() {
         <DropdownMenuContent
           align="start"
           sideOffset={8}
-          className="max-h-[60dvh] w-(--anchor-width) p-2"
+          className="max-h-[60dvh] w-64 max-w-[calc(100vw-2rem)] p-2"
         >
-          <p className="px-3 pt-2 pb-1 text-xs text-muted-foreground">
+          <p className="px-3 pt-2 pb-1 text-[11px] text-muted-foreground">
             Ваши путешествия
           </p>
           <DropdownMenuRadioGroup
@@ -69,9 +70,13 @@ export function TripSwitcher() {
                 closeOnClick={false}
                 className={itemClassName}
               >
-                <span className="min-w-0 flex-1 pr-6 break-words [overflow-wrap:anywhere]">
-                  <span className="block font-semibold">{trip.name}</span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                <span className="min-w-0 flex-1 pr-6">
+                  <span className="flex items-center gap-2">
+                    <span className="min-w-0 truncate font-medium">
+                      {trip.name}
+                    </span>
+                  </span>
+                  <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
                     {formatTripDates(trip)}
                   </span>
                 </span>
@@ -83,15 +88,24 @@ export function TripSwitcher() {
           </DropdownMenuRadioGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => router.push(pages.NEW_TRIP)}
+            onClick={() => {
+              onNavigate?.();
+              router.push(pages.NEW_TRIP);
+            }}
             className={itemClassName}
           >
             <Plus className="size-4 shrink-0" />
             Создать путешествие
           </DropdownMenuItem>
-          <DropdownMenuItem className={itemClassName}>
-            <Settings2 className="size-4 shrink-0" />
-            Настройки путешествия
+          <DropdownMenuItem
+            onClick={() => {
+              onNavigate?.();
+              router.push(pages.TRIPS);
+            }}
+            className={itemClassName}
+          >
+            <Luggage className="size-4 shrink-0" />
+            Все путешествия
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
