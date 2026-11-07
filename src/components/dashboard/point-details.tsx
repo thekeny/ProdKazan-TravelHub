@@ -7,9 +7,10 @@ import { EventIcon } from "@/components/dashboard/event-icon";
 import { MaterialThumbnail } from "@/components/materials/material-thumbnail";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
-import { EVENT_COLORS, EVENT_TYPES } from "@/configs/consts/events.const";
+import { EVENT_COLORS } from "@/configs/consts/events.const";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { RoutePoint } from "@/configs/types/route.type";
+import { eventTypeLabel } from "@/lib/event-types";
 import { formatEventDate } from "@/lib/travel-events";
 
 export function PointDetails({
@@ -101,7 +102,7 @@ export function PointDetails({
                           {event.title}
                         </span>
                         <span className="mt-0.5 block text-xs text-muted-foreground">
-                          {EVENT_TYPES[event.type]} ·{" "}
+                          {eventTypeLabel(event)} ·{" "}
                           {formatEventDate(event.start)}
                         </span>
                       </span>

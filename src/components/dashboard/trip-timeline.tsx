@@ -6,13 +6,14 @@ import { EventIcon } from "@/components/dashboard/event-icon";
 import { TransportIcon } from "@/components/dashboard/transport-icon";
 import { MaterialThumbnail } from "@/components/materials/material-thumbnail";
 import { Button } from "@/components/ui/button";
-import { EVENT_COLORS, EVENT_TYPES } from "@/configs/consts/events.const";
+import { EVENT_COLORS } from "@/configs/consts/events.const";
 import {
   TRANSPORT_STYLES,
   TRANSPORT_TYPES,
 } from "@/configs/consts/transport.const";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { TripLeg } from "@/configs/types/route.type";
+import { eventTypeLabel } from "@/lib/event-types";
 import {
   itemEndMinutes,
   itemStartMinutes,
@@ -39,7 +40,7 @@ function itemTitle(item: TimelineItem) {
 
 function itemType(item: TimelineItem) {
   return item.kind === "event"
-    ? EVENT_TYPES[item.event.type]
+    ? eventTypeLabel(item.event)
     : TRANSPORT_TYPES[item.leg.transport];
 }
 

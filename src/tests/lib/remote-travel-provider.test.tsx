@@ -111,6 +111,88 @@ afterEach(async () => {
 });
 
 describe("remote travel state", () => {
+  it("does not change local trip types in memory if writing them fails", async () => {
+    const previous = travel.trips;
+    const write = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("quota");
+      });
+    try {
+      await act(async () => {
+        await expect(
+          travel.saveTrip(trip.id, {
+            name: trip.name,
+            description: "",
+            startDate: trip.startedOn,
+            endDate: trip.endedOn,
+            cover: null,
+            eventTypes: ["Музей"],
+          }),
+        ).rejects.toThrow("Не удалось сохранить типы событий");
+      });
+      expect(travel.trips).toBe(previous);
+      expect(sdk.tripsPatchTrip).not.toHaveBeenCalled();
+    } finally {
+      write.mockRestore();
+    }
+  });
+  it("saves a local-only trip type change without issuing the failing PATCH", async () => {
+    vi.mocked(sdk.tripsPatchTrip).mockResolvedValue(fail(500));
+    await act(async () =>
+      travel.saveTrip(trip.id, {
+        name: trip.name,
+        description: "",
+        startDate: trip.startedOn,
+        endDate: trip.endedOn,
+        cover: null,
+        eventTypes: ["Музей"],
+      }),
+    );
+    expect(sdk.tripsPatchTrip).not.toHaveBeenCalled();
+    expect(travel.trips[0].eventTypes).toEqual(["Музей"]);
+    await act(async () => root.unmount());
+    await mount();
+    expect(travel.trips[0].eventTypes).toEqual(["Музей"]);
+  });
+  it("stores custom types locally, restores them after reload and keeps them out of API requests", async () => {
+    vi.mocked(sdk.tripsPatchTrip).mockResolvedValue(ok(trip));
+    await act(async () =>
+      travel.saveTrip(trip.id, {
+        ...values,
+        eventTypes: ["Утренний кофе", "Музей"],
+      }),
+    );
+    vi.mocked(sdk.eventsPatchEvent).mockResolvedValue(ok(event));
+    await act(async () =>
+      travel.saveEvent(
+        trip.id,
+        {
+          title: event.title,
+          type: event.type,
+          customType: "Утренний кофе",
+          start: "2026-11-07T10:00",
+          end: "",
+          description: "",
+          pointId: point.id,
+          materials: [],
+          bookingUrl: "",
+        },
+        event.id,
+      ),
+    );
+    expect(
+      vi.mocked(sdk.eventsPatchEvent).mock.calls[0]?.[0]?.body,
+    ).not.toHaveProperty("customType");
+    expect(
+      vi.mocked(sdk.tripsPatchTrip).mock.calls[0]?.[0]?.body,
+    ).not.toHaveProperty("eventTypes");
+    expect(travel.trips[0].events?.[0].customType).toBe("Утренний кофе");
+    await act(async () => root.unmount());
+    await mount();
+    expect(travel.trips[0].eventTypes).toEqual(["Утренний кофе", "Музей"]);
+    expect(travel.trips[0].events?.[0].customType).toBe("Утренний кофе");
+  });
   it("changes the password without reloading trips or persisting passwords", async () => {
     vi.mocked(sdk.authChangePassword).mockResolvedValue({
       ...ok(undefined),

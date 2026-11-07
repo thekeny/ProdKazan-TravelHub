@@ -13,9 +13,10 @@ import { EventIcon } from "@/components/dashboard/event-icon";
 import { MaterialGrid } from "@/components/materials/material-grid";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
-import { EVENT_COLORS, EVENT_TYPES } from "@/configs/consts/events.const";
+import { EVENT_COLORS } from "@/configs/consts/events.const";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { RoutePoint } from "@/configs/types/route.type";
+import { eventTypeLabel } from "@/lib/event-types";
 import { formatEventDate, formatEventDateRange } from "@/lib/travel-events";
 
 export function EventDetails({
@@ -48,11 +49,11 @@ export function EventDetails({
         <DialogPopup className="dialog-popup fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l bg-background  outline-none">
           <header className="flex shrink-0 items-start justify-between gap-3 border-b p-4">
             <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <p className="user-text flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                 <span style={{ color: EVENT_COLORS[event.type] }}>
                   <EventIcon type={event.type} className="size-3.5" />
                 </span>
-                {EVENT_TYPES[event.type]}
+                {eventTypeLabel(event)}
               </p>
               <Dialog.Title className="mt-1 user-text text-lg font-semibold">
                 {event.title}

@@ -59,15 +59,34 @@ export function RemoteTravelProvider({
     try {
       return readRemotePreferences(account.id ?? account.username);
     } catch {
-      setWarning("Не удалось прочитать локальные материалы и выбор поездки.");
-      return { activeId: null, materials: {} };
+      setWarning(
+        "Не удалось прочитать локальные материалы, типы событий и выбор поездки.",
+      );
+      return {
+        activeId: null,
+        materials: {},
+        eventTypes: {},
+        tripEventTypes: {},
+      };
     }
   }, []);
-  function persist(next: TravelData) {
+  function persist(next: TravelData, requireLocalWrite = false) {
     if (user) {
       try {
         writeRemotePreferences(user.id ?? user.username, {
           activeId: next.activeId,
+          eventTypes: Object.fromEntries(
+            next.trips.flatMap((trip) =>
+              (trip.events ?? []).flatMap((event) =>
+                event.customType === undefined
+                  ? []
+                  : [[event.id, event.customType]],
+              ),
+            ),
+          ),
+          tripEventTypes: Object.fromEntries(
+            next.trips.map((trip) => [trip.id, trip.eventTypes ?? []]),
+          ),
           coverIds: next.trips
             .filter((trip) => isUploadedCover(trip.cover))
             .map((trip) => trip.id),
@@ -78,8 +97,12 @@ export function RemoteTravelProvider({
           ),
         });
       } catch {
+        if (requireLocalWrite)
+          throw new Error(
+            "Не удалось сохранить типы событий в браузере. Проверьте доступ к хранилищу.",
+          );
         setWarning(
-          "Изменения сохранены на сервере, но локальные материалы и выбор поездки сохранить не удалось.",
+          "Изменения сохранены на сервере, но локальные материалы, типы событий и выбор поездки сохранить не удалось.",
         );
       }
     }
@@ -111,10 +134,14 @@ export function RemoteTravelProvider({
       setData({
         trips: trips.map((trip) => ({
           ...trip,
+          eventTypes: local.tripEventTypes?.[trip.id] ?? [],
           cover: trip.cover ?? covers.get(trip.id) ?? null,
           events: trip.events?.map((event) => ({
             ...event,
             materials: local.materials[event.id] ?? [],
+            ...(local.eventTypes?.[event.id] === undefined
+              ? {}
+              : { customType: local.eventTypes[event.id] }),
           })),
         })),
         activeId:
@@ -182,11 +209,14 @@ export function RemoteTravelProvider({
       throw new Error("Выберите путешествие.");
     return trip;
   }
-  function replace(trip: Trip) {
-    persist({
-      ...data,
-      trips: data.trips.map((item) => (item.id === trip.id ? trip : item)),
-    });
+  function replace(trip: Trip, requireLocalWrite = false) {
+    persist(
+      {
+        ...data,
+        trips: data.trips.map((item) => (item.id === trip.id ? trip : item)),
+      },
+      requireLocalWrite,
+    );
   }
   async function applyCover(trip: Trip, cover: string | null): Promise<Trip> {
     if (!isUploadedCover(cover)) return trip;
@@ -276,7 +306,13 @@ export function RemoteTravelProvider({
         );
         reconcile.current = true;
         persist({
-          trips: [...data.trips, await applyCover(trip, values.cover)],
+          trips: [
+            ...data.trips,
+            {
+              ...(await applyCover(trip, values.cover)),
+              eventTypes: values.eventTypes ?? [],
+            },
+          ],
           activeId: trip.id,
         });
       }),
@@ -293,17 +329,31 @@ export function RemoteTravelProvider({
           throw new Error(
             "Новые даты не покрывают события или перемещения поездки. Сначала перенесите их.",
           );
+        const body = tripBody(values);
+        // Custom types have no API endpoint yet. Keep local-only edits independent
+        // of backend availability, and commit in memory only after local storage.
+        if (
+          JSON.stringify(body) === JSON.stringify(tripBody(trip)) &&
+          values.cover === trip.cover
+        ) {
+          replace(
+            { ...trip, eventTypes: values.eventTypes ?? trip.eventTypes ?? [] },
+            true,
+          );
+          return;
+        }
         const saved = mapTrip(
           await apiResult(
             sdk.tripsPatchTrip({
               path: { trip_id: apiId(id) },
-              body: tripBody(values),
+              body,
             }),
           ),
         );
         reconcile.current = true;
         replace({
           ...(await applyCover(saved, values.cover)),
+          eventTypes: values.eventTypes ?? trip.eventTypes ?? [],
           events: trip.events,
           points: trip.points,
           legs: trip.legs,
@@ -428,6 +478,7 @@ export function RemoteTravelProvider({
             ),
           ),
           materials: values.materials,
+          customType: values.customType,
         };
         replace({
           ...trip,

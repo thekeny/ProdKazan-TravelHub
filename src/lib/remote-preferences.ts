@@ -1,10 +1,14 @@
 import type { Material } from "@/configs/types/material.type";
+import { eventTypesError } from "@/lib/event-types";
 import { validateMaterial } from "@/lib/materials";
 
 type Preferences = {
   activeId: string | null;
   materials: Record<string, Material[]>;
   coverIds?: string[];
+  // TODO API: custom event types are local until the backend supports them.
+  eventTypes?: Record<string, string | null>;
+  tripEventTypes?: Record<string, string[]>;
 };
 function key(userId: string) {
   return `travelhub.remote.${userId}`;
@@ -13,6 +17,31 @@ export function readRemotePreferences(userId: string): Preferences {
   const raw: unknown = JSON.parse(localStorage.getItem(key(userId)) ?? "null");
   const result: Preferences = { activeId: null, materials: {} };
   if (!raw || typeof raw !== "object") return result;
+  if (
+    "eventTypes" in raw &&
+    raw.eventTypes &&
+    typeof raw.eventTypes === "object"
+  ) {
+    result.eventTypes = {};
+    for (const [id, type] of Object.entries(raw.eventTypes)) {
+      if (
+        type === null ||
+        (typeof type === "string" && !eventTypesError([type]))
+      )
+        result.eventTypes[id] = type;
+    }
+  }
+  if (
+    "tripEventTypes" in raw &&
+    raw.tripEventTypes &&
+    typeof raw.tripEventTypes === "object"
+  ) {
+    result.tripEventTypes = {};
+    for (const [id, types] of Object.entries(raw.tripEventTypes)) {
+      if (Array.isArray(types) && !eventTypesError(types))
+        result.tripEventTypes[id] = types;
+    }
+  }
   if ("activeId" in raw && typeof raw.activeId === "string")
     result.activeId = raw.activeId;
   if ("coverIds" in raw && Array.isArray(raw.coverIds))

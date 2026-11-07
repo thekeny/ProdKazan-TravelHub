@@ -219,7 +219,7 @@ export type CreateWaypointRequest = {
 /**
  * ErrorCode
  */
-export type ErrorCode = 'ErrorOccured' | 'AuthorizationError' | 'NotFound' | 'Conflict' | 'GoogleInteractionFailed' | 'ValidationFailed' | 'UsernameIsAlreadyInUse' | 'PointHasTransfers' | 'RateLimited';
+export type ErrorCode = 'ErrorOccured' | 'AuthorizationError' | 'NotFound' | 'Conflict' | 'GoogleInteractionFailed' | 'ValidationFailed' | 'UsernameIsAlreadyInUse' | 'PointHasTransfers' | 'RateLimited' | 'ExpiredLink' | 'UserIsAlreadyACollaborator';
 
 /**
  * Event
@@ -295,31 +295,33 @@ export type InternalServerError = {
     errorCode?: ErrorCode;
 };
 
-export type MaybeMissingAnnotatedDatetimeNaiveDatetime = string;
-
 export type MaybeMissingAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGeGe0LeLe9223372036854775807FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedBigIntegerSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedPlainSerializer = number;
 
-export type MaybeMissingAnnotatedStrStringConstraints = string;
-
-export type MaybeMissingAnnotatedStrStringConstraintsMinLenMinLength1 = string;
+export type MaybeMissingAwareDatetime = string;
 
 export type MaybeMissingEventType = EventType;
 
-export type MaybeMissingUnionAnnotatedDatetimeNaiveDatetimeNoneType = string | null;
-
-export type MaybeMissingUnionAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGeGe0LeLe9223372036854775807FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedBigIntegerSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedPlainSerializerFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt0FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedSaTypePydanticUndefinedSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedNoneType = number | null;
+export type MaybeMissingUnionAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGeGe0LeLe9223372036854775807FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedBigIntegerSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedPlainSerializerNoneType = number | null;
 
 export type MaybeMissingUnionAnnotatedStrAfterValidatorNoneType = string | null;
 
+export type MaybeMissingUnionAnnotatedStrStringConstraintsNoneType = string | null;
+
+export type MaybeMissingUnionAwareDatetimeNoneType = string | null;
+
 export type MaybeMissingUnionDateNoneType = string | null;
 
-export type MaybeMissingUnionDatetimeNoneType = string | null;
+export type MaybeMissingUnionStrNoneType = string | null;
+
+export type MaybeMissingUnionStrNoneTypeMinLenMinLength1 = string | null;
+
+export type MaybeMissingBool = boolean;
 
 export type MaybeMissingDate = string;
 
-export type MaybeMissingDatetime = string;
-
 export type MaybeMissingFloat0 = number;
+
+export type MaybeMissingStr = string;
 
 export type MaybeMissingStrMinLenMinLength1 = string;
 
@@ -460,7 +462,7 @@ export type Trip = {
     /**
      * Description
      */
-    description?: string;
+    description?: string | null;
     /**
      * Startedon
      */
@@ -484,6 +486,31 @@ export type Trip = {
 };
 
 /**
+ * TripCollaborators
+ */
+export type TripCollaborators = {
+    owner: User;
+    /**
+     * Collaborators
+     */
+    collaborators: Array<User>;
+};
+
+/**
+ * TripInviteLink
+ */
+export type TripInviteLink = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Uses
+     */
+    uses: number;
+};
+
+/**
  * UnsupportedMediaTypeError
  */
 export type UnsupportedMediaTypeError = {
@@ -504,13 +531,13 @@ export type UnsupportedMediaTypeError = {
  * UpdateEventRequest
  */
 export type UpdateEventRequest = {
-    title?: MaybeMissingAnnotatedStrStringConstraints;
+    title?: MaybeMissingStr;
     type?: EventType;
-    description?: AppModelsTypesMissingMaybeMissingUnionAnnotatedStrStringConstraintsNoneType3;
-    startedAt?: MaybeMissingAnnotatedDatetimeNaiveDatetime;
-    endedAt?: MaybeMissingUnionAnnotatedDatetimeNaiveDatetimeNoneType;
+    description?: MaybeMissingUnionStrNoneType;
+    startedAt?: MaybeMissingAwareDatetime;
+    endedAt?: MaybeMissingUnionAwareDatetimeNoneType;
     bookingUrl?: MaybeMissingUnionAnnotatedStrAfterValidatorNoneType;
-    waypointId?: MaybeMissingUnionAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGeGe0LeLe9223372036854775807FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedBigIntegerSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedPlainSerializerFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt0FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedSaTypePydanticUndefinedSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedNoneType;
+    waypointId?: MaybeMissingUnionAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGeGe0LeLe9223372036854775807FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedBigIntegerSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedPlainSerializerNoneType;
 };
 
 /**
@@ -518,8 +545,8 @@ export type UpdateEventRequest = {
  */
 export type UpdateMovementRequest = {
     transportType?: MaybeMissingStrMinLenMinLength1;
-    startedAt?: MaybeMissingDatetime;
-    endedAt?: MaybeMissingUnionDatetimeNoneType;
+    startedAt?: MaybeMissingAwareDatetime;
+    endedAt?: MaybeMissingUnionAwareDatetimeNoneType;
     startsAtWaypointId?: MaybeMissingAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGeGe0LeLe9223372036854775807FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedBigIntegerSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedPlainSerializer;
     endsAtWaypointId?: MaybeMissingAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGeGe0LeLe9223372036854775807FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedBigIntegerSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedPlainSerializer;
 };
@@ -528,8 +555,8 @@ export type UpdateMovementRequest = {
  * UpdateTripRequest
  */
 export type UpdateTripRequest = {
-    name?: MaybeMissingAnnotatedStrStringConstraintsMinLenMinLength1;
-    description?: AppModelsTypesMissingMaybeMissingUnionAnnotatedStrStringConstraintsNoneType1;
+    name?: MaybeMissingStrMinLenMinLength1;
+    description?: MaybeMissingUnionStrNoneTypeMinLenMinLength1;
     startedOn?: MaybeMissingDate;
     endedOn?: MaybeMissingUnionDateNoneType;
     cover?: MaybeMissingUnionAnnotatedStrAfterValidatorNoneType;
@@ -542,7 +569,8 @@ export type UpdateWaypointRequest = {
     latitude?: MaybeMissingFloat0;
     longitude?: MaybeMissingFloat0;
     name?: MaybeMissingStrMinLenMinLength1;
-    description?: AppModelsTypesMissingMaybeMissingUnionAnnotatedStrStringConstraintsNoneType2;
+    description?: MaybeMissingUnionAnnotatedStrStringConstraintsNoneType;
+    visited?: MaybeMissingBool;
 };
 
 /**
@@ -644,13 +672,11 @@ export type Waypoint = {
      * Description
      */
     description?: string | null;
+    /**
+     * Visited
+     */
+    visited?: boolean;
 };
-
-export type AppModelsTypesMissingMaybeMissingUnionAnnotatedStrStringConstraintsNoneType1 = string | null;
-
-export type AppModelsTypesMissingMaybeMissingUnionAnnotatedStrStringConstraintsNoneType2 = string | null;
-
-export type AppModelsTypesMissingMaybeMissingUnionAnnotatedStrStringConstraintsNoneType3 = string | null;
 
 /**
  * AdminCreateUserRequest
@@ -1041,7 +1067,7 @@ export type TripsGetTripsData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/trips';
+    url: '/trips/';
 };
 
 export type TripsGetTripsErrors = {
@@ -1080,7 +1106,7 @@ export type TripsPostTripData = {
     body: CreateTripRequest;
     path?: never;
     query?: never;
-    url: '/trips';
+    url: '/trips/';
 };
 
 export type TripsPostTripErrors = {
@@ -1255,6 +1281,52 @@ export type TripsPatchTripResponses = {
 
 export type TripsPatchTripResponse = TripsPatchTripResponses[keyof TripsPatchTripResponses];
 
+export type TripsGetTripByIdCollaboratorsData = {
+    body?: never;
+    path: {
+        /**
+         * Trip Id
+         */
+        trip_id: number;
+    };
+    query?: never;
+    url: '/trips/{trip_id}/collaboratrs';
+};
+
+export type TripsGetTripByIdCollaboratorsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Not Found
+     */
+    404: NotFoundError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+};
+
+export type TripsGetTripByIdCollaboratorsError = TripsGetTripByIdCollaboratorsErrors[keyof TripsGetTripByIdCollaboratorsErrors];
+
+export type TripsGetTripByIdCollaboratorsResponses = {
+    /**
+     * Successful Response
+     */
+    200: TripCollaborators;
+};
+
+export type TripsGetTripByIdCollaboratorsResponse = TripsGetTripByIdCollaboratorsResponses[keyof TripsGetTripByIdCollaboratorsResponses];
+
 export type TripsPutTripCoverData = {
     body: Blob | File;
     path: {
@@ -1364,6 +1436,107 @@ export type TripsGetTripCoverResponses = {
      */
     200: unknown;
 };
+
+export type TripsGenerateCodeData = {
+    body?: never;
+    path: {
+        /**
+         * Trip Id
+         */
+        trip_id: number;
+    };
+    query?: {
+        /**
+         * Max Uses
+         */
+        max_uses?: number;
+    };
+    url: '/trips/{trip_id}/code/generate';
+};
+
+export type TripsGenerateCodeErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Not Found
+     */
+    404: NotFoundError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+};
+
+export type TripsGenerateCodeError = TripsGenerateCodeErrors[keyof TripsGenerateCodeErrors];
+
+export type TripsGenerateCodeResponses = {
+    /**
+     * Successful Response
+     */
+    201: TripInviteLink;
+};
+
+export type TripsGenerateCodeResponse = TripsGenerateCodeResponses[keyof TripsGenerateCodeResponses];
+
+export type TripsJoinTripData = {
+    body?: never;
+    path: {
+        /**
+         * Code
+         */
+        code: string;
+    };
+    query?: never;
+    url: '/trips/code/redeem/{code}';
+};
+
+export type TripsJoinTripErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Not Found
+     */
+    404: NotFoundError;
+    /**
+     * Conflict
+     */
+    409: ConflictError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+};
+
+export type TripsJoinTripError = TripsJoinTripErrors[keyof TripsJoinTripErrors];
+
+export type TripsJoinTripResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type TripsJoinTripResponse = TripsJoinTripResponses[keyof TripsJoinTripResponses];
 
 export type PointsGetPointsData = {
     body?: never;

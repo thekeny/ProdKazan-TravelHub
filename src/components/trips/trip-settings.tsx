@@ -22,14 +22,20 @@ export function TripSettings({
     startDate: trip.startDate,
     endDate: trip.endDate,
     cover: trip.cover,
+    eventTypes: trip.eventTypes ?? [],
   }));
   const [busy, setBusy] = useState(false);
-  const changed = useCallback((next: TripValues, pending: boolean) => {
-    setValues(next);
-    setBusy(pending);
-  }, []);
+  const [typeDraft, setTypeDraft] = useState("");
+  const changed = useCallback(
+    (next: TripValues, pending: boolean, draft: string) => {
+      setValues(next);
+      setBusy(pending);
+      setTypeDraft(draft);
+    },
+    [],
+  );
   const { requestClose, confirmation } = useDiscardConfirmation(
-    values,
+    { values, typeDraft },
     onClose,
     busy,
   );
@@ -48,7 +54,7 @@ export function TripSettings({
             Настройки путешествия
           </Dialog.Title>
           <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-            Название, даты, описание и обложка поездки.
+            Название, даты, описание, типы событий и обложка поездки.
           </Dialog.Description>
           <div className="mt-6">
             <TripForm

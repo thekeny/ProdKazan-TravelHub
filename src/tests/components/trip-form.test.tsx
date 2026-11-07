@@ -13,6 +13,7 @@ const initial: TripValues = {
   startDate: "2026-05-01",
   endDate: "2026-05-04",
   cover: null,
+  eventTypes: [],
 };
 
 let root: Root;

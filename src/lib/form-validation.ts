@@ -9,6 +9,7 @@ import type {
 } from "@/configs/types/route.type";
 import type { TripValues } from "@/configs/types/travel.type";
 import type { FormErrors } from "@/hooks/use-form-values";
+import { eventTypesError } from "@/lib/event-types";
 import {
   dateRangeError,
   textError as text,
@@ -39,6 +40,8 @@ export function tripErrors(
   if (name) errors.name = name;
   const desc = description(value.description);
   if (desc) errors.description = desc;
+  const catalogError = eventTypesError(value.eventTypes);
+  if (catalogError) errors.eventTypes = catalogError;
   for (const key of ["startDate", "endDate"] as const) {
     const error = validDateTime(`${value[key]}T00:00`)
       ? dateRangeError(value[key], context.initial?.[key], context.now)
@@ -126,6 +129,19 @@ export function eventErrors(
   if (desc) errors.description = desc;
   if (!Object.hasOwn(EVENT_TYPES, value.type))
     errors.type = "Выберите тип события.";
+  if (value.customType === null)
+    errors.customType = trip.eventTypes?.length
+      ? "Выберите тип события."
+      : "Сначала добавьте типы в настройках путешествия.";
+  else if (value.customType !== undefined) {
+    const typeError = eventTypesError([value.customType]);
+    if (typeError) errors.customType = typeError;
+    else if (
+      !trip.eventTypes?.includes(value.customType) &&
+      value.customType !== context.initial?.customType
+    )
+      errors.customType = "Выберите тип из списка этого путешествия.";
+  }
   if (value.pointId && !points.some((point) => point.id === value.pointId))
     errors.pointId = "Выберите существующую точку.";
   const materials = validateMaterials(value.materials);

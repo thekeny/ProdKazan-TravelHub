@@ -10,6 +10,7 @@ import type {
   Trip,
   TripValues,
 } from "@/configs/types/travel.type";
+import { eventTypesError } from "@/lib/event-types";
 import { validateMaterial } from "@/lib/materials";
 import { validateEvent } from "@/lib/travel-events";
 import { validateLeg, validatePoint } from "@/lib/travel-route";
@@ -225,6 +226,22 @@ function readMaterials(raw: unknown, report: ReadReport): Material[] {
   return materials;
 }
 
+function readEventTypes(raw: unknown, report: ReadReport): string[] {
+  if (!Array.isArray(raw)) {
+    report.dropped += 1;
+    return [];
+  }
+  const result: string[] = [];
+  for (const name of raw) {
+    if (typeof name !== "string" || eventTypesError([...result, name])) {
+      report.dropped += 1;
+      continue;
+    }
+    result.push(name);
+  }
+  return result;
+}
+
 function readEvents(
   raw: unknown,
   trip: TripValues,
@@ -258,6 +275,12 @@ function readEvents(
         id: value.id,
         title: readString(value.title),
         type: readString(value.type) as TripEvent["type"],
+        ...(value.customType === undefined
+          ? {}
+          : {
+              customType:
+                value.customType === null ? null : readString(value.customType),
+            }),
         start: readString(value.start),
         end: value.end === undefined ? "" : readString(value.end),
         description:
@@ -291,6 +314,9 @@ function readTrip(raw: unknown, report: ReadReport): Trip {
   return {
     id: raw.id,
     ...values,
+    ...(raw.eventTypes === undefined
+      ? {}
+      : { eventTypes: readEventTypes(raw.eventTypes, report) }),
     points,
     legs,
     events,

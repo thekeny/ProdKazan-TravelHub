@@ -45,3 +45,4 @@ code-quality-report.json
 
 .prototype
 openapi.json
+*.log

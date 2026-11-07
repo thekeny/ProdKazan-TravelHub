@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, type Options as Options2, type RequestResult, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { AdminCreateUserData, AdminCreateUserErrors, AdminCreateUserResponses, AdminListAllUsersData, AdminListAllUsersErrors, AdminListAllUsersResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthDeleteSelfData, AuthDeleteSelfErrors, AuthDeleteSelfResponses, AuthGetSelfData, AuthGetSelfErrors, AuthGetSelfResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutErrors, AuthLogoutResponses, AuthRefreshTokenData, AuthRefreshTokenErrors, AuthRefreshTokenResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, EventsGetEventData, EventsGetEventErrors, EventsGetEventResponses, EventsGetEventsData, EventsGetEventsErrors, EventsGetEventsResponses, EventsPatchEventData, EventsPatchEventErrors, EventsPatchEventResponses, EventsPostEventData, EventsPostEventErrors, EventsPostEventResponses, EventsRemoveEventData, EventsRemoveEventErrors, EventsRemoveEventResponses, PointsGetPointByIdData, PointsGetPointByIdErrors, PointsGetPointByIdResponses, PointsGetPointsData, PointsGetPointsErrors, PointsGetPointsResponses, PointsPatchPointData, PointsPatchPointErrors, PointsPatchPointResponses, PointsPostPointData, PointsPostPointErrors, PointsPostPointResponses, PointsRemovePointData, PointsRemovePointErrors, PointsRemovePointResponses, RootHealthData, RootHealthErrors, RootHealthResponses, TransfersGetTransferByIdData, TransfersGetTransferByIdErrors, TransfersGetTransferByIdResponses, TransfersGetTransfersData, TransfersGetTransfersErrors, TransfersGetTransfersResponses, TransfersPatchTransferData, TransfersPatchTransferErrors, TransfersPatchTransferResponses, TransfersPostTransferData, TransfersPostTransferErrors, TransfersPostTransferResponses, TransfersRemoveTransferData, TransfersRemoveTransferErrors, TransfersRemoveTransferResponses, TripsGetTripByIdData, TripsGetTripByIdErrors, TripsGetTripByIdResponses, TripsGetTripCoverData, TripsGetTripCoverErrors, TripsGetTripCoverResponses, TripsGetTripsData, TripsGetTripsErrors, TripsGetTripsResponses, TripsPatchTripData, TripsPatchTripErrors, TripsPatchTripResponses, TripsPostTripData, TripsPostTripErrors, TripsPostTripResponses, TripsPutTripCoverData, TripsPutTripCoverErrors, TripsPutTripCoverResponses, TripsRemoveTripData, TripsRemoveTripErrors, TripsRemoveTripResponses } from './types.gen';
+import type { AdminCreateUserData, AdminCreateUserErrors, AdminCreateUserResponses, AdminListAllUsersData, AdminListAllUsersErrors, AdminListAllUsersResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthDeleteSelfData, AuthDeleteSelfErrors, AuthDeleteSelfResponses, AuthGetSelfData, AuthGetSelfErrors, AuthGetSelfResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutErrors, AuthLogoutResponses, AuthRefreshTokenData, AuthRefreshTokenErrors, AuthRefreshTokenResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, EventsGetEventData, EventsGetEventErrors, EventsGetEventResponses, EventsGetEventsData, EventsGetEventsErrors, EventsGetEventsResponses, EventsPatchEventData, EventsPatchEventErrors, EventsPatchEventResponses, EventsPostEventData, EventsPostEventErrors, EventsPostEventResponses, EventsRemoveEventData, EventsRemoveEventErrors, EventsRemoveEventResponses, PointsGetPointByIdData, PointsGetPointByIdErrors, PointsGetPointByIdResponses, PointsGetPointsData, PointsGetPointsErrors, PointsGetPointsResponses, PointsPatchPointData, PointsPatchPointErrors, PointsPatchPointResponses, PointsPostPointData, PointsPostPointErrors, PointsPostPointResponses, PointsRemovePointData, PointsRemovePointErrors, PointsRemovePointResponses, RootHealthData, RootHealthErrors, RootHealthResponses, TransfersGetTransferByIdData, TransfersGetTransferByIdErrors, TransfersGetTransferByIdResponses, TransfersGetTransfersData, TransfersGetTransfersErrors, TransfersGetTransfersResponses, TransfersPatchTransferData, TransfersPatchTransferErrors, TransfersPatchTransferResponses, TransfersPostTransferData, TransfersPostTransferErrors, TransfersPostTransferResponses, TransfersRemoveTransferData, TransfersRemoveTransferErrors, TransfersRemoveTransferResponses, TripsGenerateCodeData, TripsGenerateCodeErrors, TripsGenerateCodeResponses, TripsGetTripByIdCollaboratorsData, TripsGetTripByIdCollaboratorsErrors, TripsGetTripByIdCollaboratorsResponses, TripsGetTripByIdData, TripsGetTripByIdErrors, TripsGetTripByIdResponses, TripsGetTripCoverData, TripsGetTripCoverErrors, TripsGetTripCoverResponses, TripsGetTripsData, TripsGetTripsErrors, TripsGetTripsResponses, TripsJoinTripData, TripsJoinTripErrors, TripsJoinTripResponses, TripsPatchTripData, TripsPatchTripErrors, TripsPatchTripResponses, TripsPostTripData, TripsPostTripErrors, TripsPostTripResponses, TripsPutTripCoverData, TripsPutTripCoverErrors, TripsPutTripCoverResponses, TripsRemoveTripData, TripsRemoveTripErrors, TripsRemoveTripResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -117,7 +117,7 @@ export const adminListAllUsers = <ThrowOnError extends boolean = false>(options?
  */
 export const tripsGetTrips = <ThrowOnError extends boolean = false>(options?: Options<TripsGetTripsData, ThrowOnError>): RequestResult<TripsGetTripsResponses, TripsGetTripsErrors, ThrowOnError> => (options?.client ?? client).get<TripsGetTripsResponses, TripsGetTripsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/trips',
+    url: '/trips/',
     ...options
 });
 
@@ -126,7 +126,7 @@ export const tripsGetTrips = <ThrowOnError extends boolean = false>(options?: Op
  */
 export const tripsPostTrip = <ThrowOnError extends boolean = false>(options: Options<TripsPostTripData, ThrowOnError>): RequestResult<TripsPostTripResponses, TripsPostTripErrors, ThrowOnError> => (options.client ?? client).post<TripsPostTripResponses, TripsPostTripErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/trips',
+    url: '/trips/',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -166,6 +166,15 @@ export const tripsPatchTrip = <ThrowOnError extends boolean = false>(options: Op
 });
 
 /**
+ * Get Trip By Id Collaborators
+ */
+export const tripsGetTripByIdCollaborators = <ThrowOnError extends boolean = false>(options: Options<TripsGetTripByIdCollaboratorsData, ThrowOnError>): RequestResult<TripsGetTripByIdCollaboratorsResponses, TripsGetTripByIdCollaboratorsErrors, ThrowOnError> => (options.client ?? client).get<TripsGetTripByIdCollaboratorsResponses, TripsGetTripByIdCollaboratorsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/trips/{trip_id}/collaboratrs',
+    ...options
+});
+
+/**
  * Put Trip Cover
  */
 export const tripsPutTripCover = <ThrowOnError extends boolean = false>(options: Options<TripsPutTripCoverData, ThrowOnError>): RequestResult<TripsPutTripCoverResponses, TripsPutTripCoverErrors, ThrowOnError> => (options.client ?? client).put<TripsPutTripCoverResponses, TripsPutTripCoverErrors, ThrowOnError>({
@@ -185,6 +194,24 @@ export const tripsPutTripCover = <ThrowOnError extends boolean = false>(options:
 export const tripsGetTripCover = <ThrowOnError extends boolean = false>(options: Options<TripsGetTripCoverData, ThrowOnError>): RequestResult<TripsGetTripCoverResponses, TripsGetTripCoverErrors, ThrowOnError> => (options.client ?? client).get<TripsGetTripCoverResponses, TripsGetTripCoverErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/trips/{trip_id}/cover/{cover_id}',
+    ...options
+});
+
+/**
+ * Generate Code
+ */
+export const tripsGenerateCode = <ThrowOnError extends boolean = false>(options: Options<TripsGenerateCodeData, ThrowOnError>): RequestResult<TripsGenerateCodeResponses, TripsGenerateCodeErrors, ThrowOnError> => (options.client ?? client).post<TripsGenerateCodeResponses, TripsGenerateCodeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/trips/{trip_id}/code/generate',
+    ...options
+});
+
+/**
+ * Join Trip
+ */
+export const tripsJoinTrip = <ThrowOnError extends boolean = false>(options: Options<TripsJoinTripData, ThrowOnError>): RequestResult<TripsJoinTripResponses, TripsJoinTripErrors, ThrowOnError> => (options.client ?? client).post<TripsJoinTripResponses, TripsJoinTripErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/trips/code/redeem/{code}',
     ...options
 });
 

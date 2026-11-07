@@ -3,6 +3,7 @@
 import { Upload, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
+import { EventTypeChips } from "@/components/trips/event-type-chips";
 import { Button } from "@/components/ui/button";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import { Field, inputClass } from "@/components/ui/field";
@@ -28,7 +29,11 @@ export function TripForm({
   submitLabel: string;
   onSubmit: (values: TripValues) => void | Promise<void>;
   onCancel?: () => void;
-  onStateChange?: (values: TripValues, busy: boolean) => void;
+  onStateChange?: (
+    values: TripValues,
+    busy: boolean,
+    typeDraft: string,
+  ) => void;
   remote?: boolean;
 }) {
   const [values, setValues, form] = useFormValues<TripValues>(
@@ -40,6 +45,7 @@ export function TripForm({
             startDate: initial.startDate,
             endDate: initial.endDate,
             cover: initial.cover,
+            eventTypes: initial.eventTypes ?? [],
           }
         : {
             name: "",
@@ -47,12 +53,15 @@ export function TripForm({
             startDate: "",
             endDate: "",
             cover: null,
+            eventTypes: [],
           },
     (values) => tripErrors(values, remote, { initial }),
   );
   const startBounds = dateInputBounds(initial?.startDate);
   const endBounds = dateInputBounds(initial?.endDate);
   const [removeCover, setRemoveCover] = useState(false);
+  const [typeDraft, setTypeDraft] = useState("");
+  const [removingTypes, setRemovingTypes] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
   const [pending, setPending] = useState(false);
@@ -61,8 +70,8 @@ export function TripForm({
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    onStateChange?.(values, pending || reading);
-  }, [values, pending, reading, onStateChange]);
+    onStateChange?.(values, pending || reading, typeDraft);
+  }, [values, pending, reading, typeDraft, onStateChange]);
 
   function update<K extends keyof TripValues>(key: K, value: TripValues[K]) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -105,6 +114,19 @@ export function TripForm({
 
   return (
     <FormProvider {...form}>
+      <ConfirmDelete
+        open={removingTypes !== null}
+        busy={pending || reading}
+        title="Убрать тип события?"
+        onClose={() => setRemovingTypes(null)}
+        onConfirm={() => {
+          if (removingTypes) update("eventTypes", removingTypes);
+          setRemovingTypes(null);
+        }}
+      >
+        Тип исчезнет из списка после сохранения путешествия. В существующих
+        событиях он сохранится.
+      </ConfirmDelete>
       <ConfirmDelete
         open={removeCover}
         title="Убрать обложку?"
@@ -174,6 +196,24 @@ export function TripForm({
               />
             )}
           </Field>
+          <EventTypeChips
+            value={values.eventTypes ?? []}
+            disabled={pending || reading}
+            onDraftChange={setTypeDraft}
+            onChange={(names) => {
+              if (names.length < (values.eventTypes?.length ?? 0))
+                setRemovingTypes(names);
+              else update("eventTypes", names);
+            }}
+          />
+          {form.formState.errors.eventTypes && (
+            <p role="alert" className="text-xs text-destructive">
+              {form.formState.errors.eventTypes.message}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            При создании события можно выбрать один из этих типов.
+          </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field name="startDate" label="Дата начала">
               {(id) => (

@@ -39,16 +39,19 @@ export function EventForm({
   onSave: (values: EventValues) => void | Promise<void>;
 }) {
   const [values, setValues, form] = useFormValues<EventValues>(
-    event ?? {
-      title: "",
-      type: "walk",
-      start: `${day || trip.startDate}T${time ?? "09:00"}`,
-      end: "",
-      description: "",
-      pointId: initialPointId ?? null,
-      materials: [],
-      bookingUrl: "",
-    },
+    event
+      ? event
+      : {
+          title: "",
+          type: "other",
+          customType: null,
+          start: `${day || trip.startDate}T${time ?? "09:00"}`,
+          end: "",
+          description: "",
+          pointId: initialPointId ?? null,
+          materials: [],
+          bookingUrl: "",
+        },
     (values) =>
       eventErrors(values, trip, trip.points ?? [], { initial: event }),
   );
@@ -62,6 +65,10 @@ export function EventForm({
   const uploadingRef = useRef(false);
   const errorId = useId();
   const points = trip.points ?? [];
+  const catalog = trip.eventTypes ?? [];
+  const preservedType = event
+    ? (event.customType ?? EVENT_TYPES[event.type])
+    : null;
   const newMaterialIds = useRef<string[]>([]);
   const removedMaterialIds = useRef<string[]>([]);
 
@@ -178,25 +185,47 @@ export function EventForm({
                         />
                       )}
                     </Field>
-                    <Field name="type" label="Тип события">
+                    <Field
+                      name="customType"
+                      label="Тип события"
+                      hint={
+                        trip.eventTypes?.length
+                          ? undefined
+                          : "Добавьте типы при создании путешествия или в его настройках."
+                      }
+                    >
                       {(id) => (
-                        <select
+                        <TextSelect
+                          data-field-control
                           id={id}
-                          className={inputClass}
-                          aria-describedby={describedBy}
-                          value={values.type}
-                          onChange={(e) => {
-                            const type = e.target.value;
-                            if (Object.hasOwn(EVENT_TYPES, type))
-                              update("type", type as EventValues["type"]);
-                          }}
-                        >
-                          {Object.entries(EVENT_TYPES).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
+                          value={
+                            values.customType === undefined
+                              ? (preservedType ?? "")
+                              : (values.customType ?? "")
+                          }
+                          disabled={pending || uploading}
+                          options={[
+                            { value: "", label: "Выберите тип события" },
+                            ...(preservedType &&
+                            !catalog.includes(preservedType)
+                              ? [{ value: preservedType, label: preservedType }]
+                              : []),
+                            ...catalog.map((name) => ({
+                              value: name,
+                              label: name,
+                            })),
+                          ]}
+                          onValueChange={(value) =>
+                            update(
+                              "customType",
+                              value === preservedType &&
+                                event?.customType === undefined &&
+                                !catalog.includes(value)
+                                ? undefined
+                                : value || null,
+                            )
+                          }
+                        />
                       )}
                     </Field>
                     <div className="grid gap-4 sm:grid-cols-2">

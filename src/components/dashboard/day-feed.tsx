@@ -7,13 +7,14 @@ import { TransportIcon } from "@/components/dashboard/transport-icon";
 import { MaterialThumbnail } from "@/components/materials/material-thumbnail";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
-import { EVENT_COLORS, EVENT_TYPES } from "@/configs/consts/events.const";
+import { EVENT_COLORS } from "@/configs/consts/events.const";
 import {
   TRANSPORT_STYLES,
   TRANSPORT_TYPES,
 } from "@/configs/consts/transport.const";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
+import { eventTypeLabel } from "@/lib/event-types";
 import { formatDayLabel } from "@/lib/travel-format";
 import {
   itemEndMinutes,
@@ -152,7 +153,7 @@ export function DayFeed({
                                 {place}
                               </span>
                               <span className="shrink-0">
-                                · {EVENT_TYPES[event.type]}
+                                · {eventTypeLabel(event)}
                               </span>
                             </span>
                           )}
