@@ -66,6 +66,8 @@ const leg = {
   description: "",
 };
 beforeEach(async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(2026, 4, 1, 12));
   localStorage.clear();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   container = document.createElement("div");
@@ -77,8 +79,53 @@ afterEach(async () => {
   container.remove();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 describe("travel session flow", () => {
+  it("rejects invalid input before writing and preserves historical dates after reload", async () => {
+    await act(async () => travel.login("alice"));
+    await clearTrips();
+    await act(async () => travel.createTrip(values));
+    const tripId = travel.activeId as string;
+    await act(async () => travel.saveEvent(tripId, event));
+    const eventId = getTrip(tripId).events?.[0].id as string;
+    const writer = vi.spyOn(Storage.prototype, "setItem");
+    const snapshot = travel.trips;
+    expect(() =>
+      travel.saveTrip(tripId, { ...values, name: "a".repeat(101) }),
+    ).toThrow();
+    expect(() =>
+      travel.savePoint(tripId, { ...airport, description: "a".repeat(513) }),
+    ).toThrow();
+    expect(() =>
+      travel.saveEvent(tripId, { ...event, title: "a".repeat(121) }),
+    ).toThrow();
+    expect(writer).not.toHaveBeenCalled();
+    expect(travel.trips).toBe(snapshot);
+
+    vi.setSystemTime(new Date(2027, 4, 1, 12));
+    await act(async () => root.unmount());
+    await mount();
+    expect(travel.storageWarning).toBeNull();
+    expect(getTrip(tripId).events?.[0].start).toBe(event.start);
+    expect(() => travel.createTrip(values)).toThrow();
+    await act(async () =>
+      travel.saveTrip(tripId, { ...values, description: "История" }),
+    );
+    await act(async () =>
+      travel.saveEvent(tripId, { ...event, title: "История" }, eventId),
+    );
+    expect(getTrip(tripId).description).toBe("История");
+    expect(() =>
+      travel.saveEvent(
+        tripId,
+        { ...event, start: "2026-05-01T10:00" },
+        eventId,
+      ),
+    ).toThrow();
+    expect(() => travel.saveEvent(tripId, event)).toThrow();
+  });
+
   it("persists event changes and isolates trips and accounts", async () => {
     await act(async () => travel.login("alice"));
     await clearTrips();

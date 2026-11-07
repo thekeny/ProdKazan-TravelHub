@@ -21,6 +21,23 @@ const material: Material = {
 };
 
 describe("materials", () => {
+  it("limits new filenames while keeping historical metadata readable", () => {
+    expect(
+      validateMaterialInput(
+        new File(["x"], "a".repeat(255), { type: "image/png" }),
+      ),
+    ).toBeNull();
+    expect(
+      validateMaterialInput(
+        new File(["x"], "a".repeat(256), { type: "image/png" }),
+      ),
+    ).toBeTruthy();
+    expect(
+      validateMaterialInput(new File(["x"], " ", { type: "image/png" })),
+    ).toBeTruthy();
+    expect(validateMaterial({ ...material, name: "a".repeat(256) })).toBeNull();
+  });
+
   it("accepts supported images and rejects other files", () => {
     expect(validateMaterialInput(file("image/png", 100))).toBeNull();
     expect(validateMaterialInput(file("application/pdf", 100))).toBeTruthy();

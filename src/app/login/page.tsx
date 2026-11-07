@@ -6,6 +6,7 @@ import { FormProvider } from "react-hook-form";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { Field, inputClass } from "@/components/ui/field";
+import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import { images } from "@/configs/paths/images.path";
 import { pages } from "@/configs/paths/pages.path";
 import { useFormValues } from "@/hooks/use-form-values";
@@ -96,7 +97,7 @@ export default function Page() {
             <form
               noValidate
               key={mode}
-              className="mt-5 grid gap-2"
+              className="mt-5 grid gap-4"
               onSubmit={async (event) => {
                 event.preventDefault();
                 setError(null);
@@ -141,8 +142,8 @@ export default function Page() {
                       }))
                     }
                     required
-                    minLength={3}
-                    maxLength={32}
+                    minLength={TEXT_LIMITS.USERNAME_MIN}
+                    maxLength={TEXT_LIMITS.USERNAME}
                     pattern={remote ? "[a-zA-Z0-9._]+" : undefined}
                     title={
                       remote
@@ -171,8 +172,16 @@ export default function Page() {
                     }
                     type="password"
                     required={remote || mode === "register"}
-                    minLength={mode === "register" ? 8 : undefined}
-                    maxLength={remote ? 64 : 128}
+                    minLength={
+                      mode === "register"
+                        ? TEXT_LIMITS.PASSWORD_MIN
+                        : TEXT_LIMITS.MIN
+                    }
+                    maxLength={
+                      remote
+                        ? TEXT_LIMITS.REMOTE_PASSWORD
+                        : TEXT_LIMITS.LOCAL_PASSWORD
+                    }
                     autoComplete={
                       mode === "login" ? "current-password" : "new-password"
                     }
@@ -196,8 +205,12 @@ export default function Page() {
                       }
                       type="password"
                       required
-                      minLength={8}
-                      maxLength={remote ? 64 : 128}
+                      minLength={TEXT_LIMITS.PASSWORD_MIN}
+                      maxLength={
+                        remote
+                          ? TEXT_LIMITS.REMOTE_PASSWORD
+                          : TEXT_LIMITS.LOCAL_PASSWORD
+                      }
                       autoComplete="new-password"
                     />
                   )}

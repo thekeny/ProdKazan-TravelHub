@@ -68,7 +68,7 @@ export function Sidebar({
               className="size-10 object-contain"
             />
           </span>
-          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+          <span className="min-w-0 flex-1 user-text whitespace-normal text-sm font-medium">
             {username}
           </span>
           <div className="flex shrink-0 items-center gap-[3px]">

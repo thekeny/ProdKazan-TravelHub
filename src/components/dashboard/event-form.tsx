@@ -7,9 +7,10 @@ import { MaterialUploader } from "@/components/materials/material-uploader";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field, inputClass } from "@/components/ui/field";
-import { BACKEND_LIMITS } from "@/configs/consts/backend.const";
+import { TextSelect } from "@/components/ui/text-select";
 import { EVENT_TYPES } from "@/configs/consts/events.const";
 import { MATERIAL_LIMITS } from "@/configs/consts/materials.const";
+import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import type { EventValues, TripEvent } from "@/configs/types/event.type";
 import type { Material } from "@/configs/types/material.type";
 import type { Trip } from "@/configs/types/travel.type";
@@ -17,6 +18,7 @@ import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { eventErrors } from "@/lib/form-validation";
+import { dateInputBounds } from "@/lib/input-validation";
 import { deleteMaterialFiles } from "@/lib/material-storage";
 
 export function EventForm({
@@ -47,8 +49,11 @@ export function EventForm({
       materials: [],
       bookingUrl: "",
     },
-    (values) => eventErrors(values, trip, trip.points ?? []),
+    (values) =>
+      eventErrors(values, trip, trip.points ?? [], { initial: event }),
   );
+  const startBounds = dateInputBounds(event?.start, new Date(), trip);
+  const endBounds = dateInputBounds(event?.end, new Date(), trip);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -158,13 +163,14 @@ export function EventForm({
                   <Dialog.Description className="mt-1 text-sm text-muted-foreground">
                     Дата и время указаны по местному времени поездки.
                   </Dialog.Description>
-                  <div className="mt-6 grid gap-5">
+                  <div className="mt-6 grid gap-4">
                     <Field name="title" label="Название события">
                       {(id) => (
                         <input
                           id={id}
                           required
-                          maxLength={120}
+                          minLength={TEXT_LIMITS.MIN}
+                          maxLength={TEXT_LIMITS.EVENT_TITLE}
                           className={inputClass}
                           aria-describedby={describedBy}
                           value={values.title}
@@ -200,8 +206,8 @@ export function EventForm({
                             id={id}
                             required
                             type="datetime-local"
-                            min={`${trip.startDate}T00:00`}
-                            max={`${trip.endDate}T23:59`}
+                            min={`${startBounds.min}T00:00`}
+                            max={`${startBounds.max}T23:59`}
                             className={inputClass}
                             aria-describedby={describedBy}
                             value={values.start}
@@ -214,8 +220,12 @@ export function EventForm({
                           <input
                             id={id}
                             type="datetime-local"
-                            min={values.start}
-                            max={`${trip.endDate}T23:59`}
+                            min={
+                              values.start > `${endBounds.min}T00:00`
+                                ? values.start
+                                : `${endBounds.min}T00:00`
+                            }
+                            max={`${endBounds.max}T23:59`}
                             className={inputClass}
                             aria-describedby={describedBy}
                             value={values.end}
@@ -228,7 +238,8 @@ export function EventForm({
                       {(id) => (
                         <textarea
                           id={id}
-                          maxLength={BACKEND_LIMITS.DESCRIPTION}
+                          minLength={TEXT_LIMITS.MIN}
+                          maxLength={TEXT_LIMITS.DESCRIPTION}
                           className={`${inputClass} h-24 py-3`}
                           aria-describedby={describedBy}
                           value={values.description}
@@ -243,22 +254,22 @@ export function EventForm({
                       label="Точка маршрута · необязательно"
                     >
                       {(id) => (
-                        <select
+                        <TextSelect
+                          data-field-control
                           id={id}
-                          className={inputClass}
-                          aria-describedby={describedBy}
                           value={values.pointId ?? ""}
-                          onChange={(e) =>
-                            update("pointId", e.target.value || null)
+                          disabled={pending || uploading}
+                          options={[
+                            { value: "", label: "Без места на карте" },
+                            ...points.map((point) => ({
+                              value: point.id,
+                              label: point.name,
+                            })),
+                          ]}
+                          onValueChange={(value) =>
+                            update("pointId", value || null)
                           }
-                        >
-                          <option value="">Без места на карте</option>
-                          {points.map((point) => (
-                            <option key={point.id} value={point.id}>
-                              {point.name}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       )}
                     </Field>
                     <Field
@@ -270,7 +281,8 @@ export function EventForm({
                           id={id}
                           type="url"
                           inputMode="url"
-                          maxLength={500}
+                          minLength={TEXT_LIMITS.MIN}
+                          maxLength={TEXT_LIMITS.URL}
                           placeholder="https://…"
                           className={inputClass}
                           aria-describedby={

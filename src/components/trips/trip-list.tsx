@@ -68,11 +68,11 @@ export function TripList() {
                     <CalendarDays aria-hidden="true" className="size-3.5" />
                     {formatTripDates(trip)}
                   </span>
-                  <span className="mt-2 line-clamp-2 break-words font-display text-xl leading-tight [overflow-wrap:anywhere]">
+                  <span className="mt-2 user-text font-display text-xl leading-tight [overflow-wrap:anywhere]">
                     {trip.name}
                   </span>
                   {trip.description && (
-                    <span className="mt-1.5 line-clamp-2 text-sm leading-6 text-muted-foreground">
+                    <span className="mt-1.5 user-text text-sm leading-6 text-muted-foreground whitespace-pre-wrap">
                       {trip.description}
                     </span>
                   )}

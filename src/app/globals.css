@@ -172,6 +172,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    overflow-wrap: anywhere;
     font-feature-settings:
       "kern" 1,
       "liga" 1;
@@ -194,6 +195,10 @@
 }
 
 @layer components {
+  .user-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
   .paper-texture {
     background-image: url("/paper-texture.png");
     background-position: center;

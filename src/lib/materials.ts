@@ -2,7 +2,9 @@ import {
   MATERIAL_LIMITS,
   MATERIAL_TYPES,
 } from "@/configs/consts/materials.const";
+import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import type { Material } from "@/configs/types/material.type";
+import { textError } from "@/lib/input-validation";
 
 const allowedTypes = new Set<string>(MATERIAL_TYPES);
 
@@ -11,6 +13,8 @@ function isAllowedImageType(value: string) {
 }
 
 export function validateMaterialInput(file: File): string | null {
+  const nameError = textError(file.name, TEXT_LIMITS.FILE_NAME, true);
+  if (nameError) return `Имя файла: ${nameError.toLowerCase()}`;
   if (!isAllowedImageType(file.type))
     return "Поддерживаются только JPEG, PNG и WebP.";
   if (file.size > MATERIAL_LIMITS.MAX_SOURCE_SIZE)
@@ -21,7 +25,8 @@ export function validateMaterialInput(file: File): string | null {
 export function validateBookingUrl(value: string | undefined): string | null {
   const trimmed = (value ?? "").trim();
   if (!trimmed) return null;
-  if (trimmed.length > 500) return "Ссылка слишком длинная.";
+  if (trimmed.length > TEXT_LIMITS.URL)
+    return `До ${TEXT_LIMITS.URL} символов.`;
   try {
     const url = new URL(trimmed);
     if (url.protocol !== "http:" && url.protocol !== "https:")

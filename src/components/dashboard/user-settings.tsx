@@ -5,6 +5,7 @@ import { FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field, inputClass } from "@/components/ui/field";
+import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
@@ -59,7 +60,7 @@ export function UserSettings({
           <FormProvider {...form}>
             <form
               noValidate
-              className="mt-6 grid gap-5"
+              className="mt-6 grid gap-4"
               onSubmit={async (event) => {
                 event.preventDefault();
                 if (pending || remote) return;
@@ -97,8 +98,8 @@ export function UserSettings({
                     readOnly={remote}
                     disabled={pending}
                     required
-                    minLength={3}
-                    maxLength={32}
+                    minLength={TEXT_LIMITS.USERNAME_MIN}
+                    maxLength={TEXT_LIMITS.USERNAME}
                     autoComplete="username"
                     onChange={(event) =>
                       setValues({ username: event.target.value })

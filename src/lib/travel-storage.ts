@@ -1,6 +1,7 @@
 import { APP } from "@/configs/consts/app.const";
 import { MATERIAL_LIMITS } from "@/configs/consts/materials.const";
 import type { TransportKind } from "@/configs/consts/transport.const";
+import { DATE_LIMITS } from "@/configs/consts/validation.const";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { Material } from "@/configs/types/material.type";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
@@ -32,7 +33,8 @@ export function validateTrip(values: TripValues): string | null {
       Date.parse(`${values.startDate}T00:00:00Z`)) /
       86_400_000 +
     1;
-  if (days > 365) return "Поездка не может длиться дольше 365 дней.";
+  if (days > DATE_LIMITS.TRIP_DAYS)
+    return `Поездка не может длиться дольше ${DATE_LIMITS.TRIP_DAYS} дней.`;
   return null;
 }
 export function emptyState(): TravelState {

@@ -54,7 +54,7 @@ export function EventDetails({
                 </span>
                 {EVENT_TYPES[event.type]}
               </p>
-              <Dialog.Title className="mt-1 break-words text-lg font-semibold">
+              <Dialog.Title className="mt-1 user-text text-lg font-semibold">
                 {event.title}
               </Dialog.Title>
               <Dialog.Description className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -93,7 +93,7 @@ export function EventDetails({
                 <dt className="text-xs font-medium text-muted-foreground">
                   Описание
                 </dt>
-                <dd className="mt-1 whitespace-pre-wrap break-words text-sm">
+                <dd className="mt-1 whitespace-pre-wrap user-text text-sm">
                   {event.description || "Без описания."}
                 </dd>
               </div>

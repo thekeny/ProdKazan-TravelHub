@@ -43,7 +43,7 @@ export function ConfirmDelete({
           <Dialog.Title className="pr-10 text-lg font-semibold">
             {title}
           </Dialog.Title>
-          <Dialog.Description className="mt-2 break-words text-sm text-muted-foreground">
+          <Dialog.Description className="mt-2 user-text text-sm text-muted-foreground">
             {children}
           </Dialog.Description>
           <div className="mt-6 flex justify-end gap-3">

@@ -5,11 +5,12 @@ import { FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field, inputClass } from "@/components/ui/field";
-import { BACKEND_LIMITS } from "@/configs/consts/backend.const";
+import { TextSelect } from "@/components/ui/text-select";
 import {
   TRANSPORT_TYPES,
   type TransportKind,
 } from "@/configs/consts/transport.const";
+import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import type {
   RoutePoint,
   TripLeg,
@@ -20,6 +21,7 @@ import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { legErrors } from "@/lib/form-validation";
+import { dateInputBounds } from "@/lib/input-validation";
 import { useTravel } from "@/providers/travel-provider";
 
 export function LegForm({
@@ -47,8 +49,10 @@ export function LegForm({
       end: `${day || trip.startDate}T10:00`,
       description: "",
     },
-    (values) => legErrors(values, trip, points),
+    (values) => legErrors(values, trip, points, { initial: leg }),
   );
+  const startBounds = dateInputBounds(leg?.start, new Date(), trip);
+  const endBounds = dateInputBounds(leg?.end, new Date(), trip);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
@@ -113,42 +117,40 @@ export function LegForm({
                   <Dialog.Description className="mt-1 text-sm text-muted-foreground">
                     Дата и время указаны по местному времени поездки.
                   </Dialog.Description>
-                  <div className="mt-6 grid gap-5">
+                  <div className="mt-6 grid gap-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field name="fromPointId" label="Откуда">
                         {(id) => (
-                          <select
+                          <TextSelect
+                            data-field-control
                             id={id}
-                            className={inputClass}
                             value={values.fromPointId}
-                            onChange={(event) =>
-                              update("fromPointId", event.target.value)
+                            disabled={pending}
+                            options={points.map((point) => ({
+                              value: point.id,
+                              label: point.name,
+                            }))}
+                            onValueChange={(value) =>
+                              update("fromPointId", value)
                             }
-                          >
-                            {points.map((point) => (
-                              <option key={point.id} value={point.id}>
-                                {point.name}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         )}
                       </Field>
                       <Field name="toPointId" label="Куда">
                         {(id) => (
-                          <select
+                          <TextSelect
+                            data-field-control
                             id={id}
-                            className={inputClass}
                             value={values.toPointId}
-                            onChange={(event) =>
-                              update("toPointId", event.target.value)
+                            disabled={pending}
+                            options={points.map((point) => ({
+                              value: point.id,
+                              label: point.name,
+                            }))}
+                            onValueChange={(value) =>
+                              update("toPointId", value)
                             }
-                          >
-                            {points.map((point) => (
-                              <option key={point.id} value={point.id}>
-                                {point.name}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         )}
                       </Field>
                     </div>
@@ -181,8 +183,8 @@ export function LegForm({
                             id={id}
                             required
                             type="datetime-local"
-                            min={`${trip.startDate}T00:00`}
-                            max={`${trip.endDate}T23:59`}
+                            min={`${startBounds.min}T00:00`}
+                            max={`${startBounds.max}T23:59`}
                             className={inputClass}
                             value={values.start}
                             onChange={(event) =>
@@ -197,8 +199,12 @@ export function LegForm({
                             id={id}
                             required
                             type="datetime-local"
-                            min={values.start}
-                            max={`${trip.endDate}T23:59`}
+                            min={
+                              values.start > `${endBounds.min}T00:00`
+                                ? values.start
+                                : `${endBounds.min}T00:00`
+                            }
+                            max={`${endBounds.max}T23:59`}
                             className={inputClass}
                             value={values.end}
                             onChange={(event) =>
@@ -222,7 +228,8 @@ export function LegForm({
                           id={id}
                           className={`${inputClass} h-20 py-3`}
                           aria-describedby={error ? errorId : describedBy}
-                          maxLength={BACKEND_LIMITS.DESCRIPTION}
+                          minLength={TEXT_LIMITS.MIN}
+                          maxLength={TEXT_LIMITS.DESCRIPTION}
                           readOnly={Boolean(remote && leg)}
                           value={values.description}
                           onChange={(event) =>

@@ -19,6 +19,8 @@ let root: Root;
 let container: HTMLDivElement;
 
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(2026, 4, 1, 12));
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   container = document.createElement("div");
   document.body.append(container);
@@ -30,6 +32,7 @@ afterEach(async () => {
   container.remove();
   vi.clearAllMocks();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe("trip form", () => {

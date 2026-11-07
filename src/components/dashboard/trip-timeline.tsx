@@ -137,7 +137,7 @@ export function TripTimeline({
                   className="size-2 shrink-0 rounded-full bg-muted-foreground/40"
                 />
               )}
-              <span className="truncate text-[11px] text-muted-foreground">
+              <span className="user-text whitespace-normal text-[11px] text-muted-foreground">
                 {position.label}
                 {active && continuesNextDay(active, day) && " · продолжается"}
               </span>
@@ -221,7 +221,9 @@ export function TripTimeline({
                     <span className="shrink-0 font-medium tabular-nums">
                       {minutesToTime(itemStartMinutes(item))}
                     </span>
-                    <span className="min-w-0 truncate">{itemTitle(item)}</span>
+                    <span className="min-w-0 user-text whitespace-normal">
+                      {itemTitle(item)}
+                    </span>
                     {continued && (
                       <ArrowRight
                         aria-hidden="true"

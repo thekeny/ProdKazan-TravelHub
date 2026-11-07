@@ -3,6 +3,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as sdk from "@/api/generated/sdk.gen";
 import type { User } from "@/api/generated/types.gen";
 import type { TravelData, Trip } from "@/configs/types/travel.type";
+import {
+  authErrors,
+  eventErrors,
+  legErrors,
+  pointErrors,
+  tripErrors,
+} from "@/lib/form-validation";
+import { assertValidInput } from "@/lib/input-validation";
 import { deleteMaterialFiles } from "@/lib/material-storage";
 import {
   isUploadedCover,
@@ -28,9 +36,6 @@ import {
   pointBody,
   tripBody,
 } from "@/lib/travel-api";
-import { validateEvent } from "@/lib/travel-events";
-import { validateLeg, validatePoint } from "@/lib/travel-route";
-import { validateTrip } from "@/lib/travel-storage";
 import { TravelContext, type TravelContextValue } from "./travel-context";
 
 const empty: TravelData = { trips: [], activeId: null };
@@ -176,9 +181,6 @@ export function RemoteTravelProvider({
       trips: data.trips.map((item) => (item.id === trip.id ? trip : item)),
     });
   }
-  function check(error: string | null) {
-    if (error) throw new Error(error);
-  }
   async function applyCover(trip: Trip, cover: string | null): Promise<Trip> {
     if (!user || !isUploadedCover(cover)) return trip;
     try {
@@ -200,6 +202,13 @@ export function RemoteTravelProvider({
     dismissStorageWarning: () => setWarning(null),
     login: (name, password = "", register = false) =>
       mutate(async () => {
+        assertValidInput(
+          authErrors(
+            { username: name, password, confirm: password },
+            true,
+            register,
+          ),
+        );
         if (register)
           await apiResult(
             sdk.authRegister({ body: { username: name.trim(), password } }),
@@ -229,7 +238,7 @@ export function RemoteTravelProvider({
     createTrip: (values) =>
       mutate(async () => {
         if (!user) throw new Error("Сначала войдите в аккаунт.");
-        check(validateTrip(values));
+        assertValidInput(tripErrors(values, true));
         const trip = mapTrip(
           await apiResult(sdk.tripsPostTrip({ body: tripBody(values) })),
         );
@@ -241,7 +250,7 @@ export function RemoteTravelProvider({
     saveTrip: (id, values) =>
       mutate(async () => {
         const trip = findTrip(id, false);
-        check(validateTrip(values));
+        assertValidInput(tripErrors(values, true, { initial: trip }));
         const outside = [...(trip.events ?? []), ...(trip.legs ?? [])].some(
           (item) =>
             item.start.slice(0, 10) < values.startDate ||
@@ -305,7 +314,7 @@ export function RemoteTravelProvider({
     savePoint: (id, values, pointId) =>
       mutate(async () => {
         const trip = findTrip(id);
-        check(validatePoint(values));
+        assertValidInput(pointErrors(values));
         const body = pointBody(values);
         const point = mapPoint(
           await apiResult(
@@ -367,12 +376,10 @@ export function RemoteTravelProvider({
     saveEvent: (id, values, eventId) =>
       mutate(async () => {
         const trip = findTrip(id);
-        check(
-          validateEvent(
-            values,
-            trip,
-            new Set(trip.points?.map((point) => point.id)),
-          ),
+        assertValidInput(
+          eventErrors(values, trip, trip.points ?? [], {
+            initial: trip.events?.find((event) => event.id === eventId),
+          }),
         );
         const body = eventBody(values);
         const event = {
@@ -415,7 +422,11 @@ export function RemoteTravelProvider({
     saveLeg: (id, values, legId) =>
       mutate(async () => {
         const trip = findTrip(id);
-        check(validateLeg(values, trip, trip.points ?? []));
+        assertValidInput(
+          legErrors(values, trip, trip.points ?? [], {
+            initial: trip.legs?.find((leg) => leg.id === legId),
+          }),
+        );
         const body = legBody(values);
         if (
           legId &&

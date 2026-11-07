@@ -36,6 +36,7 @@ export function Field({
   const child = children(id, describedBy);
   const registration = name && form ? form.register(name) : undefined;
   type ControlProps = {
+    "data-field-control"?: boolean;
     name?: string;
     onBlur?: React.FocusEventHandler<HTMLElement>;
     "aria-invalid"?: boolean;
@@ -44,8 +45,9 @@ export function Field({
   };
   const control =
     isValidElement(child) &&
-    typeof child.type === "string" &&
-    ["input", "select", "textarea"].includes(child.type)
+    ((typeof child.type === "string" &&
+      ["input", "select", "textarea"].includes(child.type)) ||
+      (child as ReactElement<ControlProps>).props["data-field-control"])
       ? cloneElement(child as ReactElement<ControlProps>, {
           name:
             registration?.name ??
@@ -65,23 +67,28 @@ export function Field({
         })
       : child;
   return (
-    <div className="grid gap-2">
-      <label htmlFor={id} className="text-sm font-medium">
+    <div className="grid min-w-0 content-start gap-y-1">
+      <label htmlFor={id} className="mb-0.5 text-sm font-medium">
         {label}
       </label>
       {control}
       {hint && (
-        <p id={`${id}-hint`} className="text-xs text-muted-foreground">
+        <p
+          id={`${id}-hint`}
+          className="text-xs leading-4 text-muted-foreground"
+        >
           {hint}
         </p>
       )}
-      <p
-        id={`${id}-error`}
-        role={error ? "alert" : undefined}
-        className="min-h-10 text-xs leading-5 text-destructive"
-      >
-        {error}
-      </p>
+      {error && (
+        <p
+          id={`${id}-error`}
+          role="alert"
+          className="text-xs leading-4 text-destructive [overflow-wrap:anywhere]"
+        >
+          {error}
+        </p>
+      )}
     </div>
   );
 }

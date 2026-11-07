@@ -44,7 +44,7 @@ export function MaterialGrid({
               onClick={() => setOpenId(material.id)}
             />
             <div className="mt-1 flex items-center gap-1">
-              <p className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+              <p className="min-w-0 flex-1 user-text whitespace-normal text-[11px] text-muted-foreground">
                 {material.name}
               </p>
               {onRemove && (
@@ -94,7 +94,9 @@ export function MaterialGrid({
               className="max-h-[80dvh] w-auto rounded-lg object-contain"
             />
             <div className="flex items-center justify-between gap-3 p-2">
-              <p className="min-w-0 truncate text-sm">{open.name}</p>
+              <p className="min-w-0 user-text whitespace-normal text-sm">
+                {open.name}
+              </p>
               <Button
                 autoFocus
                 type="button"

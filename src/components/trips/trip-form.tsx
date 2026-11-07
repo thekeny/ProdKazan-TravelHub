@@ -6,13 +6,14 @@ import { FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import { Field, inputClass } from "@/components/ui/field";
-import { BACKEND_LIMITS } from "@/configs/consts/backend.const";
 import { COVER_LIMITS, MATERIAL_TYPES } from "@/configs/consts/materials.const";
+import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import type { TripValues } from "@/configs/types/travel.type";
 import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { tripErrors } from "@/lib/form-validation";
 import { compressCover } from "@/lib/image";
+import { dateInputBounds } from "@/lib/input-validation";
 import { isUploadedCover } from "@/lib/remote-covers";
 
 export function TripForm({
@@ -47,8 +48,10 @@ export function TripForm({
             endDate: "",
             cover: null,
           },
-    (values) => tripErrors(values, remote),
+    (values) => tripErrors(values, remote, { initial }),
   );
+  const startBounds = dateInputBounds(initial?.startDate);
+  const endBounds = dateInputBounds(initial?.endDate);
   const [removeCover, setRemoveCover] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
@@ -116,7 +119,7 @@ export function TripForm({
       </ConfirmDelete>
       <form
         noValidate
-        className="grid gap-5"
+        className="grid gap-4"
         aria-busy={pending || reading}
         onSubmit={async (event) => {
           event.preventDefault();
@@ -148,7 +151,8 @@ export function TripForm({
               <input
                 id={id}
                 required
-                maxLength={100}
+                minLength={TEXT_LIMITS.MIN}
+                maxLength={TEXT_LIMITS.NAME}
                 placeholder="Выходные в Казани"
                 className={inputClass}
                 value={values.name}
@@ -160,7 +164,8 @@ export function TripForm({
             {(id) => (
               <textarea
                 id={id}
-                maxLength={BACKEND_LIMITS.DESCRIPTION}
+                minLength={TEXT_LIMITS.MIN}
+                maxLength={TEXT_LIMITS.DESCRIPTION}
                 rows={3}
                 placeholder="Несколько слов о поездке"
                 className={`${inputClass} h-auto resize-y py-3`}
@@ -176,6 +181,8 @@ export function TripForm({
                   id={id}
                   required
                   type="date"
+                  min={startBounds.min}
+                  max={startBounds.max}
                   className={inputClass}
                   value={values.startDate}
                   onChange={(event) => update("startDate", event.target.value)}
@@ -188,6 +195,12 @@ export function TripForm({
                   id={id}
                   required
                   type="date"
+                  min={
+                    values.startDate > endBounds.min
+                      ? values.startDate
+                      : endBounds.min
+                  }
+                  max={endBounds.max}
                   className={inputClass}
                   value={values.endDate}
                   onChange={(event) => update("endDate", event.target.value)}
@@ -206,6 +219,8 @@ export function TripForm({
                   id={id}
                   className={inputClass}
                   type="url"
+                  minLength={TEXT_LIMITS.MIN}
+                  maxLength={TEXT_LIMITS.URL}
                   pattern="https?://.*"
                   value={
                     isUploadedCover(values.cover) ? "" : (values.cover ?? "")

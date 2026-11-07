@@ -285,12 +285,12 @@ function Overview({ trip }: { trip: Trip }) {
       <header className="shrink-0 border-b border-border/60 bg-background/90 px-4 py-3 backdrop-blur">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
-            <h1 className="min-w-0 truncate text-xl leading-tight sm:text-3xl">
+            <h1 className="min-w-0 user-text whitespace-normal text-xl leading-tight sm:text-3xl">
               {trip.name}
             </h1>
             <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground">
               <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
-              <span className="truncate whitespace-nowrap">
+              <span className="user-text whitespace-normal">
                 {formatTripDates(trip)}
               </span>
             </div>

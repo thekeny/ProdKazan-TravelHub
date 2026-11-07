@@ -80,6 +80,8 @@ async function mount() {
   });
 }
 beforeEach(async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(2026, 10, 7, 12));
   vi.resetAllMocks();
   localStorage.clear();
   files.clear();
@@ -99,9 +101,62 @@ afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe("remote travel state", () => {
+  it("rejects invalid input before API calls and allows unchanged historical dates", async () => {
+    const snapshot = travel.trips;
+    await expect(
+      travel.createTrip({ ...values, startDate: "2026-11-06" }),
+    ).rejects.toThrow();
+    await expect(
+      travel.saveTrip(trip.id, { ...values, name: "a".repeat(101) }),
+    ).rejects.toThrow();
+    await expect(
+      travel.savePoint(trip.id, {
+        name: "a".repeat(101),
+        description: "",
+        lat: 55,
+        lng: 49,
+      }),
+    ).rejects.toThrow();
+    const eventValues = {
+      title: event.title,
+      type: event.type,
+      description: "",
+      start: "2026-11-07T10:00",
+      end: "",
+      pointId: point.id,
+      materials: [],
+      bookingUrl: "",
+    };
+    await expect(
+      travel.saveEvent(trip.id, { ...eventValues, title: "a".repeat(121) }),
+    ).rejects.toThrow();
+    expect(sdk.tripsPostTrip).not.toHaveBeenCalled();
+    expect(sdk.tripsPatchTrip).not.toHaveBeenCalled();
+    expect(sdk.pointsPostPoint).not.toHaveBeenCalled();
+    expect(sdk.eventsPostEvent).not.toHaveBeenCalled();
+    expect(travel.trips).toBe(snapshot);
+
+    vi.setSystemTime(new Date(2027, 10, 7, 12));
+    vi.mocked(sdk.tripsPatchTrip).mockResolvedValue(ok(trip));
+    vi.mocked(sdk.eventsPatchEvent).mockResolvedValue(ok(event));
+    await act(async () => travel.saveTrip(trip.id, values));
+    await act(async () => travel.saveEvent(trip.id, eventValues, event.id));
+    expect(sdk.tripsPatchTrip).toHaveBeenCalledOnce();
+    expect(sdk.eventsPatchEvent).toHaveBeenCalledOnce();
+    await expect(
+      travel.saveEvent(
+        trip.id,
+        { ...eventValues, start: "2026-11-07T11:00" },
+        event.id,
+      ),
+    ).rejects.toThrow();
+    expect(sdk.eventsPatchEvent).toHaveBeenCalledOnce();
+  });
+
   it("stores uploaded covers outside the API and restores them only for the current account", async () => {
     const cover = "data:image/webp;base64,dGVzdA==";
     vi.mocked(sdk.tripsPatchTrip).mockResolvedValue(

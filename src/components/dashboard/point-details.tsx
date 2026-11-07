@@ -53,7 +53,7 @@ export function PointDetails({
               <p className="text-xs font-medium text-muted-foreground">
                 Точка маршрута
               </p>
-              <Dialog.Title className="mt-1 break-words text-lg font-semibold">
+              <Dialog.Title className="mt-1 user-text text-lg font-semibold">
                 {point.name}
               </Dialog.Title>
               <Dialog.Description className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -73,7 +73,7 @@ export function PointDetails({
           </header>
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
             {point.description && (
-              <p className="mb-4 whitespace-pre-wrap break-words text-sm">
+              <p className="mb-4 whitespace-pre-wrap user-text text-sm">
                 {point.description}
               </p>
             )}
@@ -97,7 +97,7 @@ export function PointDetails({
                         <EventIcon type={event.type} className="size-4" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-medium">
+                        <span className="block user-text whitespace-normal font-medium">
                           {event.title}
                         </span>
                         <span className="mt-0.5 block text-xs text-muted-foreground">

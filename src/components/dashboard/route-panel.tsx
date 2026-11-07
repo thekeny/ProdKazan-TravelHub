@@ -37,9 +37,9 @@ function PointItem({
             {index + 1}
           </span>
           <span className="min-w-0">
-            <span className="block break-words font-medium">{point.name}</span>
+            <span className="block user-text font-medium">{point.name}</span>
             {point.description && (
-              <span className="mt-1 block break-words text-sm text-muted-foreground">
+              <span className="mt-1 block user-text text-sm text-muted-foreground whitespace-pre-wrap">
                 {point.description}
               </span>
             )}
@@ -102,7 +102,7 @@ function LegItem({
             <TransportIcon kind={leg.transport} className="size-3.5" />
           </span>
           <span className="min-w-0">
-            <span className="block break-words font-medium">
+            <span className="block user-text font-medium">
               {from?.name ?? "Точка удалена"} → {to?.name ?? "Точка удалена"}
             </span>
             <span className="mt-1 block text-xs text-muted-foreground">
@@ -110,7 +110,7 @@ function LegItem({
               {formatEventDate(leg.end)}
             </span>
             {leg.description && (
-              <span className="mt-2 block break-words text-sm text-muted-foreground">
+              <span className="mt-2 block user-text text-sm text-muted-foreground whitespace-pre-wrap">
                 {leg.description}
               </span>
             )}

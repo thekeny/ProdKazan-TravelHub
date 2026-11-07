@@ -51,11 +51,11 @@ export function TripSwitcher({
           className={`group flex w-full items-center gap-3 rounded-lg bg-muted p-3 text-left outline-none transition-colors duration-150 hover:bg-accent data-[popup-open]:bg-accent focus-visible:ring-2 focus-visible:ring-ring ${compact ? "min-h-12" : "min-h-16"}`}
         >
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium">
+            <span className="block user-text whitespace-normal text-sm font-medium">
               {active?.name}
             </span>
             {!compact && (
-              <span className="mt-1 block truncate text-[11px] text-muted-foreground">
+              <span className="mt-1 block user-text whitespace-normal text-[11px] text-muted-foreground">
                 {active && formatTripDates(active)}
               </span>
             )}
@@ -84,11 +84,11 @@ export function TripSwitcher({
               >
                 <span className="min-w-0 flex-1 pr-6">
                   <span className="flex items-center gap-2">
-                    <span className="min-w-0 truncate font-medium">
+                    <span className="min-w-0 user-text whitespace-normal font-medium">
                       {trip.name}
                     </span>
                   </span>
-                  <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                  <span className="mt-0.5 block user-text whitespace-normal text-[11px] text-muted-foreground">
                     {formatTripDates(trip)}
                   </span>
                 </span>

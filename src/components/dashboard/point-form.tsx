@@ -6,7 +6,7 @@ import { FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field, inputClass } from "@/components/ui/field";
-import { BACKEND_LIMITS } from "@/configs/consts/backend.const";
+import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import type { RoutePoint, RoutePointValues } from "@/configs/types/route.type";
 import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { useFormValues } from "@/hooks/use-form-values";
@@ -111,13 +111,14 @@ export function PointForm({
                   <Dialog.Description className="mt-1 text-sm text-muted-foreground">
                     Нажмите на карту или введите координаты вручную.
                   </Dialog.Description>
-                  <div className="mt-6 grid gap-5">
+                  <div className="mt-6 grid gap-4">
                     <Field name="name" label="Название точки">
                       {(id) => (
                         <input
                           id={id}
                           required
-                          maxLength={120}
+                          minLength={TEXT_LIMITS.MIN}
+                          maxLength={TEXT_LIMITS.NAME}
                           className={inputClass}
                           value={values.name}
                           placeholder="Аэропорт Казани"
@@ -134,7 +135,8 @@ export function PointForm({
                       {(id) => (
                         <textarea
                           id={id}
-                          maxLength={BACKEND_LIMITS.DESCRIPTION}
+                          minLength={TEXT_LIMITS.MIN}
+                          maxLength={TEXT_LIMITS.DESCRIPTION}
                           className={`${inputClass} h-20 py-3`}
                           value={values.description}
                           onChange={(event) =>

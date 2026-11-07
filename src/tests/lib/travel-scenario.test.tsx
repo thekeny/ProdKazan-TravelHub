@@ -45,6 +45,8 @@ const material: Material = {
 };
 
 beforeEach(async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(2026, 4, 1, 12));
   localStorage.clear();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   container = document.createElement("div");
@@ -56,6 +58,7 @@ afterEach(async () => {
   container.remove();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe("MVP scenario from the case", () => {

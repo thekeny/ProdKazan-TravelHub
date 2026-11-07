@@ -139,20 +139,25 @@ export function DayFeed({
                               )}
                             </span>
                           </span>
-                          <span className="mt-1 block break-words font-medium">
+                          <span className="mt-1 block user-text font-medium">
                             {title}
                           </span>
                           {event && (
                             <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                              <MapPin aria-hidden="true" className="size-3" />
-                              <span className="truncate">{place}</span>
+                              <MapPin
+                                aria-hidden="true"
+                                className="size-3 shrink-0"
+                              />
+                              <span className="user-text whitespace-normal">
+                                {place}
+                              </span>
                               <span className="shrink-0">
                                 · {EVENT_TYPES[event.type]}
                               </span>
                             </span>
                           )}
                           {description && (
-                            <span className="mt-1 line-clamp-2 block text-sm text-muted-foreground">
+                            <span className="mt-1 user-text block whitespace-pre-wrap text-sm text-muted-foreground">
                               {description}
                             </span>
                           )}

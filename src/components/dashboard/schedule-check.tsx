@@ -66,7 +66,7 @@ export function ScheduleCheckDialog({
                       <AlertTriangle aria-hidden="true" className="size-4" />
                       {issue.title}
                     </p>
-                    <p className="mt-1 break-words text-sm text-muted-foreground">
+                    <p className="mt-1 user-text text-sm text-muted-foreground">
                       {issue.description}
                     </p>
                     <div className="mt-2 flex items-center justify-between gap-3">

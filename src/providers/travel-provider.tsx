@@ -9,16 +9,21 @@ import type {
   TravelState,
   Trip,
 } from "@/configs/types/travel.type";
+import {
+  authErrors,
+  eventErrors,
+  legErrors,
+  pointErrors,
+  tripErrors,
+} from "@/lib/form-validation";
 import { createId } from "@/lib/id";
+import { assertValidInput } from "@/lib/input-validation";
 import { deleteMaterialFiles } from "@/lib/material-storage";
 import { normalizeBookingUrl } from "@/lib/materials";
-import { validateEvent } from "@/lib/travel-events";
-import { validateLeg, validatePoint } from "@/lib/travel-route";
 import {
   emptyState,
   normalizeUsername,
   readStateWithReport,
-  validateTrip,
   writeState,
 } from "@/lib/travel-storage";
 import { RemoteTravelProvider } from "./remote-travel-provider";
@@ -125,11 +130,11 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
         },
         saveEvent(tripId, values, eventId) {
           const trip = activeTrip(tripId);
-          const pointIds = new Set(
-            (trip.points ?? []).map((point) => point.id),
+          assertValidInput(
+            eventErrors(values, trip, trip.points ?? [], {
+              initial: trip.events?.find((event) => event.id === eventId),
+            }),
           );
-          const error = validateEvent(values, trip, pointIds);
-          if (error) throw new Error(error);
           const id = eventId ?? createId();
           updateEvents(tripId, (events) => {
             if (eventId && !events.some((event) => event.id === eventId))
@@ -162,8 +167,7 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
           );
         },
         savePoint(tripId, values, pointId) {
-          const error = validatePoint(values);
-          if (error) throw new Error(error);
+          assertValidInput(pointErrors(values));
           const id = pointId ?? createId();
           updateTrip(tripId, (trip) => {
             const points = trip.points ?? [];
@@ -204,8 +208,11 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
         },
         saveLeg(tripId, values, legId) {
           const trip = activeTrip(tripId);
-          const error = validateLeg(values, trip, trip.points ?? []);
-          if (error) throw new Error(error);
+          assertValidInput(
+            legErrors(values, trip, trip.points ?? [], {
+              initial: trip.legs?.find((leg) => leg.id === legId),
+            }),
+          );
           const id = legId ?? createId();
           updateTrip(tripId, (current) => {
             const legs = current.legs ?? [];
@@ -237,6 +244,13 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
           });
         },
         login(name) {
+          assertValidInput(
+            authErrors(
+              { username: name, password: "", confirm: "" },
+              false,
+              false,
+            ),
+          );
           const username = normalizeUsername(name);
           const existing = Object.hasOwn(state.accounts, username)
             ? state.accounts[username]
@@ -254,8 +268,13 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
         renameAccount(name) {
           if (!state.username) throw new Error("Сначала войдите в аккаунт.");
           const username = normalizeUsername(name);
-          if (username.length < 3 || username.length > 32)
-            throw new Error("Имя должно содержать от 3 до 32 символов.");
+          assertValidInput(
+            authErrors(
+              { username: name, password: "", confirm: "" },
+              false,
+              false,
+            ),
+          );
           if (username === state.username) return;
           if (Object.hasOwn(state.accounts, username))
             throw new Error("Это имя уже занято.");
@@ -267,8 +286,7 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
           commit({ ...state, username: null });
         },
         createTrip(values) {
-          const error = validateTrip(values);
-          if (error) throw new Error(error);
+          assertValidInput(tripErrors(values, false));
           const trip: Trip = {
             ...values,
             name: values.name.trim(),
@@ -281,8 +299,11 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
           updateData({ trips: [...data.trips, trip], activeId: trip.id });
         },
         saveTrip(tripId, values) {
-          const error = validateTrip(values);
-          if (error) throw new Error(error);
+          assertValidInput(
+            tripErrors(values, false, {
+              initial: data.trips.find((trip) => trip.id === tripId),
+            }),
+          );
           updateTripById(tripId, (trip) => {
             const outsideDates = (trip.events ?? []).some(
               (event) =>
