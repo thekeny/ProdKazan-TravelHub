@@ -101,10 +101,7 @@ export function TripGallery({ kind }: { kind: MaterialKind }) {
     <div className="h-full overflow-y-auto bg-background">
       <div className="w-full px-4 py-5 sm:px-6">
         <header className="mb-6">
-          <p className="truncate text-[11px] text-muted-foreground">
-            {trip.name}
-          </p>
-          <h1 className="mt-1 text-3xl leading-tight">{title}</h1>
+          <h1 className="font-display text-3xl leading-tight">{title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         </header>
         <StorageWarning className="mb-6" />
@@ -118,13 +115,14 @@ export function TripGallery({ kind }: { kind: MaterialKind }) {
                   className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-3"
                 >
                   <div className="min-w-0">
-                    <p className="break-words font-medium">{event.title}</p>
+                    <p className="user-text font-medium">{event.title}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {formatDayLabel(event.start.slice(0, 10))} ·{" "}
                       {event.start.slice(11, 16)}
                     </p>
                   </div>
-                  <a
+                  <Link
+                    prefetch={false}
                     href={event.bookingUrl}
                     target="_blank"
                     rel="noreferrer noopener"
@@ -135,7 +133,7 @@ export function TripGallery({ kind }: { kind: MaterialKind }) {
                   >
                     <ExternalLink />
                     Открыть
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -156,7 +154,7 @@ export function TripGallery({ kind }: { kind: MaterialKind }) {
                     >
                       <header className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                         <div className="min-w-0">
-                          <h3 className="font-medium break-words [overflow-wrap:anywhere]">
+                          <h3 className="font-medium user-text [overflow-wrap:anywhere]">
                             <Link
                               href={`${pages.DASHBOARD}?day=${entry.day}&event=${entry.eventId}`}
                               className="underline-offset-4 hover:underline"
@@ -165,7 +163,10 @@ export function TripGallery({ kind }: { kind: MaterialKind }) {
                             </Link>
                           </h3>
                           <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                            <MapPin aria-hidden="true" className="size-3.5" />
+                            <MapPin
+                              aria-hidden="true"
+                              className="size-3.5 shrink-0"
+                            />
                             {entry.point}
                           </p>
                         </div>

@@ -6,6 +6,8 @@
 
 @theme inline {
   --color-green: var(--green);
+  --color-offline: var(--offline);
+  --color-offline-foreground: var(--offline-foreground);
   --color-water: var(--water);
   --color-surface: var(--surface);
   --color-road: var(--road);
@@ -61,12 +63,21 @@
   --primary: #4f8a68;
   --primary-strong: color-mix(in srgb, var(--primary) 78%, var(--text));
   --green: #7bae7f;
+  --offline: #c27f78;
+  --offline-foreground: #ffffff;
   --water: #8ecae6;
   --background: #f7f5ef;
   --surface: #ffffff;
   --road: #e6d8b5;
   --border: #d8d8d8;
   --text: #2f3a33;
+
+  --map-point-sage: #b5cfa8;
+  --map-point-sky: #acd3e4;
+  --map-point-sand: #e6d8b5;
+  --map-point-peach: #e9bea5;
+  --map-point-rose: #dfb6bd;
+  --map-point-lavender: #c9bddc;
 
   --transport-walk: var(--green);
   --transport-car: var(--text);
@@ -140,11 +151,39 @@
   * {
     @apply border-border outline-ring/50;
   }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--primary) 42%, transparent)
+      transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary) 42%, transparent);
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--primary) 65%, transparent);
+  }
+  .dialog-popup,
+  .dialog-popup * {
+    scrollbar-width: none;
+  }
+  .dialog-popup::-webkit-scrollbar,
+  .dialog-popup *::-webkit-scrollbar {
+    display: none;
+  }
   html {
     @apply font-sans;
   }
   body {
     @apply bg-background text-foreground;
+    overflow-wrap: anywhere;
     font-feature-settings:
       "kern" 1,
       "liga" 1;
@@ -153,9 +192,12 @@
   h2,
   h3,
   h4 {
-    font-family: var(--font-heading);
+    font-family: var(--font-lora);
     font-weight: 500;
     letter-spacing: -0.015em;
+  }
+  [role="dialog"] {
+    --font-heading: var(--font-lora);
   }
   ::selection {
     background: color-mix(in srgb, var(--primary) 26%, transparent);
@@ -164,6 +206,10 @@
 }
 
 @layer components {
+  .user-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
   .paper-texture {
     background-image: url("/paper-texture.png");
     background-position: center;
@@ -176,7 +222,7 @@
     background-size: cover;
   }
   .flow-card {
-    @apply relative w-full max-w-md rounded-3xl border border-border/70 bg-card p-6 shadow-xl shadow-text/5 sm:p-8;
+    @apply relative w-full max-w-md rounded-3xl bg-card p-6 sm:p-8;
   }
   .section-label {
     @apply text-[11px] leading-4 font-medium text-muted-foreground;
@@ -191,6 +237,91 @@
     background-position: 0 92%;
     background-size: 100% 0.35em;
   }
+
+  .dialog-backdrop[data-open] {
+    animation: dialog-backdrop-in 220ms ease-out both;
+  }
+
+  .dialog-backdrop[data-closed] {
+    animation: dialog-backdrop-out 150ms ease-out both;
+  }
+
+  .dialog-popup[data-open] {
+    animation: dialog-popup-in 240ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  .dialog-popup[data-closed] {
+    animation: dialog-popup-out 150ms ease-out both;
+  }
+
+  .lightbox-backdrop {
+    animation: dialog-backdrop-in 220ms ease-out both;
+  }
+
+  .lightbox-panel {
+    animation: dialog-popup-in 240ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+}
+
+@keyframes dialog-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-popup-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+    scale: 0.985;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes dialog-popup-out {
+  from {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    translate: 0 4px;
+    scale: 0.99;
+  }
+}
+
+.dialog-popup {
+  border-width: 0;
+}
+
+.dialog-popup,
+.flow-card,
+.rounded-3xl.border,
+.rounded-xl.border.bg-card,
+.rounded-lg.border.bg-card,
+.rounded-xl.border.bg-background {
+  border-color: transparent;
+}
+
+:where(*):not([data-slot="dropdown-menu-content"]) {
+  box-shadow: none;
 }
 
 .leaflet-container .leaflet-bottom.leaflet-right {

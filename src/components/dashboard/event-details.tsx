@@ -9,12 +9,15 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { EventIcon } from "@/components/dashboard/event-icon";
 import { MaterialGrid } from "@/components/materials/material-grid";
 import { Button } from "@/components/ui/button";
-import { EVENT_COLORS, EVENT_TYPES } from "@/configs/consts/events.const";
+import { DialogPopup } from "@/components/ui/dialog-popup";
+import { EVENT_COLORS } from "@/configs/consts/events.const";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { RoutePoint } from "@/configs/types/route.type";
+import { eventTypeLabel } from "@/lib/event-types";
 import { formatEventDate, formatEventDateRange } from "@/lib/travel-events";
 
 export function EventDetails({
@@ -43,17 +46,17 @@ export function EventDetails({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay/35" />
-        <Dialog.Popup className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l bg-background shadow-xl outline-none">
+        <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-50 bg-overlay/35" />
+        <DialogPopup className="dialog-popup fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l bg-background  outline-none">
           <header className="flex shrink-0 items-start justify-between gap-3 border-b p-4">
             <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <p className="user-text flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                 <span style={{ color: EVENT_COLORS[event.type] }}>
                   <EventIcon type={event.type} className="size-3.5" />
                 </span>
-                {EVENT_TYPES[event.type]}
+                {eventTypeLabel(event)}
               </p>
-              <Dialog.Title className="mt-1 break-words text-lg font-semibold">
+              <Dialog.Title className="mt-1 user-text text-lg font-semibold">
                 {event.title}
               </Dialog.Title>
               <Dialog.Description className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -92,7 +95,7 @@ export function EventDetails({
                 <dt className="text-xs font-medium text-muted-foreground">
                   Описание
                 </dt>
-                <dd className="mt-1 whitespace-pre-wrap break-words text-sm">
+                <dd className="mt-1 whitespace-pre-wrap user-text text-sm">
                   {event.description || "Без описания."}
                 </dd>
               </div>
@@ -102,7 +105,8 @@ export function EventDetails({
                     Билет или бронирование
                   </dt>
                   <dd className="mt-1">
-                    <a
+                    <Link
+                      prefetch={false}
                       href={event.bookingUrl}
                       target="_blank"
                       rel="noreferrer noopener"
@@ -110,7 +114,7 @@ export function EventDetails({
                     >
                       Открыть билет или бронь
                       <ExternalLink aria-hidden="true" className="size-3.5" />
-                    </a>
+                    </Link>
                   </dd>
                 </div>
               )}
@@ -138,7 +142,7 @@ export function EventDetails({
               Удалить
             </Button>
           </footer>
-        </Dialog.Popup>
+        </DialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   );

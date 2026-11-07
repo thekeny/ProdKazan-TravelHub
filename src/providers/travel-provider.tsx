@@ -1,31 +1,34 @@
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { API_URL } from "@/configs/consts/api.const";
 import { APP } from "@/configs/consts/app.const";
-import type { EventValues, TripEvent } from "@/configs/types/event.type";
-import type {
-  RoutePoint,
-  RoutePointValues,
-  TripLeg,
-  TripLegValues,
-} from "@/configs/types/route.type";
+import type { TripEvent } from "@/configs/types/event.type";
+import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
 import type {
   TravelData,
   TravelState,
   Trip,
-  TripValues,
 } from "@/configs/types/travel.type";
+import { isConnected } from "@/lib/connectivity";
+import {
+  authErrors,
+  eventErrors,
+  legErrors,
+  pointErrors,
+  tripErrors,
+} from "@/lib/form-validation";
 import { createId } from "@/lib/id";
+import { assertValidInput } from "@/lib/input-validation";
 import { deleteMaterialFiles } from "@/lib/material-storage";
 import { normalizeBookingUrl } from "@/lib/materials";
-import { validateEvent } from "@/lib/travel-events";
-import { validateLeg, validatePoint } from "@/lib/travel-route";
 import {
   emptyState,
   normalizeUsername,
   readStateWithReport,
-  validateTrip,
   writeState,
 } from "@/lib/travel-storage";
+import { RemoteTravelProvider } from "./remote-travel-provider";
+import { TravelContext } from "./travel-context";
 
 function materialIdsOf(trip: Trip) {
   return (trip.events ?? []).flatMap((event) =>
@@ -33,30 +36,7 @@ function materialIdsOf(trip: Trip) {
   );
 }
 
-type TravelContextValue = TravelData & {
-  ready: boolean;
-  username: string | null;
-  storageWarning: string | null;
-  dismissStorageWarning: () => void;
-  login: (name: string) => void;
-  logout: () => void;
-  createTrip: (values: TripValues) => void;
-  saveTrip: (tripId: string, values: TripValues) => void;
-  deleteTrip: (tripId: string) => void;
-  selectTrip: (id: string) => void;
-  saveEvent: (tripId: string, values: EventValues, eventId?: string) => string;
-  deleteEvent: (tripId: string, eventId: string) => void;
-  savePoint: (
-    tripId: string,
-    values: RoutePointValues,
-    pointId?: string,
-  ) => string;
-  deletePoint: (tripId: string, pointId: string) => void;
-  saveLeg: (tripId: string, values: TripLegValues, legId?: string) => string;
-  deleteLeg: (tripId: string, legId: string) => void;
-};
-const TravelContext = createContext<TravelContextValue | null>(null);
-export function TravelProvider({ children }: { children: React.ReactNode }) {
+function LocalTravelProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<TravelState>(emptyState);
   const [ready, setReady] = useState(false);
   const [storageWarning, setStorageWarning] = useState<string | null>(null);
@@ -98,6 +78,13 @@ export function TravelProvider({ children }: { children: React.ReactNode }) {
       ? state.accounts[state.username]
       : { trips: [], activeId: null };
   function commit(next: TravelState) {
+    if (
+      !isConnected() &&
+      JSON.stringify(next.accounts) !== JSON.stringify(state.accounts)
+    )
+      throw new Error(
+        "Вы оффлайн. Доступен только просмотр сохранённых данных.",
+      );
     writeState(next);
     setState(next);
   }
@@ -151,11 +138,11 @@ export function TravelProvider({ children }: { children: React.ReactNode }) {
         },
         saveEvent(tripId, values, eventId) {
           const trip = activeTrip(tripId);
-          const pointIds = new Set(
-            (trip.points ?? []).map((point) => point.id),
+          assertValidInput(
+            eventErrors(values, trip, trip.points ?? [], {
+              initial: trip.events?.find((event) => event.id === eventId),
+            }),
           );
-          const error = validateEvent(values, trip, pointIds);
-          if (error) throw new Error(error);
           const id = eventId ?? createId();
           updateEvents(tripId, (events) => {
             if (eventId && !events.some((event) => event.id === eventId))
@@ -188,8 +175,7 @@ export function TravelProvider({ children }: { children: React.ReactNode }) {
           );
         },
         savePoint(tripId, values, pointId) {
-          const error = validatePoint(values);
-          if (error) throw new Error(error);
+          assertValidInput(pointErrors(values));
           const id = pointId ?? createId();
           updateTrip(tripId, (trip) => {
             const points = trip.points ?? [];
@@ -230,8 +216,11 @@ export function TravelProvider({ children }: { children: React.ReactNode }) {
         },
         saveLeg(tripId, values, legId) {
           const trip = activeTrip(tripId);
-          const error = validateLeg(values, trip, trip.points ?? []);
-          if (error) throw new Error(error);
+          assertValidInput(
+            legErrors(values, trip, trip.points ?? [], {
+              initial: trip.legs?.find((leg) => leg.id === legId),
+            }),
+          );
           const id = legId ?? createId();
           updateTrip(tripId, (current) => {
             const legs = current.legs ?? [];
@@ -263,6 +252,13 @@ export function TravelProvider({ children }: { children: React.ReactNode }) {
           });
         },
         login(name) {
+          assertValidInput(
+            authErrors(
+              { username: name, password: "", confirm: "" },
+              false,
+              false,
+            ),
+          );
           const username = normalizeUsername(name);
           const existing = Object.hasOwn(state.accounts, username)
             ? state.accounts[username]
@@ -277,12 +273,33 @@ export function TravelProvider({ children }: { children: React.ReactNode }) {
             },
           });
         },
+        renameAccount(name) {
+          if (!state.username) throw new Error("Сначала войдите в аккаунт.");
+          const username = normalizeUsername(name);
+          assertValidInput(
+            authErrors(
+              { username: name, password: "", confirm: "" },
+              false,
+              false,
+            ),
+          );
+          if (username === state.username) return;
+          if (Object.hasOwn(state.accounts, username))
+            throw new Error("Это имя уже занято.");
+          const accounts = { ...state.accounts, [username]: data };
+          delete accounts[state.username];
+          commit({ ...state, username, accounts });
+        },
+        async changePassword() {
+          throw new Error(
+            "Смена пароля доступна только для серверного аккаунта.",
+          );
+        },
         logout() {
           commit({ ...state, username: null });
         },
         createTrip(values) {
-          const error = validateTrip(values);
-          if (error) throw new Error(error);
+          assertValidInput(tripErrors(values, false));
           const trip: Trip = {
             ...values,
             name: values.name.trim(),
@@ -295,8 +312,11 @@ export function TravelProvider({ children }: { children: React.ReactNode }) {
           updateData({ trips: [...data.trips, trip], activeId: trip.id });
         },
         saveTrip(tripId, values) {
-          const error = validateTrip(values);
-          if (error) throw new Error(error);
+          assertValidInput(
+            tripErrors(values, false, {
+              initial: data.trips.find((trip) => trip.id === tripId),
+            }),
+          );
           updateTripById(tripId, (trip) => {
             const outsideDates = (trip.events ?? []).some(
               (event) =>
@@ -340,6 +360,13 @@ export function TravelProvider({ children }: { children: React.ReactNode }) {
     >
       {children}
     </TravelContext.Provider>
+  );
+}
+export function TravelProvider({ children }: { children: React.ReactNode }) {
+  return API_URL ? (
+    <RemoteTravelProvider>{children}</RemoteTravelProvider>
+  ) : (
+    <LocalTravelProvider>{children}</LocalTravelProvider>
   );
 }
 export function useTravel() {

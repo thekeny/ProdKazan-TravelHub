@@ -9,7 +9,6 @@ export default defineConfig({
     : "./openapi.json",
   output: {
     path: "src/api/generated",
-    postProcess: ["biome:format"],
   },
   plugins: [
     {

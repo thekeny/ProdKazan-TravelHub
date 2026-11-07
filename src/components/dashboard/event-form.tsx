@@ -1,18 +1,27 @@
 "use client";
-
 import { Dialog } from "@base-ui/react/dialog";
 import { useId, useRef, useState } from "react";
+import { FormProvider } from "react-hook-form";
 import { MaterialGrid } from "@/components/materials/material-grid";
 import { MaterialUploader } from "@/components/materials/material-uploader";
 import { Button } from "@/components/ui/button";
-import { Field, inputClass } from "@/components/ui/field";
+import { DialogPopup } from "@/components/ui/dialog-popup";
+import { Field } from "@/components/ui/field";
+import { Input, inputClass } from "@/components/ui/input";
+import { TextSelect } from "@/components/ui/text-select";
+import { Textarea } from "@/components/ui/textarea";
 import { EVENT_TYPES } from "@/configs/consts/events.const";
 import { MATERIAL_LIMITS } from "@/configs/consts/materials.const";
+import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import type { EventValues, TripEvent } from "@/configs/types/event.type";
 import type { Material } from "@/configs/types/material.type";
 import type { Trip } from "@/configs/types/travel.type";
+import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
+import { useFormValues } from "@/hooks/use-form-values";
+import { actionToast } from "@/lib/action-toast";
+import { eventErrors } from "@/lib/form-validation";
+import { dateInputBounds } from "@/lib/input-validation";
 import { deleteMaterialFiles } from "@/lib/material-storage";
-import { validateEvent } from "@/lib/travel-events";
 
 export function EventForm({
   trip,
@@ -31,25 +40,37 @@ export function EventForm({
   onClose: () => void;
   onSave: (values: EventValues) => void | Promise<void>;
 }) {
-  const [values, setValues] = useState<EventValues>(
-    event ?? {
-      title: "",
-      type: "walk",
-      start: `${day || trip.startDate}T${time ?? "09:00"}`,
-      end: "",
-      description: "",
-      pointId: initialPointId ?? null,
-      materials: [],
-      bookingUrl: "",
-    },
+  const [values, setValues, form] = useFormValues<EventValues>(
+    event
+      ? event
+      : {
+          title: "",
+          type: "other",
+          customType: null,
+          start: `${day || trip.startDate}T${time ?? "09:00"}`,
+          end: "",
+          description: "",
+          pointId: initialPointId ?? null,
+          materials: [],
+          bookingUrl: "",
+        },
+    (values) =>
+      eventErrors(values, trip, trip.points ?? [], { initial: event }),
   );
+  const startBounds = dateInputBounds(event?.start, new Date(), trip);
+  const endBounds = dateInputBounds(event?.end, new Date(), trip);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const pendingRef = useRef(false);
   const uploadingRef = useRef(false);
   const errorId = useId();
   const points = trip.points ?? [];
+  const catalog = trip.eventTypes ?? [];
+  const preservedType = event
+    ? (event.customType ?? EVENT_TYPES[event.type])
+    : null;
   const newMaterialIds = useRef<string[]>([]);
   const removedMaterialIds = useRef<string[]>([]);
 
@@ -93,248 +114,296 @@ export function EventForm({
     }));
   }
 
+  const { requestClose, confirmation } = useDiscardConfirmation(
+    values,
+    close,
+    pending || uploading,
+  );
   const describedBy = error ? errorId : undefined;
 
   return (
     <Dialog.Root
       open
-      disablePointerDismissal
       onOpenChange={(open) => {
-        if (!open) close();
+        if (!open) requestClose();
       }}
     >
+      {confirmation}
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-[60] bg-overlay/35" />
-        <Dialog.Popup className="fixed inset-0 z-[60] m-auto flex h-fit max-h-[calc(100dvh-1.5rem)] w-[calc(100%-1.5rem)] max-w-3xl flex-col overflow-hidden rounded-xl border bg-background shadow-xl outline-none">
-          <form
-            className="flex min-h-0 flex-1 flex-col"
-            aria-busy={pending}
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (pendingRef.current || uploadingRef.current) return;
-              const validation = validateEvent(
-                values,
-                trip,
-                new Set(points.map((point) => point.id)),
-              );
-              if (validation) {
-                setError(validation);
-                return;
-              }
-              pendingRef.current = true;
-              setPending(true);
-              setError(null);
-              try {
-                await onSave(values);
-                newMaterialIds.current = [];
-                void deleteMaterialFiles(removedMaterialIds.current);
-              } catch (saveError) {
-                pendingRef.current = false;
-                setPending(false);
-                setError(
-                  saveError instanceof Error
-                    ? saveError.message
-                    : "Не удалось сохранить событие.",
-                );
-              }
-            }}
-          >
-            <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
-              <Dialog.Title className="text-xl font-semibold">
-                {event ? "Редактировать событие" : "Новое событие"}
-              </Dialog.Title>
-              <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-                Дата и время указаны по местному времени поездки.
-              </Dialog.Description>
-              <div className="mt-6 grid gap-5">
-                <Field label="Название события">
-                  {(id) => (
-                    <input
-                      id={id}
-                      required
-                      maxLength={120}
-                      className={inputClass}
-                      aria-invalid={error ? true : undefined}
-                      aria-describedby={describedBy}
-                      value={values.title}
-                      onChange={(e) => update("title", e.target.value)}
-                    />
-                  )}
-                </Field>
-                <Field label="Тип события">
-                  {(id) => (
-                    <select
-                      id={id}
-                      className={inputClass}
-                      aria-invalid={error ? true : undefined}
-                      aria-describedby={describedBy}
-                      value={values.type}
-                      onChange={(e) => {
-                        const type = e.target.value;
-                        if (Object.hasOwn(EVENT_TYPES, type))
-                          update("type", type as EventValues["type"]);
-                      }}
-                    >
-                      {Object.entries(EVENT_TYPES).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </Field>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Начало">
-                    {(id) => (
-                      <input
-                        id={id}
-                        required
-                        type="datetime-local"
-                        min={`${trip.startDate}T00:00`}
-                        max={`${trip.endDate}T23:59`}
-                        className={inputClass}
-                        aria-invalid={error ? true : undefined}
-                        aria-describedby={describedBy}
-                        value={values.start}
-                        onChange={(e) => update("start", e.target.value)}
-                      />
-                    )}
-                  </Field>
-                  <Field label="Окончание · необязательно">
-                    {(id) => (
-                      <input
-                        id={id}
-                        type="datetime-local"
-                        min={values.start}
-                        max={`${trip.endDate}T23:59`}
-                        className={inputClass}
-                        aria-invalid={error ? true : undefined}
-                        aria-describedby={describedBy}
-                        value={values.end}
-                        onChange={(e) => update("end", e.target.value)}
-                      />
-                    )}
-                  </Field>
-                </div>
-                <Field label="Описание · необязательно">
-                  {(id) => (
-                    <textarea
-                      id={id}
-                      maxLength={2000}
-                      className={`${inputClass} h-24 py-3`}
-                      aria-invalid={error ? true : undefined}
-                      aria-describedby={describedBy}
-                      value={values.description}
-                      onChange={(e) => update("description", e.target.value)}
-                    />
-                  )}
-                </Field>
-                <Field label="Точка маршрута · необязательно">
-                  {(id) => (
-                    <select
-                      id={id}
-                      className={inputClass}
-                      aria-invalid={error ? true : undefined}
-                      aria-describedby={describedBy}
-                      value={values.pointId ?? ""}
-                      onChange={(e) =>
-                        update("pointId", e.target.value || null)
+        <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-[60] bg-overlay/35" />
+        <DialogPopup className="dialog-popup fixed inset-0 z-[60] m-auto flex h-fit max-h-[calc(100dvh-1.5rem)] w-[calc(100%-1.5rem)] max-w-5xl flex-col overflow-hidden rounded-xl border bg-background  outline-none">
+          <FormProvider {...form}>
+            <form
+              noValidate
+              className="flex min-h-0 flex-1 flex-col"
+              aria-busy={pending}
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!(await form.trigger(undefined, { shouldFocus: true })))
+                  return;
+                if (pendingRef.current || uploadingRef.current) return;
+                pendingRef.current = true;
+                setPending(true);
+                setError(null);
+                try {
+                  await actionToast(
+                    () => onSave(values),
+                    "Сохраняем…",
+                    "Изменения сохранены.",
+                  );
+                  newMaterialIds.current = [];
+                  void deleteMaterialFiles(removedMaterialIds.current);
+                } catch (saveError) {
+                  pendingRef.current = false;
+                  setPending(false);
+                  setError(
+                    saveError instanceof Error
+                      ? saveError.message
+                      : "Не удалось сохранить событие.",
+                  );
+                }
+              }}
+            >
+              <fieldset disabled={pending || uploading} className="contents">
+                <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
+                  <Dialog.Title className="pr-10 text-xl font-semibold">
+                    {event ? "Редактировать событие" : "Новое событие"}
+                  </Dialog.Title>
+                  <Dialog.Description className="mt-1 text-sm text-muted-foreground">
+                    Дата и время указаны по местному времени поездки.
+                  </Dialog.Description>
+                  <div className="mt-6 grid gap-4">
+                    <Field name="title" label="Название события">
+                      {(id) => (
+                        <Input
+                          data-field-control
+                          id={id}
+                          required
+                          minLength={TEXT_LIMITS.MIN}
+                          maxLength={TEXT_LIMITS.EVENT_TITLE}
+                          className={inputClass}
+                          aria-describedby={describedBy}
+                          value={values.title}
+                          onChange={(e) => update("title", e.target.value)}
+                        />
+                      )}
+                    </Field>
+                    <Field
+                      name="customType"
+                      label="Тип события"
+                      hint={
+                        trip.eventTypes?.length
+                          ? undefined
+                          : "Добавьте типы при создании путешествия или в его настройках."
                       }
                     >
-                      <option value="">Без места на карте</option>
-                      {points.map((point) => (
-                        <option key={point.id} value={point.id}>
-                          {point.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </Field>
-                <Field
-                  label="Ссылка на билет или бронирование · необязательно"
-                  hint="Например, ссылка на подтверждение брони или электронный билет."
-                >
-                  {(id, describedByField) => (
-                    <input
-                      id={id}
-                      type="url"
-                      inputMode="url"
-                      maxLength={500}
-                      placeholder="https://…"
-                      className={inputClass}
-                      aria-invalid={error ? true : undefined}
-                      aria-describedby={
-                        [describedBy, describedByField]
-                          .filter(Boolean)
-                          .join(" ") || undefined
-                      }
-                      value={values.bookingUrl}
-                      onChange={(e) => update("bookingUrl", e.target.value)}
-                    />
-                  )}
-                </Field>
-                {points.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Сохраните событие без места, затем добавьте точку в
-                    «Маршруте» и привяжите её при редактировании.
-                  </p>
-                )}
-                <section className="grid gap-3" aria-label="Материалы события">
-                  <div>
-                    <h3 className="text-sm font-medium">Материалы</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Фотографии и изображения билетов хранятся в этом браузере.
-                    </p>
+                      {(id) => (
+                        <TextSelect
+                          data-field-control
+                          id={id}
+                          value={
+                            values.customType === undefined
+                              ? (preservedType ?? "")
+                              : (values.customType ?? "")
+                          }
+                          disabled={pending || uploading}
+                          options={[
+                            { value: "", label: "Выберите тип события" },
+                            ...(preservedType &&
+                            !catalog.includes(preservedType)
+                              ? [{ value: preservedType, label: preservedType }]
+                              : []),
+                            ...catalog.map((name) => ({
+                              value: name,
+                              label: name,
+                            })),
+                          ]}
+                          onValueChange={(value) =>
+                            update(
+                              "customType",
+                              value === preservedType &&
+                                event?.customType === undefined &&
+                                !catalog.includes(value)
+                                ? undefined
+                                : value || null,
+                            )
+                          }
+                        />
+                      )}
+                    </Field>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field name="start" label="Начало">
+                        {(id) => (
+                          <Input
+                            data-field-control
+                            id={id}
+                            required
+                            type="datetime-local"
+                            min={`${startBounds.min}T00:00`}
+                            max={`${startBounds.max}T23:59`}
+                            className={inputClass}
+                            aria-describedby={describedBy}
+                            value={values.start}
+                            onChange={(e) => update("start", e.target.value)}
+                          />
+                        )}
+                      </Field>
+                      <Field name="end" label="Окончание · необязательно">
+                        {(id) => (
+                          <Input
+                            data-field-control
+                            id={id}
+                            type="datetime-local"
+                            min={
+                              values.start > `${endBounds.min}T00:00`
+                                ? values.start
+                                : `${endBounds.min}T00:00`
+                            }
+                            max={`${endBounds.max}T23:59`}
+                            className={inputClass}
+                            aria-describedby={describedBy}
+                            value={values.end}
+                            onChange={(e) => update("end", e.target.value)}
+                          />
+                        )}
+                      </Field>
+                    </div>
+                    <Field name="description" label="Описание · необязательно">
+                      {(id) => (
+                        <Textarea
+                          data-field-control
+                          id={id}
+                          minLength={TEXT_LIMITS.MIN}
+                          maxLength={TEXT_LIMITS.DESCRIPTION}
+                          className={`${inputClass} h-24 py-3`}
+                          aria-describedby={describedBy}
+                          value={values.description}
+                          onChange={(e) =>
+                            update("description", e.target.value)
+                          }
+                        />
+                      )}
+                    </Field>
+                    <Field
+                      name="pointId"
+                      label="Точка маршрута · необязательно"
+                    >
+                      {(id) => (
+                        <TextSelect
+                          data-field-control
+                          id={id}
+                          value={values.pointId ?? ""}
+                          disabled={pending || uploading}
+                          options={[
+                            { value: "", label: "Без места на карте" },
+                            ...points.map((point) => ({
+                              value: point.id,
+                              label: point.name,
+                            })),
+                          ]}
+                          onValueChange={(value) =>
+                            update("pointId", value || null)
+                          }
+                        />
+                      )}
+                    </Field>
+                    <Field
+                      name="bookingUrl"
+                      label="Ссылка на билет или бронирование · необязательно"
+                    >
+                      {(id, describedByField) => (
+                        <Input
+                          data-field-control
+                          id={id}
+                          type="url"
+                          inputMode="url"
+                          minLength={TEXT_LIMITS.MIN}
+                          maxLength={TEXT_LIMITS.URL}
+                          placeholder="https://…"
+                          className={inputClass}
+                          aria-describedby={
+                            [describedBy, describedByField]
+                              .filter(Boolean)
+                              .join(" ") || undefined
+                          }
+                          value={values.bookingUrl}
+                          onChange={(e) => update("bookingUrl", e.target.value)}
+                        />
+                      )}
+                    </Field>
+                    <section
+                      className="grid gap-3"
+                      aria-label="Материалы события"
+                    >
+                      <div>
+                        <h3 className="text-sm font-medium">Материалы</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Фотографии и изображения билетов хранятся в этом
+                          браузере.
+                        </p>
+                      </div>
+                      <MaterialGrid
+                        materials={values.materials}
+                        onRemove={removeMaterial}
+                      />
+                      <MaterialUploader
+                        remaining={
+                          MATERIAL_LIMITS.MAX_PER_EVENT -
+                          values.materials.length
+                        }
+                        defaultKind={values.materials.at(-1)?.kind ?? "photo"}
+                        onUploaded={addMaterial}
+                        onError={setUploadError}
+                        onBusyChange={setUploadBusy}
+                      />
+                      {uploadError && (
+                        <p role="alert" className="text-sm text-destructive">
+                          {uploadError}
+                        </p>
+                      )}
+                      {form.formState.errors.materials && (
+                        <p role="alert" className="text-sm text-destructive">
+                          {form.formState.errors.materials.message}
+                        </p>
+                      )}
+                    </section>
+                    {error && (
+                      <p
+                        id={errorId}
+                        role="alert"
+                        className="text-sm text-destructive"
+                      >
+                        {error}
+                      </p>
+                    )}
                   </div>
-                  <MaterialGrid
-                    materials={values.materials}
-                    onRemove={removeMaterial}
-                  />
-                  <MaterialUploader
-                    remaining={
-                      MATERIAL_LIMITS.MAX_PER_EVENT - values.materials.length
-                    }
-                    defaultKind={values.materials.at(-1)?.kind ?? "photo"}
-                    onUploaded={addMaterial}
-                    onError={setError}
-                    onBusyChange={setUploadBusy}
-                  />
-                </section>
-                {error && (
-                  <p
-                    id={errorId}
-                    role="alert"
-                    className="text-sm text-destructive"
+                </div>
+                <div className="flex shrink-0 justify-end gap-3 border-t px-5 py-4 sm:px-7">
+                  <Button
+                    variant="outline"
+                    className="h-11"
+                    type="button"
+                    disabled={pending || uploading}
+                    onClick={requestClose}
                   >
-                    {error}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex shrink-0 justify-end gap-3 border-t px-5 py-4 sm:px-7">
-              <Button
-                variant="outline"
-                className="h-11"
-                type="button"
-                disabled={pending || uploading}
-                onClick={close}
-              >
-                Отмена
-              </Button>
-              <Button
-                type="submit"
-                className="h-11"
-                disabled={pending || uploading}
-              >
-                {uploading
-                  ? "Дождитесь загрузки…"
-                  : pending
-                    ? "Сохраняем…"
-                    : "Сохранить событие"}
-              </Button>
-            </div>
-          </form>
-        </Dialog.Popup>
+                    Отмена
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="h-11"
+                    disabled={pending || uploading}
+                  >
+                    {uploading
+                      ? "Дождитесь загрузки…"
+                      : pending
+                        ? "Сохраняем…"
+                        : "Сохранить событие"}
+                  </Button>
+                </div>
+              </fieldset>
+            </form>
+          </FormProvider>
+        </DialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   );

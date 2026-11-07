@@ -13,7 +13,7 @@ export function StorageWarning({ className = "" }: { className?: string }) {
       className={`flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive ${className}`}
     >
       <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-      <p className="min-w-0 flex-1 break-words">{storageWarning}</p>
+      <p className="min-w-0 flex-1 user-text">{storageWarning}</p>
       <Button
         variant="ghost"
         size="icon"

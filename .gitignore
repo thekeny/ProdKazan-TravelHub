@@ -12,6 +12,13 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# local tool caches
+/.cache/
 
 # next.js
 /.next/
@@ -43,4 +50,5 @@ next-env.d.ts
 # reports
 code-quality-report.json
 
-.prototype
+openapi.json
+*.log

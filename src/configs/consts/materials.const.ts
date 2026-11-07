@@ -17,6 +17,7 @@ export const MATERIAL_LIMITS = {
 } as const;
 
 export const COVER_LIMITS = {
+  MAX_UPLOAD_SIZE: 5 * 1024 * 1024,
   MAX_SOURCE_SIZE: 12 * 1024 * 1024,
   MAX_STORED_SIZE: 1024 * 1024,
   MAX_DIMENSION: 1600,

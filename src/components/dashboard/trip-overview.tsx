@@ -3,7 +3,7 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { CalendarDays, List, Plus, Route as RouteIcon, X } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { DayFeed } from "@/components/dashboard/day-feed";
 import { EventDetails } from "@/components/dashboard/event-details";
 import { EventForm } from "@/components/dashboard/event-form";
@@ -16,15 +16,17 @@ import { TripTimeline } from "@/components/dashboard/trip-timeline";
 import { StorageWarning } from "@/components/layout/storage-warning";
 import { TripActions } from "@/components/trips/trip-actions";
 import { Button } from "@/components/ui/button";
-import { StatusToast } from "@/components/ui/status-toast";
+import { ConfirmDelete } from "@/components/ui/confirm-delete";
+import { DialogPopup } from "@/components/ui/dialog-popup";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
 import type { Trip } from "@/configs/types/travel.type";
+import { useOverviewNavigation } from "@/hooks/use-overview-navigation";
+import { actionToast } from "@/lib/action-toast";
 import { tripDays } from "@/lib/travel-events";
-import { formatDayShort, formatTripDates, todayIso } from "@/lib/travel-format";
+import { formatTripDates } from "@/lib/travel-format";
 import {
   buildTimeline,
-  firstItemMinutes,
   itemStartMinutes,
   legsForDay,
   minutesToTime,
@@ -34,6 +36,7 @@ import {
 } from "@/lib/travel-route";
 import type { ScheduleIssue } from "@/lib/travel-schedule";
 import { useTravel } from "@/providers/travel-provider";
+import { TripDayNavigation } from "./trip-day-navigation";
 
 const TripMap = dynamic(() => import("./trip-map"), {
   ssr: false,
@@ -76,11 +79,18 @@ function Overview({ trip }: { trip: Trip }) {
   const legs = trip.legs ?? [];
   const events = trip.events ?? [];
   const days = useMemo(() => tripDays(trip), [trip]);
-  const [day, setDay] = useState(days[0] ?? trip.startDate);
-  const [minutes, setMinutes] = useState(() =>
-    firstItemMinutes(events, legs, days[0] ?? trip.startDate),
-  );
-  const [showAll, setShowAll] = useState(false);
+  const {
+    day,
+    setDay,
+    minutes,
+    setMinutes,
+    showAll,
+    setShowAll,
+    detailsEvent,
+    setDetailsEvent,
+    changeDay,
+    openEvent,
+  } = useOverviewNavigation(trip);
   const [routeOpen, setRouteOpen] = useState(false);
   const [feedOpen, setFeedOpen] = useState(false);
   const [eventEditor, setEventEditor] = useState<{
@@ -92,13 +102,11 @@ function Overview({ trip }: { trip: Trip }) {
   );
   const [legEditor, setLegEditor] = useState<{ leg?: TripLeg } | null>(null);
   const [deletion, setDeletion] = useState<Deletion | null>(null);
-  const [detailsEvent, setDetailsEvent] = useState<TripEvent | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
   const [detailsPointId, setDetailsPointId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
   const [timelineInset, setTimelineInset] = useState(176);
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const initializedRef = useRef(false);
 
   const dayLegs = useMemo(() => legsForDay(legs, day), [legs, day]);
   const allLegs = useMemo(
@@ -124,68 +132,6 @@ function Overview({ trip }: { trip: Trip }) {
   const detailsPoint = detailsPointId
     ? (points.find((point) => point.id === detailsPointId) ?? null)
     : null;
-
-  useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-    const params = new URLSearchParams(window.location.search);
-    const eventId = params.get("event");
-    const targetEvent = eventId
-      ? events.find((event) => event.id === eventId)
-      : undefined;
-    if (targetEvent) {
-      setDay(targetEvent.start.slice(0, 10));
-      setShowAll(false);
-      setMinutes(timeToMinutes(targetEvent.start));
-      setDetailsEvent(targetEvent);
-      return;
-    }
-    const requestedDay = params.get("day");
-    if (requestedDay && days.includes(requestedDay)) {
-      setDay(requestedDay);
-      setShowAll(false);
-      setMinutes(firstItemMinutes(events, legs, requestedDay));
-      return;
-    }
-    const today = todayIso();
-    if (days.includes(today)) {
-      setDay(today);
-      setMinutes(firstItemMinutes(events, legs, today));
-    }
-  }, [days, events, legs]);
-
-  useEffect(() => {
-    if (days.includes(day)) return;
-    const next = days[0] ?? trip.startDate;
-    setDay(next);
-    setMinutes(firstItemMinutes(events, legs, next));
-  }, [days, day, events, legs, trip.startDate]);
-
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("day", day);
-    if (detailsEvent) url.searchParams.set("event", detailsEvent.id);
-    else url.searchParams.delete("event");
-    window.history.replaceState(
-      null,
-      "",
-      `${url.pathname}${url.search}${url.hash}`,
-    );
-  }, [day, detailsEvent]);
-
-  function changeDay(value: string) {
-    setDay(value);
-    setShowAll(false);
-    setDetailsEvent(null);
-    setMinutes(firstItemMinutes(events, legs, value));
-  }
-
-  function openEvent(event: TripEvent) {
-    setDay(event.start.slice(0, 10));
-    setShowAll(false);
-    setMinutes(timeToMinutes(event.start));
-    setDetailsEvent(event);
-  }
 
   function showIssue(issue: ScheduleIssue) {
     const event = events.find((item) => issue.itemIds.includes(item.id));
@@ -237,25 +183,34 @@ function Overview({ trip }: { trip: Trip }) {
     setMinutes(timeToMinutes(leg.start));
   }
 
-  function confirmDelete() {
-    if (!deletion) return;
+  async function confirmDelete() {
+    if (!deletion || deletingRef.current) return;
+    deletingRef.current = true;
+    setDeleting(true);
     try {
-      if (deletion.kind === "event") deleteEvent(trip.id, deletion.event.id);
-      if (deletion.kind === "point") deletePoint(trip.id, deletion.point.id);
-      if (deletion.kind === "leg") deleteLeg(trip.id, deletion.leg.id);
-      setStatus(
-        deletion.kind === "event"
-          ? "Событие удалено."
-          : deletion.kind === "point"
-            ? "Точка удалена. Связанные события остались без места."
-            : "Перемещение удалено.",
-      );
+      if (deletion.kind === "event")
+        await actionToast(
+          () => deleteEvent(trip.id, deletion.event.id),
+          "Удаляем…",
+          "Запись удалена.",
+        );
+      if (deletion.kind === "point")
+        await actionToast(
+          () => deletePoint(trip.id, deletion.point.id),
+          "Удаляем…",
+          "Запись удалена.",
+        );
+      if (deletion.kind === "leg")
+        await actionToast(
+          () => deleteLeg(trip.id, deletion.leg.id),
+          "Удаляем…",
+          "Запись удалена.",
+        );
       setDeletion(null);
-      setError(null);
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Не удалось удалить запись.",
-      );
+    } catch {
+    } finally {
+      deletingRef.current = false;
+      setDeleting(false);
     }
   }
 
@@ -274,12 +229,12 @@ function Overview({ trip }: { trip: Trip }) {
       <header className="shrink-0 border-b border-border/60 bg-background/90 px-4 py-3 backdrop-blur">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
-            <h1 className="min-w-0 truncate text-xl leading-tight sm:text-3xl">
+            <h1 className="font-display min-w-0 user-text whitespace-normal text-xl leading-tight sm:text-3xl">
               {trip.name}
             </h1>
             <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground">
               <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
-              <span className="truncate whitespace-nowrap">
+              <span className="user-text whitespace-normal">
                 {formatTripDates(trip)}
               </span>
             </div>
@@ -287,7 +242,6 @@ function Overview({ trip }: { trip: Trip }) {
           <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
             <TripActions
               trip={trip}
-              onSaved={() => setStatus("Поездка обновлена.")}
               onCheckSchedule={() => setScheduleOpen(true)}
             />
             <Button
@@ -335,46 +289,13 @@ function Overview({ trip }: { trip: Trip }) {
             </Button>
           </div>
         </div>
-        <div className="mt-2 flex items-center gap-2">
-          <div className="flex min-w-0 gap-1.5 overflow-x-auto pb-0.5">
-            {days.map((value, index) => {
-              const active = day === value && !showAll;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={active}
-                  className={`min-h-8 shrink-0 rounded-full border px-3 py-1 text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-                    active
-                      ? "border-primary-strong bg-primary-strong text-primary-foreground"
-                      : "border-border bg-surface text-muted-foreground hover:border-primary/50 hover:text-foreground"
-                  }`}
-                  onClick={() => changeDay(value)}
-                >
-                  <span className="font-medium">День {index + 1}</span>
-                  <span
-                    className={`ml-1.5 hidden tabular-nums sm:inline ${active ? "opacity-80" : "opacity-70"}`}
-                  >
-                    · {formatDayShort(value)}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <button
-            type="button"
-            aria-pressed={showAll}
-            title="Показать на карте весь маршрут"
-            className={`ml-auto min-h-8 shrink-0 rounded-full border px-3 py-1 text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-              showAll
-                ? "border-primary-strong bg-primary-strong text-primary-foreground"
-                : "border-border bg-surface text-muted-foreground hover:border-primary/50 hover:text-foreground"
-            }`}
-            onClick={() => setShowAll((value) => !value)}
-          >
-            {showAll ? "Только день" : "Все дни"}
-          </button>
-        </div>
+        <TripDayNavigation
+          days={days}
+          day={day}
+          showAll={showAll}
+          onChangeDay={changeDay}
+          onToggleAll={() => setShowAll((value) => !value)}
+        />
       </header>
       <StorageWarning className="mx-4 mt-2 shrink-0" />
 
@@ -407,7 +328,6 @@ function Overview({ trip }: { trip: Trip }) {
           onSelectLeg={(leg) => jumpToLeg(leg.id)}
           onEditEvent={(event) => openEventEditor(event)}
           onDeleteEvent={(event) => {
-            setError(null);
             setDetailsEvent(null);
             setDeletion({ kind: "event", event });
           }}
@@ -416,7 +336,6 @@ function Overview({ trip }: { trip: Trip }) {
             setLegEditor({ leg });
           }}
           onDeleteLeg={(leg) => {
-            setError(null);
             setDetailsEvent(null);
             setDeletion({ kind: "leg", leg });
           }}
@@ -424,7 +343,7 @@ function Overview({ trip }: { trip: Trip }) {
         />
         {visiblePoints.length === 0 && (
           <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center px-4 pb-40">
-            <div className="pointer-events-auto max-w-sm rounded-xl border bg-surface/95 p-4 text-center shadow-lg">
+            <div className="pointer-events-auto max-w-sm rounded-xl border bg-surface/95 p-4 text-center ">
               <p className="text-sm font-medium">
                 {points.length
                   ? "В этом дне нет привязанных точек"
@@ -462,10 +381,10 @@ function Overview({ trip }: { trip: Trip }) {
         )}
         <Dialog.Root open={routeOpen} onOpenChange={setRouteOpen}>
           <Dialog.Portal>
-            <Dialog.Backdrop className="fixed inset-0 z-40 bg-overlay/20" />
-            <Dialog.Popup
+            <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-40 bg-overlay/20" />
+            <DialogPopup
               id="route-panel"
-              className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l bg-background shadow-xl outline-none"
+              className="dialog-popup fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-background outline-none"
             >
               <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
                 <div>
@@ -497,18 +416,16 @@ function Overview({ trip }: { trip: Trip }) {
                   onAddPoint={() => openPointEditor()}
                   onEditPoint={(point) => openPointEditor(point)}
                   onDeletePoint={(point) => {
-                    setError(null);
                     setDeletion({ kind: "point", point });
                   }}
                   onAddLeg={() => setLegEditor({})}
                   onEditLeg={(leg) => setLegEditor({ leg })}
                   onDeleteLeg={(leg) => {
-                    setError(null);
                     setDeletion({ kind: "leg", leg });
                   }}
                 />
               </div>
-            </Dialog.Popup>
+            </DialogPopup>
           </Dialog.Portal>
         </Dialog.Root>
       </section>
@@ -520,7 +437,6 @@ function Overview({ trip }: { trip: Trip }) {
           onClose={() => setDetailsEvent(null)}
           onEdit={() => openEventEditor(detailsEvent)}
           onDelete={() => {
-            setError(null);
             setDetailsEvent(null);
             setDeletion({ kind: "event", event: detailsEvent });
           }}
@@ -541,7 +457,6 @@ function Overview({ trip }: { trip: Trip }) {
           }}
           onEdit={() => openPointEditor(detailsPoint)}
           onDelete={() => {
-            setError(null);
             setDetailsPointId(null);
             setDeletion({ kind: "point", point: detailsPoint });
           }}
@@ -575,13 +490,12 @@ function Overview({ trip }: { trip: Trip }) {
           time={minutesToTime(minutes)}
           initialPointId={eventEditor.pointId}
           onClose={() => setEventEditor(null)}
-          onSave={(values) => {
-            saveEvent(trip.id, values, eventEditor.event?.id);
+          onSave={async (values) => {
+            await saveEvent(trip.id, values, eventEditor.event?.id);
             setEventEditor(null);
             setDay(values.start.slice(0, 10));
             setShowAll(false);
             setMinutes(timeToMinutes(values.start));
-            setStatus("Событие сохранено.");
           }}
         />
       )}
@@ -590,10 +504,9 @@ function Overview({ trip }: { trip: Trip }) {
           points={points}
           point={pointEditor.point}
           onClose={() => setPointEditor(null)}
-          onSave={(values) => {
-            savePoint(trip.id, values, pointEditor.point?.id);
+          onSave={async (values) => {
+            await savePoint(trip.id, values, pointEditor.point?.id);
             setPointEditor(null);
-            setStatus("Точка сохранена.");
           }}
         />
       )}
@@ -604,17 +517,15 @@ function Overview({ trip }: { trip: Trip }) {
           leg={legEditor.leg}
           day={day}
           onClose={() => setLegEditor(null)}
-          onSave={(values) => {
-            saveLeg(trip.id, values, legEditor.leg?.id);
+          onSave={async (values) => {
+            await saveLeg(trip.id, values, legEditor.leg?.id);
             setLegEditor(null);
             setDay(values.start.slice(0, 10));
             setShowAll(false);
             setMinutes(timeToMinutes(values.start));
-            setStatus("Перемещение сохранено.");
           }}
         />
       )}
-      <StatusToast message={status} onClose={() => setStatus(null)} />
       <ScheduleCheckDialog
         open={scheduleOpen}
         onOpenChange={setScheduleOpen}
@@ -623,45 +534,15 @@ function Overview({ trip }: { trip: Trip }) {
         points={points}
         onShowIssue={showIssue}
       />
-      <Dialog.Root
+      <ConfirmDelete
         open={!!deletion}
-        onOpenChange={(open) => {
-          if (!open) setDeletion(null);
-        }}
+        title={deletion ? deletionTitle[deletion.kind] : ""}
+        busy={deleting}
+        onClose={() => setDeletion(null)}
+        onConfirm={confirmDelete}
       >
-        <Dialog.Portal>
-          <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay/35" />
-          <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background p-6 shadow-xl">
-            <Dialog.Title className="text-lg font-semibold">
-              {deletion ? deletionTitle[deletion.kind] : ""}
-            </Dialog.Title>
-            <Dialog.Description className="mt-2 break-words text-sm text-muted-foreground">
-              {deletion ? deletionText(deletion) : ""}
-            </Dialog.Description>
-            {error && (
-              <p role="alert" className="mt-3 text-sm text-destructive">
-                {error}
-              </p>
-            )}
-            <div className="mt-6 flex justify-end gap-3">
-              <Button
-                variant="outline"
-                className="h-11"
-                onClick={() => setDeletion(null)}
-              >
-                Отмена
-              </Button>
-              <Button
-                variant="destructive"
-                className="h-11"
-                onClick={confirmDelete}
-              >
-                Удалить
-              </Button>
-            </div>
-          </Dialog.Popup>
-        </Dialog.Portal>
-      </Dialog.Root>
+        {deletion ? deletionText(deletion) : ""}
+      </ConfirmDelete>
     </div>
   );
 }

@@ -1,11 +1,13 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
+import { divIcon } from "leaflet";
 import { useEffect, useMemo, useState } from "react";
 import {
   AttributionControl,
   CircleMarker,
   MapContainer,
+  Marker,
   Polyline,
   TileLayer,
   useMap,
@@ -13,11 +15,26 @@ import {
 } from "react-leaflet";
 import { Button } from "@/components/ui/button";
 import { MAP } from "@/configs/consts/map.const";
+import { OFFLINE } from "@/configs/consts/offline.const";
 import {
   TRANSPORT_STYLES,
   TRANSPORT_TYPES,
 } from "@/configs/consts/transport.const";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
+import { useOnline } from "@/lib/connectivity";
+import { mapPointColor } from "@/lib/map-point-color";
+
+const travelerIcon = divIcon({
+  className: "",
+  html: `<div class="flex h-10 w-9 items-center justify-center rounded-xl border border-border bg-surface text-primary-strong shadow-md">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="5" r="2" />
+      <path d="m6 9 6 2 6-2M12 11v6m-4 5 4-5 4 5" />
+    </svg>
+  </div>`,
+  iconSize: [36, 40],
+  iconAnchor: [18, 36],
+});
 
 type Props = {
   points: RoutePoint[];
@@ -87,6 +104,7 @@ function MapBehavior({
 }
 
 export default function TripMap(props: Props) {
+  const online = useOnline();
   const [initialView] = useState(() => ({
     center: props.draftPlace
       ? ([props.draftPlace.lat, props.draftPlace.lng] as [number, number])
@@ -105,7 +123,7 @@ export default function TripMap(props: Props) {
   );
   return (
     <section
-      className={`relative isolate overflow-hidden rounded-xl border bg-muted ${
+      className={`relative isolate overflow-hidden rounded-xl bg-muted ${
         props.className ?? "h-[360px] sm:h-[500px] xl:h-[640px]"
       }`}
       style={
@@ -120,7 +138,6 @@ export default function TripMap(props: Props) {
       <MapContainer
         center={initialView.center}
         zoom={initialView.zoom}
-        preferCanvas
         attributionControl={false}
         className="h-full w-full"
       >
@@ -130,6 +147,7 @@ export default function TripMap(props: Props) {
           key={attempt}
           url={MAP.tiles}
           attribution={MAP.attribution}
+          referrerPolicy={MAP.referrerPolicy}
           eventHandlers={{ tileerror: () => setFailed(true) }}
         />
         <MapBehavior {...props} />
@@ -181,7 +199,7 @@ export default function TripMap(props: Props) {
                 point.id === props.selectedPointId
                   ? MAP.colors.selected
                   : MAP.colors.marker,
-              fillColor: MAP.colors.fill,
+              fillColor: mapPointColor(point.id),
               fillOpacity: 1,
               weight: 3,
             }}
@@ -198,38 +216,24 @@ export default function TripMap(props: Props) {
           />
         )}
         {props.currentPosition && (
-          <>
-            <CircleMarker
-              center={[props.currentPosition.lat, props.currentPosition.lng]}
-              radius={18}
-              pathOptions={{
-                color: MAP.colors.current,
-                weight: 2,
-                fillColor: MAP.colors.current,
-                fillOpacity: 0.2,
-              }}
-            />
-            <CircleMarker
-              center={[props.currentPosition.lat, props.currentPosition.lng]}
-              radius={6}
-              pathOptions={{
-                color: MAP.colors.current,
-                weight: 2,
-                fillColor: MAP.colors.current,
-                fillOpacity: 1,
-              }}
-            />
-          </>
+          <Marker
+            position={[props.currentPosition.lat, props.currentPosition.lng]}
+            icon={travelerIcon}
+            title="Текущее положение путешественника"
+            alt="Путешественник"
+            interactive={false}
+            keyboard={false}
+          />
         )}
       </MapContainer>
       {props.onPlace && (
-        <p className="pointer-events-none absolute top-3 right-3 z-[1000] max-w-52 rounded-lg bg-background px-3 py-2 text-sm shadow">
+        <p className="pointer-events-none absolute top-3 right-3 z-[1000] max-w-52 rounded-lg bg-background px-3 py-2 text-sm">
           Нажмите на карту, чтобы выбрать место
         </p>
       )}
       {transports.length > 0 && !failed && (
         <ul
-          className="pointer-events-none absolute left-3 z-[1000] grid gap-1.5 rounded-lg border bg-surface/95 px-3 py-2 text-xs shadow-sm"
+          className="pointer-events-none absolute left-3 z-[1000] grid gap-1.5 rounded-lg bg-surface/95 px-3 py-2 text-xs "
           style={{ bottom: `calc(1.5rem + ${props.overlayInset ?? 0}px)` }}
         >
           {transports.map((transport) => (
@@ -250,15 +254,18 @@ export default function TripMap(props: Props) {
           ))}
         </ul>
       )}
-      {failed && (
+      {(failed || !online) && (
         <div
           role="alert"
-          className="absolute right-3 left-3 z-[1000] flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background p-3 text-sm"
+          className="absolute right-3 left-3 z-20 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-background p-3 text-sm"
           style={{ bottom: `calc(2rem + ${props.overlayInset ?? 0}px)` }}
         >
           <span>
-            Не удалось загрузить карту. Маршрут доступен в хронологии и панели
-            маршрута.
+            {online
+              ? "Не удалось загрузить карту. Маршрут доступен в хронологии и панели маршрута."
+              : OFFLINE.cacheTiles
+                ? "Вы оффлайн. Доступны сохранённые участки карты, точки и маршруты поездки."
+                : "Вы оффлайн. Точки и маршруты доступны; подложке карты нужен интернет."}
           </span>
           <Button
             variant="outline"

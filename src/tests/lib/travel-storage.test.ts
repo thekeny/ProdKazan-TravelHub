@@ -61,6 +61,28 @@ beforeEach(() => {
   vi.restoreAllMocks();
 });
 describe("travel validation", () => {
+  it("restores custom types and skips damaged types without losing the event", () => {
+    save(
+      accountState([
+        {
+          ...trip,
+          id: "trip",
+          points: [point],
+          eventTypes: ["Кофе", 123, "Музей"],
+          events: [{ ...event, customType: "Кофе" }],
+        },
+      ]),
+    );
+    const result = readStateWithReport();
+    expect(result.state.accounts.alice.trips[0].eventTypes).toEqual([
+      "Кофе",
+      "Музей",
+    ]);
+    expect(result.state.accounts.alice.trips[0].events?.[0].customType).toBe(
+      "Кофе",
+    );
+    expect(result.dropped).toBe(1);
+  });
   it("accepts past trips and a single day", () => {
     expect(validateTrip(trip)).toBeNull();
     expect(validateTrip({ ...trip, endDate: trip.startDate })).toBeNull();

@@ -6,13 +6,15 @@ import { EventIcon } from "@/components/dashboard/event-icon";
 import { TransportIcon } from "@/components/dashboard/transport-icon";
 import { MaterialThumbnail } from "@/components/materials/material-thumbnail";
 import { Button } from "@/components/ui/button";
-import { EVENT_COLORS, EVENT_TYPES } from "@/configs/consts/events.const";
+import { DialogPopup } from "@/components/ui/dialog-popup";
+import { EVENT_COLORS } from "@/configs/consts/events.const";
 import {
   TRANSPORT_STYLES,
   TRANSPORT_TYPES,
 } from "@/configs/consts/transport.const";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
+import { eventTypeLabel } from "@/lib/event-types";
 import { formatDayLabel } from "@/lib/travel-format";
 import {
   itemEndMinutes,
@@ -59,8 +61,8 @@ export function DayFeed({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay/35" />
-        <Dialog.Popup className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l bg-background shadow-xl outline-none">
+        <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-50 bg-overlay/35" />
+        <DialogPopup className="dialog-popup fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l bg-background  outline-none">
           <header className="flex shrink-0 items-start justify-between gap-3 border-b p-4">
             <div className="min-w-0">
               <p className="text-xs font-medium text-muted-foreground">
@@ -100,13 +102,14 @@ export function DayFeed({
                   const description = event?.description || leg?.description;
                   return (
                     <li key={`${item.kind}-${item.id}`}>
-                      <button
+                      <Button
+                        variant="plain"
                         type="button"
                         onClick={() => {
                           if (event) onSelectEvent(event);
                           else if (leg) onSelectLeg(leg);
                         }}
-                        className="flex w-full gap-3 rounded-xl border bg-card p-3 text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        className="flex w-full gap-3 rounded-xl bg-card p-3 text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                       >
                         <span
                           aria-hidden="true"
@@ -138,20 +141,25 @@ export function DayFeed({
                               )}
                             </span>
                           </span>
-                          <span className="mt-1 block break-words font-medium">
+                          <span className="mt-1 block user-text font-medium">
                             {title}
                           </span>
                           {event && (
                             <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                              <MapPin aria-hidden="true" className="size-3" />
-                              <span className="truncate">{place}</span>
+                              <MapPin
+                                aria-hidden="true"
+                                className="size-3 shrink-0"
+                              />
+                              <span className="user-text whitespace-normal">
+                                {place}
+                              </span>
                               <span className="shrink-0">
-                                · {EVENT_TYPES[event.type]}
+                                · {eventTypeLabel(event)}
                               </span>
                             </span>
                           )}
                           {description && (
-                            <span className="mt-1 line-clamp-2 block text-sm text-muted-foreground">
+                            <span className="mt-1 user-text block whitespace-pre-wrap text-sm text-muted-foreground">
                               {description}
                             </span>
                           )}
@@ -179,7 +187,7 @@ export function DayFeed({
                             </span>
                           )}
                         </span>
-                      </button>
+                      </Button>
                     </li>
                   );
                 })}
@@ -202,7 +210,7 @@ export function DayFeed({
               Добавить событие
             </Button>
           </footer>
-        </Dialog.Popup>
+        </DialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   );

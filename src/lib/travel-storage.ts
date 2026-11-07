@@ -1,6 +1,7 @@
 import { APP } from "@/configs/consts/app.const";
 import { MATERIAL_LIMITS } from "@/configs/consts/materials.const";
 import type { TransportKind } from "@/configs/consts/transport.const";
+import { DATE_LIMITS } from "@/configs/consts/validation.const";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { Material } from "@/configs/types/material.type";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
@@ -9,6 +10,7 @@ import type {
   Trip,
   TripValues,
 } from "@/configs/types/travel.type";
+import { eventTypesError } from "@/lib/event-types";
 import { validateMaterial } from "@/lib/materials";
 import { validateEvent } from "@/lib/travel-events";
 import { validateLeg, validatePoint } from "@/lib/travel-route";
@@ -32,7 +34,8 @@ export function validateTrip(values: TripValues): string | null {
       Date.parse(`${values.startDate}T00:00:00Z`)) /
       86_400_000 +
     1;
-  if (days > 365) return "Поездка не может длиться дольше 365 дней.";
+  if (days > DATE_LIMITS.TRIP_DAYS)
+    return `Поездка не может длиться дольше ${DATE_LIMITS.TRIP_DAYS} дней.`;
   return null;
 }
 export function emptyState(): TravelState {
@@ -223,6 +226,22 @@ function readMaterials(raw: unknown, report: ReadReport): Material[] {
   return materials;
 }
 
+function readEventTypes(raw: unknown, report: ReadReport): string[] {
+  if (!Array.isArray(raw)) {
+    report.dropped += 1;
+    return [];
+  }
+  const result: string[] = [];
+  for (const name of raw) {
+    if (typeof name !== "string" || eventTypesError([...result, name])) {
+      report.dropped += 1;
+      continue;
+    }
+    result.push(name);
+  }
+  return result;
+}
+
 function readEvents(
   raw: unknown,
   trip: TripValues,
@@ -256,6 +275,12 @@ function readEvents(
         id: value.id,
         title: readString(value.title),
         type: readString(value.type) as TripEvent["type"],
+        ...(value.customType === undefined
+          ? {}
+          : {
+              customType:
+                value.customType === null ? null : readString(value.customType),
+            }),
         start: readString(value.start),
         end: value.end === undefined ? "" : readString(value.end),
         description:
@@ -289,6 +314,9 @@ function readTrip(raw: unknown, report: ReadReport): Trip {
   return {
     id: raw.id,
     ...values,
+    ...(raw.eventTypes === undefined
+      ? {}
+      : { eventTypes: readEventTypes(raw.eventTypes, report) }),
     points,
     legs,
     events,

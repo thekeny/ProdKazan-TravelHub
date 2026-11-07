@@ -1,7 +1,8 @@
 "use client";
-import { Check, ChevronsUpDown, Luggage, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { TripSettings } from "@/components/trips/trip-settings";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,9 +19,16 @@ import { useTravel } from "@/providers/travel-provider";
 const itemClassName =
   "min-h-14 w-full cursor-pointer rounded-md px-3 py-2.5 transition-colors duration-150 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground";
 
-export function TripSwitcher({ onNavigate }: { onNavigate?: () => void }) {
+export function TripSwitcher({
+  onNavigate,
+  compact = false,
+}: {
+  onNavigate?: () => void;
+  compact?: boolean;
+}) {
   const { trips, activeId, selectTrip } = useTravel();
   const router = useRouter();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const active = trips.find((trip) => trip.id === activeId);
@@ -37,21 +45,25 @@ export function TripSwitcher({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   return (
-    <div className="mt-8">
+    <div className={compact ? "" : "mt-8"}>
       <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
-        <DropdownMenuTrigger className="group flex min-h-16 w-full items-center gap-3 rounded-lg bg-muted p-3 text-left outline-none transition-colors duration-150 hover:bg-accent data-[popup-open]:bg-accent focus-visible:ring-2 focus-visible:ring-ring">
+        <DropdownMenuTrigger
+          className={`group flex w-full items-center gap-3 rounded-lg bg-muted p-3 text-left outline-none transition-colors duration-150 hover:bg-accent data-[popup-open]:bg-accent focus-visible:ring-2 focus-visible:ring-ring ${compact ? "min-h-12" : "min-h-16"}`}
+        >
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium">
+            <span className="block user-text whitespace-normal text-sm font-medium">
               {active?.name}
             </span>
-            <span className="mt-1 block text-[11px] text-muted-foreground">
-              {active && formatTripDates(active)}
-            </span>
+            {!compact && (
+              <span className="mt-1 block user-text whitespace-normal text-[11px] text-muted-foreground">
+                {active && formatTripDates(active)}
+              </span>
+            )}
           </span>
           <ChevronsUpDown className="size-4 shrink-0 transition-transform duration-200 group-data-[popup-open]:rotate-180" />
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          align="start"
+          align={compact ? "end" : "start"}
           sideOffset={8}
           className="max-h-[60dvh] w-64 max-w-[calc(100vw-2rem)] p-2"
         >
@@ -72,11 +84,11 @@ export function TripSwitcher({ onNavigate }: { onNavigate?: () => void }) {
               >
                 <span className="min-w-0 flex-1 pr-6">
                   <span className="flex items-center gap-2">
-                    <span className="min-w-0 truncate font-medium">
+                    <span className="min-w-0 user-text whitespace-normal font-medium">
                       {trip.name}
                     </span>
                   </span>
-                  <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                  <span className="mt-0.5 block user-text whitespace-normal text-[11px] text-muted-foreground">
                     {formatTripDates(trip)}
                   </span>
                 </span>
@@ -99,16 +111,23 @@ export function TripSwitcher({ onNavigate }: { onNavigate?: () => void }) {
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
-              onNavigate?.();
-              router.push(pages.TRIPS);
+              setOpen(false);
+              setSettingsOpen(true);
             }}
             className={itemClassName}
           >
-            <Luggage className="size-4 shrink-0" />
-            Все путешествия
+            <Settings className="size-4 shrink-0" />
+            Настройки путешествия
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      {settingsOpen && active && (
+        <TripSettings
+          key={active.id}
+          trip={active}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
       {error && (
         <p role="alert" className="mt-2 text-sm text-destructive">
           {error}

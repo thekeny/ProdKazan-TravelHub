@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { PwaRegistration } from "@/components/layout/pwa-registration";
+import { AppToaster } from "@/components/ui/app-toaster";
 import { images } from "@/configs/paths/images.path";
 import { TravelProvider } from "@/providers/travel-provider";
 
@@ -30,8 +32,8 @@ const caveat = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "TravelHub — путешествие как история",
-    template: "%s · TravelHub",
+    default: "TravelHub",
+    template: "%s",
   },
   description:
     "Планируйте поездки, стройте маршруты на карте и сохраняйте события, фотографии и билеты в одной хронологии.",
@@ -48,8 +50,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" className={`${lora.variable} ${caveat.variable}`}>
+      <head>
+        <link
+          rel="preload"
+          as="image"
+          href={images.LOADING}
+          type="image/webp"
+          fetchPriority="high"
+        />
+      </head>
       <body className="antialiased">
-        <TravelProvider>{children}</TravelProvider>
+        <PwaRegistration />
+        <TravelProvider>
+          {children}
+          <AppToaster />
+        </TravelProvider>
       </body>
     </html>
   );

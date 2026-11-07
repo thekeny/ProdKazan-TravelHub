@@ -7,6 +7,7 @@ export type TripValues = {
   startDate: string;
   endDate: string;
   cover: string | null;
+  eventTypes?: string[];
 };
 export type Trip = TripValues & {
   id: string;

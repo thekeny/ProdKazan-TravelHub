@@ -16,7 +16,7 @@ type CompressedImage = {
   height: number;
 };
 
-function readBlobAsDataUrl(blob: Blob): Promise<string> {
+export function readBlobAsDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () =>

@@ -1,10 +1,10 @@
 "use client";
 
-import { Dialog } from "@base-ui/react/dialog";
 import { EllipsisVertical, ListChecks, Pencil, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
-import { TripForm } from "@/components/trips/trip-form";
+import { TripSettings } from "@/components/trips/trip-settings";
 import { Button } from "@/components/ui/button";
+import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Trip, TripValues } from "@/configs/types/travel.type";
+import type { Trip } from "@/configs/types/travel.type";
+import { actionToast } from "@/lib/action-toast";
 import { useTravel } from "@/providers/travel-provider";
 
 export function TripActions({
@@ -26,37 +27,28 @@ export function TripActions({
   onDeleted?: () => void;
   onCheckSchedule?: () => void;
 }) {
-  const { saveTrip, deleteTrip } = useTravel();
+  const { deleteTrip } = useTravel();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const deletingRef = useRef(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const save = async (values: TripValues) => {
-    saveTrip(trip.id, values);
-    setEditorOpen(false);
-    onSaved?.();
-  };
-
-  const remove = () => {
+  const remove = async () => {
     if (deletingRef.current) return;
     deletingRef.current = true;
     setDeleting(true);
-    setError(null);
     try {
-      deleteTrip(trip.id);
+      await actionToast(
+        () => deleteTrip(trip.id),
+        "Удаляем путешествие…",
+        "Путешествие удалено.",
+      );
       setDeleteOpen(false);
       onDeleted?.();
-    } catch (deleteError) {
+    } catch {
       deletingRef.current = false;
       setDeleting(false);
-      setError(
-        deleteError instanceof Error
-          ? deleteError.message
-          : "Не удалось удалить путешествие.",
-      );
     }
   };
 
@@ -104,7 +96,6 @@ export function TripActions({
             className="min-h-10 cursor-pointer px-3"
             onClick={() => {
               setMenuOpen(false);
-              setError(null);
               setDeleteOpen(true);
             }}
           >
@@ -114,69 +105,24 @@ export function TripActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog.Root
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
-        disablePointerDismissal
-      >
-        <Dialog.Portal>
-          <Dialog.Backdrop className="fixed inset-0 z-[60] bg-overlay/35" />
-          <Dialog.Popup className="fixed inset-3 z-[60] mx-auto max-w-lg overflow-y-auto rounded-xl border bg-background p-5 shadow-xl sm:inset-y-8 sm:p-8">
-            <Dialog.Title className="text-xl font-semibold">
-              Редактировать путешествие
-            </Dialog.Title>
-            <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-              Изменения сразу отразятся на карте и в хронологии.
-            </Dialog.Description>
-            <div className="mt-6">
-              <TripForm
-                initial={trip}
-                submitLabel="Сохранить изменения"
-                onSubmit={save}
-                onCancel={() => setEditorOpen(false)}
-              />
-            </div>
-          </Dialog.Popup>
-        </Dialog.Portal>
-      </Dialog.Root>
+      {editorOpen && (
+        <TripSettings
+          trip={trip}
+          onClose={() => setEditorOpen(false)}
+          onSaved={onSaved}
+        />
+      )}
 
-      <Dialog.Root open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <Dialog.Portal>
-          <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay/35" />
-          <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background p-6 shadow-xl">
-            <Dialog.Title className="text-lg font-semibold">
-              Удалить путешествие?
-            </Dialog.Title>
-            <Dialog.Description className="mt-2 break-words text-sm text-muted-foreground">
-              «{trip.name}» будет удалено вместе с точками, перемещениями,
-              событиями и материалами. Действие нельзя отменить.
-            </Dialog.Description>
-            {error && (
-              <p role="alert" className="mt-3 text-sm text-destructive">
-                {error}
-              </p>
-            )}
-            <div className="mt-6 flex justify-end gap-3">
-              <Button
-                variant="outline"
-                className="h-11"
-                disabled={deleting}
-                onClick={() => setDeleteOpen(false)}
-              >
-                Отмена
-              </Button>
-              <Button
-                variant="destructive"
-                className="h-11"
-                disabled={deleting}
-                onClick={remove}
-              >
-                {deleting ? "Удаляем…" : "Удалить"}
-              </Button>
-            </div>
-          </Dialog.Popup>
-        </Dialog.Portal>
-      </Dialog.Root>
+      <ConfirmDelete
+        open={deleteOpen}
+        title="Удалить путешествие?"
+        busy={deleting}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={remove}
+      >
+        «{trip.name}» будет удалено вместе с точками, перемещениями, событиями и
+        материалами. Действие нельзя отменить.
+      </ConfirmDelete>
     </div>
   );
 }

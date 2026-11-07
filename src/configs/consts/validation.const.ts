@@ -1,0 +1,19 @@
+import { BACKEND_LIMITS } from "./backend.const";
+
+export const TEXT_LIMITS = {
+  MIN: 1,
+  NAME: 100,
+  EVENT_TITLE: 120,
+  EVENT_TYPE: 60,
+  DESCRIPTION: BACKEND_LIMITS.DESCRIPTION,
+  URL: 500,
+  FILE_NAME: 255,
+  USERNAME_MIN: 3,
+  USERNAME: 32,
+  PASSWORD_MIN: 8,
+  REMOTE_PASSWORD: 64,
+  LOCAL_PASSWORD: 128,
+} as const;
+
+export const DATE_LIMITS = { FUTURE_YEARS: 10, TRIP_DAYS: 365 } as const;
+export const EVENT_TYPE_LIMITS = { PER_TRIP: 100 } as const;

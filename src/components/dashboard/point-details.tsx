@@ -6,9 +6,11 @@ import { useMemo } from "react";
 import { EventIcon } from "@/components/dashboard/event-icon";
 import { MaterialThumbnail } from "@/components/materials/material-thumbnail";
 import { Button } from "@/components/ui/button";
-import { EVENT_COLORS, EVENT_TYPES } from "@/configs/consts/events.const";
+import { DialogPopup } from "@/components/ui/dialog-popup";
+import { EVENT_COLORS } from "@/configs/consts/events.const";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { RoutePoint } from "@/configs/types/route.type";
+import { eventTypeLabel } from "@/lib/event-types";
 import { formatEventDate } from "@/lib/travel-events";
 
 export function PointDetails({
@@ -45,14 +47,14 @@ export function PointDetails({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay/35" />
-        <Dialog.Popup className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l bg-background shadow-xl outline-none">
+        <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-50 bg-overlay/35" />
+        <DialogPopup className="dialog-popup fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l bg-background  outline-none">
           <header className="flex shrink-0 items-start justify-between gap-3 border-b p-4">
             <div className="min-w-0">
               <p className="text-xs font-medium text-muted-foreground">
                 Точка маршрута
               </p>
-              <Dialog.Title className="mt-1 break-words text-lg font-semibold">
+              <Dialog.Title className="mt-1 user-text text-lg font-semibold">
                 {point.name}
               </Dialog.Title>
               <Dialog.Description className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -72,7 +74,7 @@ export function PointDetails({
           </header>
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
             {point.description && (
-              <p className="mb-4 whitespace-pre-wrap break-words text-sm">
+              <p className="mb-4 whitespace-pre-wrap user-text text-sm">
                 {point.description}
               </p>
             )}
@@ -84,7 +86,8 @@ export function PointDetails({
               <ul className="mt-2 grid gap-2">
                 {pointEvents.map((event) => (
                   <li key={event.id}>
-                    <button
+                    <Button
+                      variant="plain"
                       type="button"
                       onClick={() => onSelectEvent(event)}
                       className="flex w-full items-center gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
@@ -96,11 +99,11 @@ export function PointDetails({
                         <EventIcon type={event.type} className="size-4" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-medium">
+                        <span className="block user-text whitespace-normal font-medium">
                           {event.title}
                         </span>
                         <span className="mt-0.5 block text-xs text-muted-foreground">
-                          {EVENT_TYPES[event.type]} ·{" "}
+                          {eventTypeLabel(event)} ·{" "}
                           {formatEventDate(event.start)}
                         </span>
                       </span>
@@ -119,7 +122,7 @@ export function PointDetails({
                         aria-hidden="true"
                         className="size-4 shrink-0 text-muted-foreground"
                       />
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -153,7 +156,7 @@ export function PointDetails({
               </Button>
             </div>
           </footer>
-        </Dialog.Popup>
+        </DialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   );

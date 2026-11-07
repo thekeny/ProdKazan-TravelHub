@@ -1,6 +1,7 @@
 import { EVENT_TYPES } from "@/configs/consts/events.const";
 import type { EventValues, TripEvent } from "@/configs/types/event.type";
 import type { TripValues } from "@/configs/types/travel.type";
+import { eventTypesError } from "@/lib/event-types";
 import { validateBookingUrl, validateMaterials } from "@/lib/materials";
 
 export function validDateTime(value: string) {
@@ -18,6 +19,9 @@ export function validateEvent(
 ): string | null {
   if (!value.title.trim()) return "Укажите название события.";
   if (!Object.hasOwn(EVENT_TYPES, value.type)) return "Выберите тип события.";
+  const typesError =
+    value.customType == null ? undefined : eventTypesError([value.customType]);
+  if (typesError) return typesError;
   if (!validDateTime(value.start) || (value.end && !validDateTime(value.end)))
     return "Укажите корректные дату и время.";
   if (value.end && value.end < value.start)
