@@ -79,6 +79,7 @@ export default function TripMap(props: Props) {
           key={attempt}
           url={MAP.tiles}
           attribution={MAP.attribution}
+          referrerPolicy={MAP.referrerPolicy}
           eventHandlers={{ tileerror: () => setFailed(true) }}
         />
         <MapBehavior {...props} />
