@@ -49,7 +49,7 @@ export function RemoteTravelProvider({
   const [user, setUser] = useState<User>();
   const [data, setData] = useState<TravelData>(empty);
   const [ready, setReady] = useState(false);
-  const [serverError, setServerError] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [storageWarning, setWarning] = useState<string | null>(null);
   const busy = useRef(false);
   const generation = useRef(0);
@@ -133,7 +133,7 @@ export function RemoteTravelProvider({
       } catch (error) {
         if (generation.current !== current) return;
         if (!(error instanceof ApiError && error.status === 401))
-          setServerError(true);
+          setErrorStatus(error instanceof ApiError ? error.status : 0);
       } finally {
         if (generation.current === current) setReady(true);
       }
@@ -152,12 +152,11 @@ export function RemoteTravelProvider({
       return await operation();
     } catch (error) {
       if (
-        (error instanceof ApiError &&
-          (error.status >= 500 || error.status === 0)) ||
-        error instanceof TypeError ||
-        (error instanceof Error && error.name === "TimeoutError")
+        error instanceof ApiError &&
+        error.status >= 500 &&
+        error.status < 600
       ) {
-        setServerError(true);
+        setErrorStatus(error.status);
       }
       if (error instanceof ApiError && error.status === 401) {
         setUser(undefined);
@@ -510,7 +509,7 @@ export function RemoteTravelProvider({
   };
   return (
     <TravelContext.Provider value={value}>
-      {serverError ? <ServerError /> : children}
+      {errorStatus !== null ? <ServerError status={errorStatus} /> : children}
     </TravelContext.Provider>
   );
 }

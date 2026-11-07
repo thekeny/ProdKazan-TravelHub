@@ -22,6 +22,66 @@ afterEach(() => {
 });
 
 describe("backend proxy", () => {
+  it("follows a trailing-slash redirect on the server with authentication", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 307,
+          headers: { Location: "https://backend.example/api/v1/trips/" },
+        }),
+      )
+      .mockResolvedValueOnce(new Response("[]"));
+    const response = await proxyBackend(
+      request("trips", "GET", "travelhub_access=access"),
+      ["trips"],
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual([]);
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      "https://backend.example/api/v1/trips/",
+    );
+    expect(
+      new Headers(fetchMock.mock.calls[1][1]?.headers).get("Authorization"),
+    ).toBe("Bearer access");
+  });
+  it("does not forward credentials to an external redirect target", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(null, {
+        status: 307,
+        headers: { Location: "https://foreign.example/api/v1/trips/" },
+      }),
+    );
+    const response = await proxyBackend(request("trips"), ["trips"]);
+    expect(response.status).toBe(307);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+  it("preserves mutation bodies and queries across 307 and stops redirect loops", async () => {
+    fetchMock.mockImplementation(
+      async () =>
+        new Response(null, {
+          status: 307,
+          headers: { Location: "/api/v1/trips/?page=1" },
+        }),
+    );
+    const body = JSON.stringify({ name: "Trip" });
+    const response = await proxyBackend(
+      new NextRequest("http://localhost:3000/api/backend/trips?page=1", {
+        method: "POST",
+        body,
+        headers: { "Content-Type": "application/json" },
+      }),
+      ["trips"],
+    );
+    expect(response.status).toBe(307);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      "https://backend.example/api/v1/trips/?page=1",
+    );
+    expect(fetchMock.mock.calls[1][1]?.method).toBe("POST");
+    expect(
+      new TextDecoder().decode(fetchMock.mock.calls[1][1]?.body as ArrayBuffer),
+    ).toBe(body);
+  });
   it("forwards password changes to the backend with the session and JSON body", async () => {
     const body = JSON.stringify({
       currentPassword: "old-pass",

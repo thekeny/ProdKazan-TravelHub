@@ -67,21 +67,50 @@ export async function proxyBackend(request: NextRequest, path: string[]) {
     const body = ["GET", "HEAD"].includes(request.method)
       ? undefined
       : await request.arrayBuffer();
-    const send = (target: string, method: string, payload?: ArrayBuffer) => {
+    const send = async (
+      target: string,
+      method: string,
+      payload?: ArrayBuffer,
+    ) => {
       const headers = new Headers();
       if (access) headers.set("Authorization", `Bearer ${access}`);
       if (refresh)
         headers.set("Cookie", `refresh_token=${encodeURIComponent(refresh)}`);
       const contentType = request.headers.get("content-type");
       if (contentType) headers.set("Content-Type", contentType);
-      return fetch(`${base}/${target}`, {
+      const url = new URL(`${base}/${target}`);
+      const options: RequestInit = {
         method,
         body: payload,
         headers,
         cache: "no-store",
         redirect: "manual",
         signal: AbortSignal.timeout(30_000),
-      });
+      };
+      let response = await fetch(url.href, options);
+      const location = response.headers.get("Location");
+      if (
+        location &&
+        ([307, 308].includes(response.status) ||
+          ([301, 302, 303].includes(response.status) &&
+            ["GET", "HEAD"].includes(method)))
+      ) {
+        const destination = new URL(location, url);
+        // Follow only canonical slash redirects, keeping credentials on the
+        // configured backend and preventing arbitrary redirects or loops.
+        if (
+          destination.origin === url.origin &&
+          destination.pathname !== url.pathname &&
+          destination.pathname.replace(/\/$/, "") ===
+            url.pathname.replace(/\/$/, "") &&
+          destination.search === url.search &&
+          !destination.username &&
+          !destination.password
+        ) {
+          response = await fetch(destination.href, options);
+        }
+      }
+      return response;
     };
     const readTokens = async (response: Response) => {
       if (!response.ok) return;

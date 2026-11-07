@@ -1,11 +1,13 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
+import { divIcon } from "leaflet";
 import { useEffect, useMemo, useState } from "react";
 import {
   AttributionControl,
   CircleMarker,
   MapContainer,
+  Marker,
   Polyline,
   TileLayer,
   useMap,
@@ -18,6 +20,18 @@ import {
   TRANSPORT_TYPES,
 } from "@/configs/consts/transport.const";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
+
+const travelerIcon = divIcon({
+  className: "",
+  html: `<div class="flex h-10 w-9 items-center justify-center rounded-xl border border-border bg-surface text-primary-strong shadow-md">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="5" r="2" />
+      <path d="m6 9 6 2 6-2M12 11v6m-4 5 4-5 4 5" />
+    </svg>
+  </div>`,
+  iconSize: [36, 40],
+  iconAnchor: [18, 36],
+});
 
 type Props = {
   points: RoutePoint[];
@@ -199,28 +213,14 @@ export default function TripMap(props: Props) {
           />
         )}
         {props.currentPosition && (
-          <>
-            <CircleMarker
-              center={[props.currentPosition.lat, props.currentPosition.lng]}
-              radius={18}
-              pathOptions={{
-                color: MAP.colors.current,
-                weight: 2,
-                fillColor: MAP.colors.current,
-                fillOpacity: 0.2,
-              }}
-            />
-            <CircleMarker
-              center={[props.currentPosition.lat, props.currentPosition.lng]}
-              radius={6}
-              pathOptions={{
-                color: MAP.colors.current,
-                weight: 2,
-                fillColor: MAP.colors.current,
-                fillOpacity: 1,
-              }}
-            />
-          </>
+          <Marker
+            position={[props.currentPosition.lat, props.currentPosition.lng]}
+            icon={travelerIcon}
+            title="Текущее положение путешественника"
+            alt="Путешественник"
+            interactive={false}
+            keyboard={false}
+          />
         )}
       </MapContainer>
       {props.onPlace && (

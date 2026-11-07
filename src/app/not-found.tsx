@@ -16,9 +16,8 @@ export default function NotFound() {
           unoptimized
           width={716}
         />
-        <h1 className="mt-5 flex flex-wrap items-baseline justify-center gap-x-2 text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="mt-5 flex flex-col items-center gap-3 font-sans text-2xl font-semibold tracking-tight text-foreground">
           <span className="text-5xl text-primary-strong">404</span>
-          <span aria-hidden="true">-</span>
           <span>Страница не найдена</span>
         </h1>
         <Link

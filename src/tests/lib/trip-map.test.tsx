@@ -18,6 +18,7 @@ vi.mock("react-leaflet", () => ({
   ),
   AttributionControl: () => null,
   CircleMarker: () => null,
+  Marker: () => null,
   Polyline: () => null,
   TileLayer: () => null,
   Popup: () => null,

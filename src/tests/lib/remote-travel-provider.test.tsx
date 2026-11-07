@@ -79,7 +79,10 @@ async function mount() {
     await act(async () => {
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     });
-    expect(travel.ready || container.textContent?.includes("500")).toBe(true);
+    expect(
+      travel.ready ||
+        container.textContent?.includes("Не удалось загрузить страницу"),
+    ).toBe(true);
   });
 }
 beforeEach(async () => {
@@ -152,13 +155,25 @@ describe("remote travel state", () => {
     await mount();
     expect(container.textContent).toContain("500");
   });
-  it("shows the error page on network failure", async () => {
+  it.each([307, 400, 403, 404, 429])(
+    "does not show 500 when restoring trips returns %s",
+    async (status) => {
+      await act(async () => root.unmount());
+      vi.mocked(sdk.tripsGetTrips).mockResolvedValue(fail(status));
+      await mount();
+      expect(container.textContent).not.toContain("500");
+      expect(container.textContent).toContain("Не удалось загрузить страницу");
+      expect(navigation.replace).not.toHaveBeenCalled();
+    },
+  );
+  it("does not show 500 on network failure", async () => {
     await act(async () => root.unmount());
     vi.mocked(sdk.authGetSelf).mockRejectedValue(
       new TypeError("Failed to fetch"),
     );
     await mount();
-    expect(container.textContent).toContain("500");
+    expect(container.textContent).not.toContain("500");
+    expect(container.textContent).toContain("Не удалось загрузить страницу");
   });
   it("shows the error page when a mutation returns a server error", async () => {
     vi.mocked(sdk.tripsPatchTrip).mockResolvedValue(fail(503));
@@ -166,6 +181,28 @@ describe("remote travel state", () => {
       await expect(travel.saveTrip(trip.id, values)).rejects.toThrow();
     });
     expect(container.textContent).toContain("500");
+  });
+  it.each([307, 400, 403, 404, 429])(
+    "keeps the interface available when a mutation returns %s",
+    async (status) => {
+      vi.mocked(sdk.tripsPatchTrip).mockResolvedValue(fail(status));
+      await act(async () => {
+        await expect(travel.saveTrip(trip.id, values)).rejects.toThrow();
+      });
+      expect(container.textContent).not.toContain("500");
+      expect(travel.username).toBe(user.username);
+      expect(travel.trips[0].name).toBe("Trip");
+    },
+  );
+  it("keeps the interface available on a mutation network failure", async () => {
+    vi.mocked(sdk.tripsPatchTrip).mockRejectedValue(
+      new TypeError("Failed to fetch"),
+    );
+    await act(async () => {
+      await expect(travel.saveTrip(trip.id, values)).rejects.toThrow();
+    });
+    expect(container.textContent).not.toContain("500");
+    expect(travel.username).toBe(user.username);
   });
   it("keeps unauthenticated sessions eligible for login", async () => {
     await act(async () => root.unmount());

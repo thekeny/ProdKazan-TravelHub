@@ -19,7 +19,7 @@ export function LoadingState() {
           src={images.LOADING}
           width={716}
         />
-        <span className="mt-5 flex items-baseline font-display text-2xl text-foreground">
+        <span className="mt-5 flex items-baseline font-sans text-2xl font-semibold tracking-tight text-foreground">
           Загрузка
           <span aria-hidden="true" className="inline-flex w-6 justify-start">
             {[0, 1, 2].map((dot) => (
