@@ -5,7 +5,9 @@ import { useId, useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
-import { Field, inputClass } from "@/components/ui/field";
+import { Field } from "@/components/ui/field";
+import { Input, inputClass } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import type { RoutePoint, RoutePointValues } from "@/configs/types/route.type";
 import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
@@ -114,7 +116,8 @@ export function PointForm({
                   <div className="mt-6 grid gap-4">
                     <Field name="name" label="Название точки">
                       {(id) => (
-                        <input
+                        <Input
+                          data-field-control
                           id={id}
                           required
                           minLength={TEXT_LIMITS.MIN}
@@ -133,7 +136,8 @@ export function PointForm({
                     </Field>
                     <Field name="description" label="Описание · необязательно">
                       {(id) => (
-                        <textarea
+                        <Textarea
+                          data-field-control
                           id={id}
                           minLength={TEXT_LIMITS.MIN}
                           maxLength={TEXT_LIMITS.DESCRIPTION}
@@ -167,7 +171,8 @@ export function PointForm({
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field name="lat" label="Широта">
                         {(id) => (
-                          <input
+                          <Input
+                            data-field-control
                             id={id}
                             required
                             type="number"
@@ -190,7 +195,8 @@ export function PointForm({
                       </Field>
                       <Field name="lng" label="Долгота">
                         {(id) => (
-                          <input
+                          <Input
+                            data-field-control
                             id={id}
                             required
                             type="number"

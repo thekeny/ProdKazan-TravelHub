@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { images } from "@/configs/paths/images.path";
 
 export function LoadingState() {
@@ -8,8 +9,8 @@ export function LoadingState() {
         aria-label="Загрузка"
         className="flex flex-col items-center text-center"
       >
-        {/* biome-ignore lint/performance/noImgElement: Render the public animation directly in the loading boundary. */}
-        <img
+        <Image
+          unoptimized
           alt=""
           aria-hidden="true"
           className="h-auto w-52"

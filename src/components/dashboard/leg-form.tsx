@@ -4,8 +4,10 @@ import { useId, useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
-import { Field, inputClass } from "@/components/ui/field";
+import { Field } from "@/components/ui/field";
+import { Input, inputClass } from "@/components/ui/input";
 import { TextSelect } from "@/components/ui/text-select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   TRANSPORT_TYPES,
   type TransportKind,
@@ -156,30 +158,26 @@ export function LegForm({
                     </div>
                     <Field name="transport" label="Способ передвижения">
                       {(id) => (
-                        <select
+                        <TextSelect
+                          data-field-control
                           id={id}
-                          className={inputClass}
                           value={values.transport}
-                          onChange={(event) => {
-                            const transport = event.target.value;
-                            if (Object.hasOwn(TRANSPORT_TYPES, transport))
-                              update("transport", transport as TransportKind);
-                          }}
-                        >
-                          {Object.entries(TRANSPORT_TYPES).map(
-                            ([value, label]) => (
-                              <option key={value} value={value}>
-                                {label}
-                              </option>
-                            ),
+                          disabled={pending}
+                          options={Object.entries(TRANSPORT_TYPES).map(
+                            ([value, label]) => ({ value, label }),
                           )}
-                        </select>
+                          onValueChange={(value) => {
+                            if (Object.hasOwn(TRANSPORT_TYPES, value))
+                              update("transport", value as TransportKind);
+                          }}
+                        />
                       )}
                     </Field>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field name="start" label="Отправление">
                         {(id) => (
-                          <input
+                          <Input
+                            data-field-control
                             id={id}
                             required
                             type="datetime-local"
@@ -195,7 +193,8 @@ export function LegForm({
                       </Field>
                       <Field name="end" label="Прибытие">
                         {(id) => (
-                          <input
+                          <Input
+                            data-field-control
                             id={id}
                             required
                             type="datetime-local"
@@ -224,7 +223,8 @@ export function LegForm({
                       }
                     >
                       {(id, describedBy) => (
-                        <textarea
+                        <Textarea
+                          data-field-control
                           id={id}
                           className={`${inputClass} h-20 py-3`}
                           aria-describedby={error ? errorId : describedBy}

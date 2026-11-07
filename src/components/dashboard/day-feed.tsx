@@ -102,7 +102,8 @@ export function DayFeed({
                   const description = event?.description || leg?.description;
                   return (
                     <li key={`${item.kind}-${item.id}`}>
-                      <button
+                      <Button
+                        variant="plain"
                         type="button"
                         onClick={() => {
                           if (event) onSelectEvent(event);
@@ -186,7 +187,7 @@ export function DayFeed({
                             </span>
                           )}
                         </span>
-                      </button>
+                      </Button>
                     </li>
                   );
                 })}

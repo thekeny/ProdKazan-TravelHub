@@ -2,7 +2,8 @@
 
 import { X } from "lucide-react";
 import { useId, useState } from "react";
-import { inputClass } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import { Input, inputClass } from "@/components/ui/input";
 import {
   EVENT_TYPE_LIMITS,
   TEXT_LIMITS,
@@ -55,7 +56,8 @@ export function EventTypeChips({
             className="inline-flex max-w-full items-center rounded-xl border border-primary/25 bg-primary/10 pl-3 text-sm"
           >
             <span className="user-text min-w-0">{name}</span>
-            <button
+            <Button
+              variant="plain"
               type="button"
               disabled={disabled}
               aria-label={`Убрать тип «${name}»`}
@@ -74,11 +76,12 @@ export function EventTypeChips({
               }}
             >
               <X aria-hidden="true" className="size-3.5" />
-            </button>
+            </Button>
           </span>
         ))}
       </div>
-      <input
+      <Input
+        data-field-control
         id={id}
         className={inputClass}
         value={draft}

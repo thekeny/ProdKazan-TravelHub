@@ -6,8 +6,10 @@ import { MaterialGrid } from "@/components/materials/material-grid";
 import { MaterialUploader } from "@/components/materials/material-uploader";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
-import { Field, inputClass } from "@/components/ui/field";
+import { Field } from "@/components/ui/field";
+import { Input, inputClass } from "@/components/ui/input";
 import { TextSelect } from "@/components/ui/text-select";
+import { Textarea } from "@/components/ui/textarea";
 import { EVENT_TYPES } from "@/configs/consts/events.const";
 import { MATERIAL_LIMITS } from "@/configs/consts/materials.const";
 import { TEXT_LIMITS } from "@/configs/consts/validation.const";
@@ -173,7 +175,8 @@ export function EventForm({
                   <div className="mt-6 grid gap-4">
                     <Field name="title" label="Название события">
                       {(id) => (
-                        <input
+                        <Input
+                          data-field-control
                           id={id}
                           required
                           minLength={TEXT_LIMITS.MIN}
@@ -231,7 +234,8 @@ export function EventForm({
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field name="start" label="Начало">
                         {(id) => (
-                          <input
+                          <Input
+                            data-field-control
                             id={id}
                             required
                             type="datetime-local"
@@ -246,7 +250,8 @@ export function EventForm({
                       </Field>
                       <Field name="end" label="Окончание · необязательно">
                         {(id) => (
-                          <input
+                          <Input
+                            data-field-control
                             id={id}
                             type="datetime-local"
                             min={
@@ -265,7 +270,8 @@ export function EventForm({
                     </div>
                     <Field name="description" label="Описание · необязательно">
                       {(id) => (
-                        <textarea
+                        <Textarea
+                          data-field-control
                           id={id}
                           minLength={TEXT_LIMITS.MIN}
                           maxLength={TEXT_LIMITS.DESCRIPTION}
@@ -306,7 +312,8 @@ export function EventForm({
                       label="Ссылка на билет или бронирование · необязательно"
                     >
                       {(id, describedByField) => (
-                        <input
+                        <Input
+                          data-field-control
                           id={id}
                           type="url"
                           inputMode="url"

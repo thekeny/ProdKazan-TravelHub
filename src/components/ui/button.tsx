@@ -8,6 +8,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        plain: "",
         default:
           "bg-primary-strong text-primary-foreground hover:bg-primary-strong/90",
         outline:
@@ -50,7 +51,11 @@ function Button({
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={
+        variant === "plain"
+          ? cn("disabled:pointer-events-none disabled:opacity-50", className)
+          : cn(buttonVariants({ variant, size, className }))
+      }
       {...props}
     />
   );

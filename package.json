@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "openapi": "openapi-ts",
     "knip": "knip",
-    "repomix": "repomix"
+    "repomix": "repomix",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -35,6 +36,7 @@
     "@biomejs/biome": "2.2.0",
     "@hey-api/openapi-ts": "0.99.0",
     "@next/env": "15.5.27",
+    "@playwright/test": "^1.65.0",
     "@tailwindcss/postcss": "^4",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^22.20.5",

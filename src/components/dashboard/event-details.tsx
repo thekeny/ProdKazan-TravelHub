@@ -9,6 +9,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { EventIcon } from "@/components/dashboard/event-icon";
 import { MaterialGrid } from "@/components/materials/material-grid";
 import { Button } from "@/components/ui/button";
@@ -104,7 +105,8 @@ export function EventDetails({
                     Билет или бронирование
                   </dt>
                   <dd className="mt-1">
-                    <a
+                    <Link
+                      prefetch={false}
                       href={event.bookingUrl}
                       target="_blank"
                       rel="noreferrer noopener"
@@ -112,7 +114,7 @@ export function EventDetails({
                     >
                       Открыть билет или бронь
                       <ExternalLink aria-hidden="true" className="size-3.5" />
-                    </a>
+                    </Link>
                   </dd>
                 </div>
               )}

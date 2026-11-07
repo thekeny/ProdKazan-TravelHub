@@ -121,7 +121,8 @@ export function TripGallery({ kind }: { kind: MaterialKind }) {
                       {event.start.slice(11, 16)}
                     </p>
                   </div>
-                  <a
+                  <Link
+                    prefetch={false}
                     href={event.bookingUrl}
                     target="_blank"
                     rel="noreferrer noopener"
@@ -132,7 +133,7 @@ export function TripGallery({ kind }: { kind: MaterialKind }) {
                   >
                     <ExternalLink />
                     Открыть
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

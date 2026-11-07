@@ -4,7 +4,8 @@ import { useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
-import { Field, inputClass } from "@/components/ui/field";
+import { Field } from "@/components/ui/field";
+import { Input, inputClass } from "@/components/ui/input";
 import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { useFormValues } from "@/hooks/use-form-values";
@@ -118,7 +119,8 @@ export function UserSettings({
             >
               <Field name="username" label="Имя пользователя">
                 {(id) => (
-                  <input
+                  <Input
+                    data-field-control
                     id={id}
                     className={inputClass}
                     value={name}
@@ -138,7 +140,8 @@ export function UserSettings({
                 <>
                   <Field name="currentPassword" label="Текущий пароль">
                     {(id) => (
-                      <input
+                      <Input
+                        data-field-control
                         id={id}
                         type="password"
                         className={inputClass}
@@ -161,7 +164,8 @@ export function UserSettings({
                     hint={`От ${TEXT_LIMITS.PASSWORD_MIN} до ${TEXT_LIMITS.REMOTE_PASSWORD} символов.`}
                   >
                     {(id, describedBy) => (
-                      <input
+                      <Input
+                        data-field-control
                         id={id}
                         type="password"
                         className={inputClass}
@@ -182,7 +186,8 @@ export function UserSettings({
                   </Field>
                   <Field name="confirmPassword" label="Повторите новый пароль">
                     {(id) => (
-                      <input
+                      <Input
+                        data-field-control
                         id={id}
                         type="password"
                         className={inputClass}
@@ -209,7 +214,8 @@ export function UserSettings({
                   }
                 >
                   {(id, describedBy) => (
-                    <input
+                    <Input
+                      data-field-control
                       id={id}
                       type="password"
                       disabled

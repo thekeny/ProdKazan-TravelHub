@@ -3,7 +3,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { FormProvider } from "react-hook-form";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { TextSelect } from "@/components/ui/text-select";
+import { Textarea } from "@/components/ui/textarea";
 import { useFormValues } from "@/hooks/use-form-values";
 import { textError } from "@/lib/input-validation";
 
@@ -12,7 +14,8 @@ let state: ReturnType<typeof useFormValues<{ name: string; pointId: string }>>;
 let root: Root;
 let container: HTMLDivElement;
 
-function Form() {
+function Form({ multiline = false }: { multiline?: boolean }) {
+  const Control = multiline ? Textarea : Input;
   state = useFormValues({ name: "", pointId: "" }, (values) => ({
     name: textError(values.name, 100, true),
     pointId: values.pointId ? undefined : "Выберите точку.",
@@ -22,7 +25,8 @@ function Form() {
     <FormProvider {...form}>
       <Field name="name" label="Название" hint="До 100 символов.">
         {(id) => (
-          <input
+          <Control
+            data-field-control
             id={id}
             value={values.name}
             onChange={(event) =>
@@ -63,6 +67,16 @@ afterEach(async () => {
 });
 
 describe("shared form fields", () => {
+  it("registers textarea errors and focuses the invalid control", async () => {
+    await act(async () => root.render(<Form multiline />));
+    await act(async () => {
+      await state[2].trigger("name", { shouldFocus: true });
+    });
+    const textarea = container.querySelector("textarea");
+    expect(document.activeElement).toBe(textarea);
+    expect(textarea?.getAttribute("aria-invalid")).toBe("true");
+    expect(textarea?.getAttribute("aria-describedby")).toContain("error");
+  });
   it("shows an error only after blur and removes it as the value is corrected", async () => {
     expect(container.querySelectorAll('[role="alert"]')).toHaveLength(0);
     const input = container.querySelector("input") as HTMLInputElement;

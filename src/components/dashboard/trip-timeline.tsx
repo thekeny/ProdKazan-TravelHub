@@ -6,14 +6,16 @@ import { EventIcon } from "@/components/dashboard/event-icon";
 import { TransportIcon } from "@/components/dashboard/transport-icon";
 import { MaterialThumbnail } from "@/components/materials/material-thumbnail";
 import { Button } from "@/components/ui/button";
-import { EVENT_COLORS } from "@/configs/consts/events.const";
-import {
-  TRANSPORT_STYLES,
-  TRANSPORT_TYPES,
-} from "@/configs/consts/transport.const";
+import { DAY_MINUTES, HOURS, LABELS } from "@/configs/consts/timeline.const";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { TripLeg } from "@/configs/types/route.type";
-import { eventTypeLabel } from "@/lib/event-types";
+import {
+  continuesNextDay,
+  hourLabel,
+  itemColor,
+  itemTitle,
+  itemType,
+} from "@/lib/timeline-presentation";
 import {
   itemEndMinutes,
   itemStartMinutes,
@@ -21,37 +23,6 @@ import {
   type TimelineItem,
   type TripPosition,
 } from "@/lib/travel-route";
-
-const DAY_MINUTES = 1440;
-const HOURS = Array.from({ length: 25 }, (_, index) => index);
-const LABELS = [0, 3, 6, 9, 12, 15, 18, 21, 24];
-
-function itemColor(item: TimelineItem) {
-  return item.kind === "event"
-    ? EVENT_COLORS[item.event.type]
-    : TRANSPORT_STYLES[item.leg.transport].color;
-}
-
-function itemTitle(item: TimelineItem) {
-  return item.kind === "event"
-    ? item.event.title
-    : `${TRANSPORT_TYPES[item.leg.transport]} · ${item.leg.description || "перемещение"}`;
-}
-
-function itemType(item: TimelineItem) {
-  return item.kind === "event"
-    ? eventTypeLabel(item.event)
-    : TRANSPORT_TYPES[item.leg.transport];
-}
-
-function continuesNextDay(item: TimelineItem, day: string) {
-  const end = item.kind === "event" ? item.event.end : item.leg.end;
-  return Boolean(end) && end.slice(0, 10) > day;
-}
-
-function hourLabel(hour: number) {
-  return `${String(hour).padStart(2, "0")}:00`;
-}
 
 export function TripTimeline({
   items,
@@ -192,7 +163,8 @@ export function TripTimeline({
               items.map((item) => {
                 const continued = continuesNextDay(item, day);
                 return (
-                  <button
+                  <Button
+                    variant="plain"
                     key={`${item.kind}-${item.id}`}
                     type="button"
                     className="flex min-h-9 max-w-64 shrink-0 items-center gap-1.5 rounded-md bg-background px-2 py-1 text-left text-[11px] transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
@@ -237,7 +209,7 @@ export function TripTimeline({
                         className="size-6 shrink-0"
                       />
                     )}
-                  </button>
+                  </Button>
                 );
               })
             ) : (

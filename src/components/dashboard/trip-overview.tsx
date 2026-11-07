@@ -3,7 +3,7 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { CalendarDays, List, Plus, Route as RouteIcon, X } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { DayFeed } from "@/components/dashboard/day-feed";
 import { EventDetails } from "@/components/dashboard/event-details";
 import { EventForm } from "@/components/dashboard/event-form";
@@ -21,12 +21,12 @@ import { DialogPopup } from "@/components/ui/dialog-popup";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
 import type { Trip } from "@/configs/types/travel.type";
+import { useOverviewNavigation } from "@/hooks/use-overview-navigation";
 import { actionToast } from "@/lib/action-toast";
 import { tripDays } from "@/lib/travel-events";
-import { formatDayShort, formatTripDates, todayIso } from "@/lib/travel-format";
+import { formatTripDates } from "@/lib/travel-format";
 import {
   buildTimeline,
-  firstItemMinutes,
   itemStartMinutes,
   legsForDay,
   minutesToTime,
@@ -36,6 +36,7 @@ import {
 } from "@/lib/travel-route";
 import type { ScheduleIssue } from "@/lib/travel-schedule";
 import { useTravel } from "@/providers/travel-provider";
+import { TripDayNavigation } from "./trip-day-navigation";
 
 const TripMap = dynamic(() => import("./trip-map"), {
   ssr: false,
@@ -78,11 +79,18 @@ function Overview({ trip }: { trip: Trip }) {
   const legs = trip.legs ?? [];
   const events = trip.events ?? [];
   const days = useMemo(() => tripDays(trip), [trip]);
-  const [day, setDay] = useState(days[0] ?? trip.startDate);
-  const [minutes, setMinutes] = useState(() =>
-    firstItemMinutes(events, legs, days[0] ?? trip.startDate),
-  );
-  const [showAll, setShowAll] = useState(false);
+  const {
+    day,
+    setDay,
+    minutes,
+    setMinutes,
+    showAll,
+    setShowAll,
+    detailsEvent,
+    setDetailsEvent,
+    changeDay,
+    openEvent,
+  } = useOverviewNavigation(trip);
   const [routeOpen, setRouteOpen] = useState(false);
   const [feedOpen, setFeedOpen] = useState(false);
   const [eventEditor, setEventEditor] = useState<{
@@ -96,11 +104,9 @@ function Overview({ trip }: { trip: Trip }) {
   const [deletion, setDeletion] = useState<Deletion | null>(null);
   const [deleting, setDeleting] = useState(false);
   const deletingRef = useRef(false);
-  const [detailsEvent, setDetailsEvent] = useState<TripEvent | null>(null);
   const [detailsPointId, setDetailsPointId] = useState<string | null>(null);
   const [timelineInset, setTimelineInset] = useState(176);
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const initializedRef = useRef(false);
 
   const dayLegs = useMemo(() => legsForDay(legs, day), [legs, day]);
   const allLegs = useMemo(
@@ -126,68 +132,6 @@ function Overview({ trip }: { trip: Trip }) {
   const detailsPoint = detailsPointId
     ? (points.find((point) => point.id === detailsPointId) ?? null)
     : null;
-
-  useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-    const params = new URLSearchParams(window.location.search);
-    const eventId = params.get("event");
-    const targetEvent = eventId
-      ? events.find((event) => event.id === eventId)
-      : undefined;
-    if (targetEvent) {
-      setDay(targetEvent.start.slice(0, 10));
-      setShowAll(false);
-      setMinutes(timeToMinutes(targetEvent.start));
-      setDetailsEvent(targetEvent);
-      return;
-    }
-    const requestedDay = params.get("day");
-    if (requestedDay && days.includes(requestedDay)) {
-      setDay(requestedDay);
-      setShowAll(false);
-      setMinutes(firstItemMinutes(events, legs, requestedDay));
-      return;
-    }
-    const today = todayIso();
-    if (days.includes(today)) {
-      setDay(today);
-      setMinutes(firstItemMinutes(events, legs, today));
-    }
-  }, [days, events, legs]);
-
-  useEffect(() => {
-    if (days.includes(day)) return;
-    const next = days[0] ?? trip.startDate;
-    setDay(next);
-    setMinutes(firstItemMinutes(events, legs, next));
-  }, [days, day, events, legs, trip.startDate]);
-
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("day", day);
-    if (detailsEvent) url.searchParams.set("event", detailsEvent.id);
-    else url.searchParams.delete("event");
-    window.history.replaceState(
-      null,
-      "",
-      `${url.pathname}${url.search}${url.hash}`,
-    );
-  }, [day, detailsEvent]);
-
-  function changeDay(value: string) {
-    setDay(value);
-    setShowAll(false);
-    setDetailsEvent(null);
-    setMinutes(firstItemMinutes(events, legs, value));
-  }
-
-  function openEvent(event: TripEvent) {
-    setDay(event.start.slice(0, 10));
-    setShowAll(false);
-    setMinutes(timeToMinutes(event.start));
-    setDetailsEvent(event);
-  }
 
   function showIssue(issue: ScheduleIssue) {
     const event = events.find((item) => issue.itemIds.includes(item.id));
@@ -345,46 +289,13 @@ function Overview({ trip }: { trip: Trip }) {
             </Button>
           </div>
         </div>
-        <div className="mt-2 flex items-center gap-2">
-          <div className="flex min-w-0 gap-1.5 overflow-x-auto pb-0.5">
-            {days.map((value, index) => {
-              const active = day === value && !showAll;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={active}
-                  className={`min-h-8 shrink-0 rounded-full border px-3 py-1 text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-                    active
-                      ? "border-primary-strong bg-primary-strong text-primary-foreground"
-                      : "border-border bg-surface text-muted-foreground hover:border-primary/50 hover:text-foreground"
-                  }`}
-                  onClick={() => changeDay(value)}
-                >
-                  <span className="font-medium">День {index + 1}</span>
-                  <span
-                    className={`ml-1.5 hidden tabular-nums sm:inline ${active ? "opacity-80" : "opacity-70"}`}
-                  >
-                    · {formatDayShort(value)}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <button
-            type="button"
-            aria-pressed={showAll}
-            title="Показать на карте весь маршрут"
-            className={`ml-auto min-h-8 shrink-0 rounded-full border px-3 py-1 text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-              showAll
-                ? "border-primary-strong bg-primary-strong text-primary-foreground"
-                : "border-border bg-surface text-muted-foreground hover:border-primary/50 hover:text-foreground"
-            }`}
-            onClick={() => setShowAll((value) => !value)}
-          >
-            {showAll ? "Только день" : "Все дни"}
-          </button>
-        </div>
+        <TripDayNavigation
+          days={days}
+          day={day}
+          showAll={showAll}
+          onChangeDay={changeDay}
+          onToggleAll={() => setShowAll((value) => !value)}
+        />
       </header>
       <StorageWarning className="mx-4 mt-2 shrink-0" />
 

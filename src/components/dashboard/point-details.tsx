@@ -86,7 +86,8 @@ export function PointDetails({
               <ul className="mt-2 grid gap-2">
                 {pointEvents.map((event) => (
                   <li key={event.id}>
-                    <button
+                    <Button
+                      variant="plain"
                       type="button"
                       onClick={() => onSelectEvent(event)}
                       className="flex w-full items-center gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
@@ -121,7 +122,7 @@ export function PointDetails({
                         aria-hidden="true"
                         className="size-4 shrink-0 text-muted-foreground"
                       />
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>

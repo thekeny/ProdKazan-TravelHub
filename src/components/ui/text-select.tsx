@@ -3,7 +3,7 @@
 import { Select } from "@base-ui/react/select";
 import { Check, ChevronDown } from "lucide-react";
 import type { FocusEventHandler, Ref } from "react";
-import { inputClass } from "./field";
+import { inputClass } from "./input";
 
 export function TextSelect({
   id,

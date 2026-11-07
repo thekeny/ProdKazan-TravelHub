@@ -1,12 +1,15 @@
 "use client";
 
 import { Upload, X } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
 import { EventTypeChips } from "@/components/trips/event-type-chips";
 import { Button } from "@/components/ui/button";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
-import { Field, inputClass } from "@/components/ui/field";
+import { Field } from "@/components/ui/field";
+import { Input, inputClass } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { COVER_LIMITS, MATERIAL_TYPES } from "@/configs/consts/materials.const";
 import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import type { TripValues } from "@/configs/types/travel.type";
@@ -170,7 +173,8 @@ export function TripForm({
         <fieldset disabled={pending || reading} className="contents">
           <Field name="name" label="Название">
             {(id) => (
-              <input
+              <Input
+                data-field-control
                 id={id}
                 required
                 minLength={TEXT_LIMITS.MIN}
@@ -184,7 +188,8 @@ export function TripForm({
           </Field>
           <Field name="description" label="Описание · необязательно">
             {(id) => (
-              <textarea
+              <Textarea
+                data-field-control
                 id={id}
                 minLength={TEXT_LIMITS.MIN}
                 maxLength={TEXT_LIMITS.DESCRIPTION}
@@ -217,7 +222,8 @@ export function TripForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <Field name="startDate" label="Дата начала">
               {(id) => (
-                <input
+                <Input
+                  data-field-control
                   id={id}
                   required
                   type="date"
@@ -231,7 +237,8 @@ export function TripForm({
             </Field>
             <Field name="endDate" label="Дата окончания">
               {(id) => (
-                <input
+                <Input
+                  data-field-control
                   id={id}
                   required
                   type="date"
@@ -255,7 +262,8 @@ export function TripForm({
               hint="Можно указать ссылку или выбрать файл ниже."
             >
               {(id, describedBy) => (
-                <input
+                <Input
+                  data-field-control
                   id={id}
                   className={inputClass}
                   type="url"
@@ -289,12 +297,16 @@ export function TripForm({
               <div>
                 <div className="relative overflow-hidden rounded-lg border border-dashed bg-muted">
                   {values.cover && (
-                    <div
-                      role="img"
-                      aria-label="Предпросмотр обложки"
-                      className="h-40 bg-cover bg-center"
-                      style={{ backgroundImage: `url(${values.cover})` }}
-                    />
+                    <div className="relative h-40">
+                      <Image
+                        src={values.cover}
+                        alt="Предпросмотр обложки"
+                        fill
+                        unoptimized
+                        sizes="100vw"
+                        className="object-cover"
+                      />
+                    </div>
                   )}
                   <label
                     htmlFor={id}
@@ -306,7 +318,8 @@ export function TripForm({
                       : values.cover
                         ? "Заменить обложку"
                         : "Выбрать изображение"}
-                    <input
+                    <Input
+                      data-field-control
                       ref={fileRef}
                       id={id}
                       type="file"
