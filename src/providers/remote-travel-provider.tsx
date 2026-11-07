@@ -4,6 +4,7 @@ import * as sdk from "@/api/generated/sdk.gen";
 import type { User } from "@/api/generated/types.gen";
 import { ServerError } from "@/components/layout/server-error";
 import type { TravelData, Trip } from "@/configs/types/travel.type";
+import { isConnected, setConnected } from "@/lib/connectivity";
 import {
   authErrors,
   eventErrors,
@@ -14,6 +15,11 @@ import {
 } from "@/lib/form-validation";
 import { assertValidInput } from "@/lib/input-validation";
 import { deleteMaterialFiles } from "@/lib/material-storage";
+import {
+  clearOfflineSnapshot,
+  readOfflineSnapshot,
+  saveOfflineSnapshot,
+} from "@/lib/offline-cache";
 import {
   coverBlob,
   isUploadedCover,
@@ -54,6 +60,7 @@ export function RemoteTravelProvider({
   const busy = useRef(false);
   const generation = useRef(0);
   const reconcile = useRef(false);
+  const restoredAccount = useRef<string | undefined>(undefined);
 
   const preferences = useCallback((account: User) => {
     try {
@@ -107,10 +114,24 @@ export function RemoteTravelProvider({
       }
     }
     setData(next);
+    if (user)
+      void saveOfflineSnapshot(user, next).catch(() =>
+        setWarning("Не удалось сохранить данные для офлайн-просмотра."),
+      );
   }
   const initialize = useCallback(
     async (expected = generation.current) => {
+      if (!isConnected()) {
+        const snapshot = await readOfflineSnapshot();
+        if (generation.current !== expected) return;
+        if (!snapshot)
+          throw new Error("Нет сохранённых данных для офлайн-просмотра.");
+        setUser(snapshot.user);
+        setData(snapshot.data);
+        return;
+      }
       const account = await apiResult(sdk.authGetSelf());
+      restoredAccount.current = account.id ?? account.username;
       const trips = await loadTrips();
       const local = preferences(account);
       const covers = new Map<string, string>();
@@ -131,7 +152,7 @@ export function RemoteTravelProvider({
       );
       if (generation.current !== expected) return;
       setUser(account);
-      setData({
+      const next: TravelData = {
         trips: trips.map((trip) => ({
           ...trip,
           eventTypes: local.tripEventTypes?.[trip.id] ?? [],
@@ -148,7 +169,11 @@ export function RemoteTravelProvider({
           trips.find((trip) => trip.id === local.activeId)?.id ??
           trips[0]?.id ??
           null,
-      });
+      };
+      setData(next);
+      void saveOfflineSnapshot(account, next).catch(() =>
+        setWarning("Не удалось сохранить данные для офлайн-просмотра."),
+      );
     },
     [preferences],
   );
@@ -159,7 +184,22 @@ export function RemoteTravelProvider({
         await initialize(current);
       } catch (error) {
         if (generation.current !== current) return;
-        if (!(error instanceof ApiError && error.status === 401))
+        if (error instanceof ApiError && error.status === 401) {
+          void clearOfflineSnapshot();
+        } else if (
+          error instanceof TypeError ||
+          (error instanceof ApiError && error.status === 0)
+        ) {
+          const snapshot = await readOfflineSnapshot(restoredAccount.current);
+          if (generation.current !== current) return;
+          if (snapshot) {
+            setConnected(false);
+            setUser(snapshot.user);
+            setData(snapshot.data);
+            return;
+          }
+          setErrorStatus(0);
+        } else if (!(error instanceof ApiError && error.status === 401))
           setErrorStatus(error instanceof ApiError ? error.status : 0);
       } finally {
         if (generation.current === current) setReady(true);
@@ -171,13 +211,32 @@ export function RemoteTravelProvider({
     };
   }, [initialize]);
 
+  useEffect(() => {
+    const reconnect = () => {
+      if (busy.current) return;
+      // Revalidate the session before allowing edits again.
+      window.location.reload();
+    };
+    window.addEventListener("online", reconnect);
+    return () => window.removeEventListener("online", reconnect);
+  }, []);
+
   async function mutate<T>(operation: () => Promise<T>): Promise<T> {
+    if (!isConnected())
+      throw new Error(
+        "Вы оффлайн. Доступен только просмотр сохранённых данных.",
+      );
     if (busy.current)
       throw new Error("Дождитесь завершения предыдущего запроса.");
     busy.current = true;
     try {
       return await operation();
     } catch (error) {
+      if (
+        error instanceof TypeError ||
+        (error instanceof ApiError && error.status === 0)
+      )
+        setConnected(false);
       if (
         error instanceof ApiError &&
         error.status >= 500 &&
@@ -186,6 +245,7 @@ export function RemoteTravelProvider({
         setErrorStatus(error.status);
       }
       if (error instanceof ApiError && error.status === 401) {
+        void clearOfflineSnapshot();
         setUser(undefined);
         setData(empty);
       } else if (reconcile.current && user) {
@@ -242,6 +302,7 @@ export function RemoteTravelProvider({
     dismissStorageWarning: () => setWarning(null),
     login: (name, password = "", register = false) =>
       mutate(async () => {
+        await clearOfflineSnapshot();
         assertValidInput(
           authErrors(
             { username: name, password, confirm: password },
@@ -263,6 +324,7 @@ export function RemoteTravelProvider({
     logout: () =>
       mutate(async () => {
         await apiResult(sdk.authLogout());
+        await clearOfflineSnapshot();
         setUser(undefined);
         setData(empty);
       }),

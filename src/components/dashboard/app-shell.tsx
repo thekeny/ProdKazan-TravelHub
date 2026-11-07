@@ -2,6 +2,7 @@ import { MobileNavigation } from "@/components/dashboard/mobile-navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TripSwitcher } from "@/components/dashboard/trip-switcher";
 import { Logo } from "@/components/layout/logo";
+import { OfflineBanner } from "@/components/layout/offline-banner";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -10,6 +11,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Sidebar />
       </aside>
       <div className="flex min-h-0 flex-1 flex-col lg:ml-72">
+        <OfflineBanner />
         <header className="flex shrink-0 items-center gap-3 bg-background px-3 py-2 lg:hidden">
           <Logo />
           <div className="ml-auto w-52 min-w-0 max-w-[55%]">

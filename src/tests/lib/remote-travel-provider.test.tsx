@@ -4,8 +4,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as sdk from "@/api/generated/sdk.gen";
 import type { Event, Trip, User, Waypoint } from "@/api/generated/types.gen";
 import { AuthGuard } from "@/components/layout/auth-guard";
+import { setConnected } from "@/lib/connectivity";
 import { RemoteTravelProvider } from "@/providers/remote-travel-provider";
 import { useTravel } from "@/providers/travel-provider";
+
+const offline = vi.hoisted(() => ({ snapshot: null as unknown }));
+vi.mock("@/lib/offline-cache", () => ({
+  saveOfflineSnapshot: async (user: unknown, data: unknown) => {
+    offline.snapshot = { user, data };
+  },
+  readOfflineSnapshot: async (account?: string) => {
+    const snapshot = offline.snapshot as { user: User } | null;
+    return account === undefined ||
+      (snapshot?.user.id ?? snapshot?.user.username) === account
+      ? snapshot
+      : null;
+  },
+  clearOfflineSnapshot: async () => {
+    offline.snapshot = null;
+  },
+}));
 
 vi.mock("@/api/generated/sdk.gen");
 const navigation = vi.hoisted(() => ({ replace: vi.fn() }));
@@ -91,6 +109,8 @@ beforeEach(async () => {
   vi.resetAllMocks();
   localStorage.clear();
   files.clear();
+  offline.snapshot = null;
+  setConnected(true);
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   // Response wrappers are intentionally mocked at the SDK boundary, while
   // provider validation, mapping, session handling and reconciliation run fully.
@@ -108,9 +128,51 @@ afterEach(async () => {
   container.remove();
   vi.unstubAllGlobals();
   vi.useRealTimers();
+  setConnected(true);
 });
 
 describe("remote travel state", () => {
+  it("does not restore another account's trips when the current account's loading fails", async () => {
+    await act(async () => root.unmount());
+    vi.mocked(sdk.authGetSelf).mockResolvedValue(
+      ok({ id: "other", username: "other" }),
+    );
+    vi.mocked(sdk.tripsGetTrips).mockRejectedValue(
+      new TypeError("Failed to fetch"),
+    );
+    await mount();
+    expect(container.textContent).toContain("Не удалось загрузить страницу");
+    expect(container.textContent).not.toContain("500");
+  });
+  it("restores cached trips offline and rejects changes without calling the API", async () => {
+    await act(async () => root.unmount());
+    setConnected(false);
+    vi.mocked(sdk.authGetSelf).mockClear();
+    await mount();
+    expect(travel.username).toBe(user.username);
+    expect(travel.trips[0].points?.[0].id).toBe(point.id);
+    expect(travel.trips[0].events?.[0].id).toBe(event.id);
+    expect(sdk.authGetSelf).not.toHaveBeenCalled();
+    await expect(travel.deleteTrip(trip.id)).rejects.toThrow("Вы оффлайн");
+    expect(sdk.tripsRemoveTrip).not.toHaveBeenCalled();
+    expect(travel.trips).toHaveLength(1);
+  });
+
+  it("falls back to the snapshot on network failure, but never on a confirmed 401", async () => {
+    await act(async () => root.unmount());
+    vi.mocked(sdk.authGetSelf).mockRejectedValue(
+      new TypeError("Failed to fetch"),
+    );
+    await mount();
+    expect(travel.username).toBe(user.username);
+    await act(async () => root.unmount());
+    setConnected(true);
+    vi.mocked(sdk.authGetSelf).mockResolvedValue(fail(401));
+    await mount();
+    expect(travel.username).toBe(null);
+    expect(offline.snapshot).toBe(null);
+  });
+
   it("does not change local trip types in memory if writing them fails", async () => {
     const previous = travel.trips;
     const write = vi
@@ -250,6 +312,7 @@ describe("remote travel state", () => {
   );
   it("does not show 500 on network failure", async () => {
     await act(async () => root.unmount());
+    offline.snapshot = null;
     vi.mocked(sdk.authGetSelf).mockRejectedValue(
       new TypeError("Failed to fetch"),
     );

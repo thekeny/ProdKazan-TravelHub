@@ -15,11 +15,13 @@ import {
 } from "react-leaflet";
 import { Button } from "@/components/ui/button";
 import { MAP } from "@/configs/consts/map.const";
+import { OFFLINE } from "@/configs/consts/offline.const";
 import {
   TRANSPORT_STYLES,
   TRANSPORT_TYPES,
 } from "@/configs/consts/transport.const";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
+import { useOnline } from "@/lib/connectivity";
 import { mapPointColor } from "@/lib/map-point-color";
 
 const travelerIcon = divIcon({
@@ -102,6 +104,7 @@ function MapBehavior({
 }
 
 export default function TripMap(props: Props) {
+  const online = useOnline();
   const [initialView] = useState(() => ({
     center: props.draftPlace
       ? ([props.draftPlace.lat, props.draftPlace.lng] as [number, number])
@@ -251,15 +254,18 @@ export default function TripMap(props: Props) {
           ))}
         </ul>
       )}
-      {failed && (
+      {(failed || !online) && (
         <div
           role="alert"
-          className="absolute right-3 left-3 z-[1000] flex flex-wrap items-center justify-between gap-2 rounded-lg bg-background p-3 text-sm"
+          className="absolute right-3 left-3 z-20 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-background p-3 text-sm"
           style={{ bottom: `calc(2rem + ${props.overlayInset ?? 0}px)` }}
         >
           <span>
-            Не удалось загрузить карту. Маршрут доступен в хронологии и панели
-            маршрута.
+            {online
+              ? "Не удалось загрузить карту. Маршрут доступен в хронологии и панели маршрута."
+              : OFFLINE.cacheTiles
+                ? "Вы оффлайн. Доступны сохранённые участки карты, точки и маршруты поездки."
+                : "Вы оффлайн. Точки и маршруты доступны; подложке карты нужен интернет."}
           </span>
           <Button
             variant="outline"

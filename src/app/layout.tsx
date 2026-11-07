@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { PwaRegistration } from "@/components/layout/pwa-registration";
 import { AppToaster } from "@/components/ui/app-toaster";
 import { images } from "@/configs/paths/images.path";
 import { TravelProvider } from "@/providers/travel-provider";
@@ -59,6 +60,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
+        <PwaRegistration />
         <TravelProvider>
           {children}
           <AppToaster />

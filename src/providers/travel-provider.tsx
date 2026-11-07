@@ -9,6 +9,7 @@ import type {
   TravelState,
   Trip,
 } from "@/configs/types/travel.type";
+import { isConnected } from "@/lib/connectivity";
 import {
   authErrors,
   eventErrors,
@@ -77,6 +78,13 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
       ? state.accounts[state.username]
       : { trips: [], activeId: null };
   function commit(next: TravelState) {
+    if (
+      !isConnected() &&
+      JSON.stringify(next.accounts) !== JSON.stringify(state.accounts)
+    )
+      throw new Error(
+        "Вы оффлайн. Доступен только просмотр сохранённых данных.",
+      );
     writeState(next);
     setState(next);
   }

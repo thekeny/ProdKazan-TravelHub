@@ -6,6 +6,8 @@
 
 @theme inline {
   --color-green: var(--green);
+  --color-offline: var(--offline);
+  --color-offline-foreground: var(--offline-foreground);
   --color-water: var(--water);
   --color-surface: var(--surface);
   --color-road: var(--road);
@@ -61,6 +63,8 @@
   --primary: #4f8a68;
   --primary-strong: color-mix(in srgb, var(--primary) 78%, var(--text));
   --green: #7bae7f;
+  --offline: #c27f78;
+  --offline-foreground: #ffffff;
   --water: #8ecae6;
   --background: #f7f5ef;
   --surface: #ffffff;
