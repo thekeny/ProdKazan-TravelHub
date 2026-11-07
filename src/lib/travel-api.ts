@@ -12,6 +12,7 @@ import type {
   TripLegValues,
 } from "@/configs/types/route.type";
 import type { Trip, TripValues } from "@/configs/types/travel.type";
+import { isUploadedCover } from "@/lib/remote-covers";
 
 export class ApiError extends Error {
   constructor(
@@ -134,7 +135,7 @@ export function tripBody(values: TripValues) {
     description: values.description.trim() || null,
     startedOn: values.startDate,
     endedOn: values.endDate,
-    cover: values.cover,
+    cover: isUploadedCover(values.cover) ? null : values.cover,
   };
 }
 export function pointBody(values: RoutePointValues) {

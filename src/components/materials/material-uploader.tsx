@@ -8,6 +8,8 @@ import {
   MATERIAL_KINDS,
 } from "@/configs/consts/materials.const";
 import type { Material, MaterialKind } from "@/configs/types/material.type";
+import { useFormValues } from "@/hooks/use-form-values";
+import { actionToast } from "@/lib/action-toast";
 import { uploadMaterial } from "@/lib/material-upload";
 import { validateMaterialInput } from "@/lib/materials";
 
@@ -24,7 +26,14 @@ export function MaterialUploader({
   onError: (message: string | null) => void;
   onBusyChange?: (busy: boolean) => void;
 }) {
-  const [kind, setKind] = useState<MaterialKind>(defaultKind);
+  const [selection, setSelection, selectionForm] = useFormValues<{
+    kind: MaterialKind;
+  }>({ kind: defaultKind }, (values) =>
+    Object.hasOwn(MATERIAL_KINDS, values.kind)
+      ? {}
+      : { kind: "Выберите категорию материала." },
+  );
+  const kind = selection.kind;
   const [uploading, setUploading] = useState(false);
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -33,7 +42,15 @@ export function MaterialUploader({
   async function handleFiles(files: FileList | null) {
     if (!files?.length) return;
     onError(null);
-    const selected = Array.from(files).slice(0, remaining);
+    if (!(await selectionForm.trigger())) {
+      onError("Выберите категорию материала.");
+      return;
+    }
+    if (files.length > remaining) {
+      onError(`Можно добавить не более ${remaining} материалов.`);
+      return;
+    }
+    const selected = Array.from(files);
     setUploading(true);
     onBusyChange?.(true);
     try {
@@ -44,7 +61,11 @@ export function MaterialUploader({
           continue;
         }
         try {
-          const material = await uploadMaterial(file, kind);
+          const material = await actionToast(
+            () => uploadMaterial(file, kind),
+            "Обрабатываем изображение…",
+            "Изображение добавлено.",
+          );
           onUploaded(material);
         } catch (error) {
           onError(
@@ -73,7 +94,8 @@ export function MaterialUploader({
               variant="ghost"
               aria-pressed={kind === value}
               className={`h-10 ${kind === value ? "bg-surface " : ""}`}
-              onClick={() => setKind(value as MaterialKind)}
+              disabled={uploading}
+              onClick={() => setSelection({ kind: value as MaterialKind })}
             >
               {label}
             </Button>

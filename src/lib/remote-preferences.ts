@@ -4,6 +4,7 @@ import { validateMaterial } from "@/lib/materials";
 type Preferences = {
   activeId: string | null;
   materials: Record<string, Material[]>;
+  coverIds?: string[];
 };
 function key(userId: string) {
   return `travelhub.remote.${userId}`;
@@ -14,6 +15,10 @@ export function readRemotePreferences(userId: string): Preferences {
   if (!raw || typeof raw !== "object") return result;
   if ("activeId" in raw && typeof raw.activeId === "string")
     result.activeId = raw.activeId;
+  if ("coverIds" in raw && Array.isArray(raw.coverIds))
+    result.coverIds = raw.coverIds.filter(
+      (id): id is string => typeof id === "string",
+    );
   if (
     "materials" in raw &&
     raw.materials &&

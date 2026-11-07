@@ -140,6 +140,33 @@
   * {
     @apply border-border outline-ring/50;
   }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--primary) 42%, transparent)
+      transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary) 42%, transparent);
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--primary) 65%, transparent);
+  }
+  .dialog-popup,
+  .dialog-popup * {
+    scrollbar-width: none;
+  }
+  .dialog-popup::-webkit-scrollbar,
+  .dialog-popup *::-webkit-scrollbar {
+    display: none;
+  }
   html {
     @apply font-sans;
   }
@@ -156,6 +183,9 @@
     font-family: var(--font-heading);
     font-weight: 500;
     letter-spacing: -0.015em;
+  }
+  [role="dialog"] {
+    --font-heading: var(--font-lora);
   }
   ::selection {
     background: color-mix(in srgb, var(--primary) 26%, transparent);

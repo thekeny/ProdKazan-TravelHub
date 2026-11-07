@@ -1,6 +1,7 @@
 "use client";
 import { Dialog } from "@base-ui/react/dialog";
 import { useId, useRef, useState } from "react";
+import { FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field, inputClass } from "@/components/ui/field";
@@ -16,7 +17,9 @@ import type {
 } from "@/configs/types/route.type";
 import type { TripValues } from "@/configs/types/travel.type";
 import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
-import { validateLeg } from "@/lib/travel-route";
+import { useFormValues } from "@/hooks/use-form-values";
+import { actionToast } from "@/lib/action-toast";
+import { legErrors } from "@/lib/form-validation";
 import { useTravel } from "@/providers/travel-provider";
 
 export function LegForm({
@@ -35,7 +38,7 @@ export function LegForm({
   onSave: (values: TripLegValues) => void | Promise<void>;
 }) {
   const { remote } = useTravel();
-  const [values, setValues] = useState<TripLegValues>(
+  const [values, setValues, form] = useFormValues<TripLegValues>(
     leg ?? {
       fromPointId: points[0]?.id ?? "",
       toPointId: points[1]?.id ?? "",
@@ -44,6 +47,7 @@ export function LegForm({
       end: `${day || trip.startDate}T10:00`,
       description: "",
     },
+    (values) => legErrors(values, trip, points),
   );
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -70,189 +74,191 @@ export function LegForm({
       {confirmation}
       <Dialog.Portal>
         <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-[60] bg-overlay/35" />
-        <DialogPopup className="dialog-popup fixed inset-0 z-[60] m-auto flex h-fit max-h-[calc(100dvh-1.5rem)] w-[calc(100%-1.5rem)] max-w-2xl flex-col overflow-hidden rounded-xl border bg-background  outline-none">
-          <form
-            className="flex min-h-0 flex-1 flex-col"
-            aria-busy={pending}
-            onSubmit={async (event) => {
-              event.preventDefault();
-              if (pendingRef.current) return;
-              const validation = validateLeg(values, trip, points);
-              if (validation) {
-                setError(validation);
-                return;
-              }
-              pendingRef.current = true;
-              setPending(true);
-              setError(null);
-              try {
-                await onSave(values);
-              } catch (error) {
-                pendingRef.current = false;
-                setPending(false);
-                setError(
-                  error instanceof Error
-                    ? error.message
-                    : "Не удалось сохранить перемещение.",
-                );
-              }
-            }}
-          >
-            <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
-              <Dialog.Title className="pr-10 text-xl font-semibold">
-                {leg ? "Редактировать перемещение" : "Новое перемещение"}
-              </Dialog.Title>
-              <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-                Дата и время указаны по местному времени поездки.
-              </Dialog.Description>
-              <div className="mt-6 grid gap-5">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Откуда">
-                    {(id) => (
-                      <select
-                        id={id}
-                        className={inputClass}
-                        aria-invalid={error ? true : undefined}
-                        aria-describedby={error ? errorId : undefined}
-                        value={values.fromPointId}
-                        onChange={(event) =>
-                          update("fromPointId", event.target.value)
-                        }
-                      >
-                        {points.map((point) => (
-                          <option key={point.id} value={point.id}>
-                            {point.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </Field>
-                  <Field label="Куда">
-                    {(id) => (
-                      <select
-                        id={id}
-                        className={inputClass}
-                        aria-invalid={error ? true : undefined}
-                        aria-describedby={error ? errorId : undefined}
-                        value={values.toPointId}
-                        onChange={(event) =>
-                          update("toPointId", event.target.value)
-                        }
-                      >
-                        {points.map((point) => (
-                          <option key={point.id} value={point.id}>
-                            {point.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </Field>
-                </div>
-                <Field label="Способ передвижения">
-                  {(id) => (
-                    <select
-                      id={id}
-                      className={inputClass}
-                      value={values.transport}
-                      onChange={(event) => {
-                        const transport = event.target.value;
-                        if (Object.hasOwn(TRANSPORT_TYPES, transport))
-                          update("transport", transport as TransportKind);
-                      }}
-                    >
-                      {Object.entries(TRANSPORT_TYPES).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </Field>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Отправление">
-                    {(id) => (
-                      <input
-                        id={id}
-                        required
-                        type="datetime-local"
-                        min={`${trip.startDate}T00:00`}
-                        max={`${trip.endDate}T23:59`}
-                        className={inputClass}
-                        aria-invalid={error ? true : undefined}
-                        aria-describedby={error ? errorId : undefined}
-                        value={values.start}
-                        onChange={(event) =>
-                          update("start", event.target.value)
-                        }
-                      />
-                    )}
-                  </Field>
-                  <Field label="Прибытие">
-                    {(id) => (
-                      <input
-                        id={id}
-                        required
-                        type="datetime-local"
-                        min={values.start}
-                        max={`${trip.endDate}T23:59`}
-                        className={inputClass}
-                        aria-invalid={error ? true : undefined}
-                        aria-describedby={error ? errorId : undefined}
-                        value={values.end}
-                        onChange={(event) => update("end", event.target.value)}
-                      />
-                    )}
-                  </Field>
-                </div>
-                <Field
-                  label="Описание · необязательно"
-                  hint={
-                    remote && leg
-                      ? "API пока не поддерживает изменение описания перемещения."
-                      : undefined
-                  }
-                >
-                  {(id, describedBy) => (
-                    <textarea
-                      id={id}
-                      className={`${inputClass} h-20 py-3`}
-                      aria-invalid={error ? true : undefined}
-                      aria-describedby={error ? errorId : describedBy}
-                      maxLength={BACKEND_LIMITS.DESCRIPTION}
-                      readOnly={Boolean(remote && leg)}
-                      value={values.description}
-                      onChange={(event) =>
-                        update("description", event.target.value)
+        <DialogPopup className="dialog-popup fixed inset-0 z-[60] m-auto flex h-fit max-h-[calc(100dvh-1.5rem)] w-[calc(100%-1.5rem)] max-w-4xl flex-col overflow-hidden rounded-xl border bg-background  outline-none">
+          <FormProvider {...form}>
+            <form
+              noValidate
+              className="flex min-h-0 flex-1 flex-col"
+              aria-busy={pending}
+              onSubmit={async (event) => {
+                event.preventDefault();
+                if (!(await form.trigger(undefined, { shouldFocus: true })))
+                  return;
+                if (pendingRef.current) return;
+                pendingRef.current = true;
+                setPending(true);
+                setError(null);
+                try {
+                  await actionToast(
+                    () => onSave(values),
+                    "Сохраняем…",
+                    "Изменения сохранены.",
+                  );
+                } catch (error) {
+                  pendingRef.current = false;
+                  setPending(false);
+                  setError(
+                    error instanceof Error
+                      ? error.message
+                      : "Не удалось сохранить перемещение.",
+                  );
+                }
+              }}
+            >
+              <fieldset disabled={pending} className="contents">
+                <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
+                  <Dialog.Title className="pr-10 text-xl font-semibold">
+                    {leg ? "Редактировать перемещение" : "Новое перемещение"}
+                  </Dialog.Title>
+                  <Dialog.Description className="mt-1 text-sm text-muted-foreground">
+                    Дата и время указаны по местному времени поездки.
+                  </Dialog.Description>
+                  <div className="mt-6 grid gap-5">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field name="fromPointId" label="Откуда">
+                        {(id) => (
+                          <select
+                            id={id}
+                            className={inputClass}
+                            value={values.fromPointId}
+                            onChange={(event) =>
+                              update("fromPointId", event.target.value)
+                            }
+                          >
+                            {points.map((point) => (
+                              <option key={point.id} value={point.id}>
+                                {point.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </Field>
+                      <Field name="toPointId" label="Куда">
+                        {(id) => (
+                          <select
+                            id={id}
+                            className={inputClass}
+                            value={values.toPointId}
+                            onChange={(event) =>
+                              update("toPointId", event.target.value)
+                            }
+                          >
+                            {points.map((point) => (
+                              <option key={point.id} value={point.id}>
+                                {point.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </Field>
+                    </div>
+                    <Field name="transport" label="Способ передвижения">
+                      {(id) => (
+                        <select
+                          id={id}
+                          className={inputClass}
+                          value={values.transport}
+                          onChange={(event) => {
+                            const transport = event.target.value;
+                            if (Object.hasOwn(TRANSPORT_TYPES, transport))
+                              update("transport", transport as TransportKind);
+                          }}
+                        >
+                          {Object.entries(TRANSPORT_TYPES).map(
+                            ([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      )}
+                    </Field>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field name="start" label="Отправление">
+                        {(id) => (
+                          <input
+                            id={id}
+                            required
+                            type="datetime-local"
+                            min={`${trip.startDate}T00:00`}
+                            max={`${trip.endDate}T23:59`}
+                            className={inputClass}
+                            value={values.start}
+                            onChange={(event) =>
+                              update("start", event.target.value)
+                            }
+                          />
+                        )}
+                      </Field>
+                      <Field name="end" label="Прибытие">
+                        {(id) => (
+                          <input
+                            id={id}
+                            required
+                            type="datetime-local"
+                            min={values.start}
+                            max={`${trip.endDate}T23:59`}
+                            className={inputClass}
+                            value={values.end}
+                            onChange={(event) =>
+                              update("end", event.target.value)
+                            }
+                          />
+                        )}
+                      </Field>
+                    </div>
+                    <Field
+                      name="description"
+                      label="Описание · необязательно"
+                      hint={
+                        remote && leg
+                          ? "API пока не поддерживает изменение описания перемещения."
+                          : undefined
                       }
-                    />
-                  )}
-                </Field>
-                {error && (
-                  <p
-                    id={errorId}
-                    role="alert"
-                    className="text-sm text-destructive"
+                    >
+                      {(id, describedBy) => (
+                        <textarea
+                          id={id}
+                          className={`${inputClass} h-20 py-3`}
+                          aria-describedby={error ? errorId : describedBy}
+                          maxLength={BACKEND_LIMITS.DESCRIPTION}
+                          readOnly={Boolean(remote && leg)}
+                          value={values.description}
+                          onChange={(event) =>
+                            update("description", event.target.value)
+                          }
+                        />
+                      )}
+                    </Field>
+                    {error && (
+                      <p
+                        id={errorId}
+                        role="alert"
+                        className="text-sm text-destructive"
+                      >
+                        {error}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex shrink-0 justify-end gap-3 border-t px-5 py-4 sm:px-7">
+                  <Button
+                    variant="outline"
+                    className="h-11"
+                    type="button"
+                    disabled={pending}
+                    onClick={requestClose}
                   >
-                    {error}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex shrink-0 justify-end gap-3 border-t px-5 py-4 sm:px-7">
-              <Button
-                variant="outline"
-                className="h-11"
-                type="button"
-                disabled={pending}
-                onClick={requestClose}
-              >
-                Отмена
-              </Button>
-              <Button type="submit" className="h-11" disabled={pending}>
-                {pending ? "Сохраняем…" : "Сохранить перемещение"}
-              </Button>
-            </div>
-          </form>
+                    Отмена
+                  </Button>
+                  <Button type="submit" className="h-11" disabled={pending}>
+                    {pending ? "Сохраняем…" : "Сохранить перемещение"}
+                  </Button>
+                </div>
+              </fieldset>
+            </form>
+          </FormProvider>
         </DialogPopup>
       </Dialog.Portal>
     </Dialog.Root>

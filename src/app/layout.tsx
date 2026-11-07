@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { AppToaster } from "@/components/ui/app-toaster";
 import { images } from "@/configs/paths/images.path";
 import { TravelProvider } from "@/providers/travel-provider";
 
@@ -30,8 +31,8 @@ const caveat = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "TravelHub — путешествие как история",
-    template: "%s · TravelHub",
+    default: "TravelHub",
+    template: "%s",
   },
   description:
     "Планируйте поездки, стройте маршруты на карте и сохраняйте события, фотографии и билеты в одной хронологии.",
@@ -58,7 +59,10 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <TravelProvider>{children}</TravelProvider>
+        <TravelProvider>
+          {children}
+          <AppToaster />
+        </TravelProvider>
       </body>
     </html>
   );

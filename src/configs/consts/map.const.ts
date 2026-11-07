@@ -5,6 +5,7 @@ export const MAP = {
   attribution:
     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   center: [30, 20] as [number, number],
+  referrerPolicy: "strict-origin-when-cross-origin" as const,
   zoom: 2,
   pointZoom: 14,
   colors: {

@@ -1,12 +1,16 @@
 "use client";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { FormProvider } from "react-hook-form";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { Field, inputClass } from "@/components/ui/field";
 import { images } from "@/configs/paths/images.path";
 import { pages } from "@/configs/paths/pages.path";
+import { useFormValues } from "@/hooks/use-form-values";
+import { actionToast } from "@/lib/action-toast";
+import { authErrors } from "@/lib/form-validation";
 import { useTravel } from "@/providers/travel-provider";
 
 const MODES = [
@@ -20,13 +24,21 @@ export default function Page() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const pendingRef = useRef(false);
   const errorId = useId();
+  const [values, setValues, form] = useFormValues(
+    { username: "", password: "", confirm: "" },
+    (values) => authErrors(values, Boolean(remote), mode === "register"),
+  );
+  useEffect(() => {
+    document.title = mode === "login" ? "Вход" : "Регистрация";
+  }, [mode]);
   useEffect(() => {
     if (ready && username) router.replace(pages.TRIPS);
   }, [ready, username, router]);
   return (
-    <main className="flow-background">
-      <section className="flow-card relative grid w-full max-w-4xl overflow-hidden rounded-[2rem] p-0 lg:grid-cols-[0.85fr_1.15fr]">
+    <main className="flow-background !py-4">
+      <section className="flow-card relative grid w-full max-w-4xl overflow-hidden rounded-[2rem] !p-0 lg:grid-cols-[0.85fr_1.15fr]">
         <aside className="relative hidden flex-col overflow-hidden bg-secondary p-8 lg:flex">
           <div>
             <Logo size="lg" />
@@ -43,7 +55,7 @@ export default function Page() {
           </div>
         </aside>
 
-        <div className="p-6 sm:p-10">
+        <div className="min-h-0 self-center p-6 sm:p-8">
           <div className="lg:hidden">
             <Logo />
           </div>
@@ -64,8 +76,15 @@ export default function Page() {
                 variant="ghost"
                 aria-pressed={mode === value}
                 className={`h-10 rounded-lg ${mode === value ? "bg-surface  hover:bg-surface" : ""}`}
+                disabled={pending}
                 onClick={() => {
                   setMode(value);
+                  form.clearErrors();
+                  setValues((current) => ({
+                    ...current,
+                    password: "",
+                    confirm: "",
+                  }));
                   setError(null);
                 }}
               >
@@ -73,121 +92,139 @@ export default function Page() {
               </Button>
             ))}
           </div>
-          <form
-            key={mode}
-            className="mt-6 grid gap-4"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              setError(null);
-              const values = new FormData(event.currentTarget);
-              const name = String(values.get("username")).trim();
-              if (name.length < 3 || name.length > 32) {
-                setError(
-                  "Имя пользователя должно содержать от 3 до 32 символов.",
-                );
-                return;
-              }
-              if (
-                mode === "register" &&
-                values.get("password") !== values.get("confirm")
-              ) {
-                setError("Пароли не совпадают.");
-                return;
-              }
-              if (pending) return;
-              setPending(true);
-              try {
-                await login(
-                  name,
-                  String(values.get("password") ?? ""),
-                  mode === "register",
-                );
-                router.replace(pages.TRIPS);
-              } catch (error) {
-                setError(
-                  error instanceof Error ? error.message : "Не удалось войти.",
-                );
-              } finally {
-                setPending(false);
-              }
-            }}
-          >
-            <Field label="Имя пользователя">
-              {(id) => (
-                <input
-                  id={id}
-                  className={inputClass}
-                  name="username"
-                  required
-                  minLength={3}
-                  maxLength={32}
-                  pattern={remote ? "[a-zA-Z0-9._]+" : undefined}
-                  title={
-                    remote
-                      ? "Латинские буквы, цифры, точка и подчёркивание"
-                      : undefined
-                  }
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  aria-invalid={error ? true : undefined}
-                  aria-describedby={error ? errorId : undefined}
-                />
-              )}
-            </Field>
-            <Field label="Пароль">
-              {(id) => (
-                <input
-                  id={id}
-                  className={inputClass}
-                  name="password"
-                  type="password"
-                  required={remote || mode === "register"}
-                  minLength={mode === "register" ? 8 : undefined}
-                  maxLength={remote ? 64 : 128}
-                  autoComplete={
-                    mode === "login" ? "current-password" : "new-password"
-                  }
-                  aria-invalid={error ? true : undefined}
-                  aria-describedby={error ? errorId : undefined}
-                />
-              )}
-            </Field>
-            {mode === "register" && (
-              <Field label="Повторите пароль">
+          <FormProvider {...form}>
+            <form
+              noValidate
+              key={mode}
+              className="mt-5 grid gap-2"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                setError(null);
+                if (!(await form.trigger(undefined, { shouldFocus: true })))
+                  return;
+                const values = form.getValues();
+                const name = values.username.trim();
+                if (pendingRef.current) return;
+                pendingRef.current = true;
+                setPending(true);
+                try {
+                  await actionToast(
+                    () => login(name, values.password, mode === "register"),
+                    "Подождите…",
+                    "Готово.",
+                  );
+                  router.replace(pages.TRIPS);
+                } catch (error) {
+                  setError(
+                    error instanceof Error
+                      ? error.message
+                      : "Не удалось войти.",
+                  );
+                } finally {
+                  pendingRef.current = false;
+                  setPending(false);
+                }
+              }}
+            >
+              <Field name="username" label="Имя пользователя">
                 {(id) => (
                   <input
                     id={id}
                     className={inputClass}
-                    name="confirm"
-                    type="password"
+                    name="username"
+                    value={values.username}
+                    disabled={pending}
+                    onChange={(event) =>
+                      setValues((current) => ({
+                        ...current,
+                        username: event.target.value,
+                      }))
+                    }
                     required
-                    minLength={8}
-                    maxLength={remote ? 64 : 128}
-                    autoComplete="new-password"
-                    aria-invalid={error ? true : undefined}
-                    aria-describedby={error ? errorId : undefined}
+                    minLength={3}
+                    maxLength={32}
+                    pattern={remote ? "[a-zA-Z0-9._]+" : undefined}
+                    title={
+                      remote
+                        ? "Латинские буквы, цифры, точка и подчёркивание"
+                        : undefined
+                    }
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    spellCheck={false}
                   />
                 )}
               </Field>
-            )}
-            {(error || storageWarning) && (
-              <p id={errorId} role="alert" className="text-sm text-destructive">
-                {error || storageWarning}
-              </p>
-            )}
-            <Button
-              type="submit"
-              disabled={!ready || pending}
-              className="mt-2 h-12"
-            >
-              {pending
-                ? "Подождите…"
-                : mode === "login"
-                  ? "Войти"
-                  : "Зарегистрироваться"}
-            </Button>
-          </form>
+              <Field name="password" label="Пароль">
+                {(id) => (
+                  <input
+                    id={id}
+                    className={inputClass}
+                    name="password"
+                    value={values.password}
+                    disabled={pending}
+                    onChange={(event) =>
+                      setValues((current) => ({
+                        ...current,
+                        password: event.target.value,
+                      }))
+                    }
+                    type="password"
+                    required={remote || mode === "register"}
+                    minLength={mode === "register" ? 8 : undefined}
+                    maxLength={remote ? 64 : 128}
+                    autoComplete={
+                      mode === "login" ? "current-password" : "new-password"
+                    }
+                  />
+                )}
+              </Field>
+              {mode === "register" && (
+                <Field name="confirm" label="Повторите пароль">
+                  {(id) => (
+                    <input
+                      id={id}
+                      className={inputClass}
+                      name="confirm"
+                      value={values.confirm}
+                      disabled={pending}
+                      onChange={(event) =>
+                        setValues((current) => ({
+                          ...current,
+                          confirm: event.target.value,
+                        }))
+                      }
+                      type="password"
+                      required
+                      minLength={8}
+                      maxLength={remote ? 64 : 128}
+                      autoComplete="new-password"
+                    />
+                  )}
+                </Field>
+              )}
+              {(error || storageWarning) && (
+                <p
+                  id={errorId}
+                  role="alert"
+                  className="text-sm text-destructive"
+                >
+                  {error || storageWarning}
+                </p>
+              )}
+              <Button
+                type="submit"
+                disabled={!ready || pending}
+                className="mt-2 h-12"
+              >
+                {pending
+                  ? "Подождите…"
+                  : mode === "login"
+                    ? "Войти"
+                    : "Зарегистрироваться"}
+              </Button>
+            </form>
+          </FormProvider>
         </div>
       </section>
     </main>

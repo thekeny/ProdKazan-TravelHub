@@ -7,6 +7,16 @@ import { RemoteTravelProvider } from "@/providers/remote-travel-provider";
 import { useTravel } from "@/providers/travel-provider";
 
 vi.mock("@/api/generated/sdk.gen");
+const files = vi.hoisted(() => new Map<string, Blob>());
+vi.mock("@/lib/material-storage", () => ({
+  getMaterialFile: vi.fn(async (id: string) => files.get(id) ?? null),
+  putMaterialFile: vi.fn(async (id: string, blob: Blob) => {
+    files.set(id, blob);
+  }),
+  deleteMaterialFiles: vi.fn(async (ids: string[]) => {
+    for (const id of ids) files.delete(id);
+  }),
+}));
 const user = { id: "1568610886538672010", username: "traveler" } satisfies User;
 const trip = {
   id: "1568610886538672011",
@@ -62,10 +72,17 @@ async function mount() {
       </RemoteTravelProvider>,
     );
   });
+  await vi.waitFor(async () => {
+    await act(async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    });
+    expect(travel.ready).toBe(true);
+  });
 }
 beforeEach(async () => {
   vi.resetAllMocks();
   localStorage.clear();
+  files.clear();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   // Response wrappers are intentionally mocked at the SDK boundary, while
   // provider validation, mapping, session handling and reconciliation run fully.
@@ -85,6 +102,48 @@ afterEach(async () => {
 });
 
 describe("remote travel state", () => {
+  it("stores uploaded covers outside the API and restores them only for the current account", async () => {
+    const cover = "data:image/webp;base64,dGVzdA==";
+    vi.mocked(sdk.tripsPatchTrip).mockResolvedValue(
+      ok({ ...trip, cover: null }),
+    );
+    await act(async () => travel.saveTrip(trip.id, { ...values, cover }));
+    expect(sdk.tripsPatchTrip).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({ cover: null }),
+      }),
+    );
+    expect(travel.trips[0].cover).toBe(cover);
+    expect(localStorage.getItem(`travelhub.remote.${user.id}`)).not.toContain(
+      "base64",
+    );
+    await act(async () => root.unmount());
+    await mount();
+    expect(travel.trips[0].cover).toBe(cover);
+    await act(async () => root.unmount());
+    vi.mocked(sdk.authGetSelf).mockResolvedValue(
+      ok({ ...user, id: "1568610886538672099" }),
+    );
+    await mount();
+    expect(travel.trips[0].cover).toBeNull();
+  });
+
+  it("does not restore an uploaded cover after it is removed", async () => {
+    vi.mocked(sdk.tripsPatchTrip).mockResolvedValue(
+      ok({ ...trip, cover: null }),
+    );
+    await act(async () =>
+      travel.saveTrip(trip.id, {
+        ...values,
+        cover: "data:image/webp;base64,dGVzdA==",
+      }),
+    );
+    await act(async () => travel.saveTrip(trip.id, values));
+    await act(async () => root.unmount());
+    await mount();
+    expect(travel.trips[0].cover).toBeNull();
+  });
+
   it("restores the server session and complete trip graph without rounding IDs", () => {
     expect(travel.ready).toBe(true);
     expect(travel.username).toBe(user.username);

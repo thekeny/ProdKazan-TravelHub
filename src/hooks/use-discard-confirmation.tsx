@@ -17,10 +17,13 @@ export function useDiscardConfirmation(
     else close();
   };
   const confirmation = (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
+    <Dialog.Root modal open={open} onOpenChange={setOpen}>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-[70] bg-overlay/35" />
-        <DialogPopup className="fixed top-1/2 left-1/2 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background p-6">
+        <Dialog.Backdrop
+          forceRender
+          className="dialog-backdrop fixed inset-0 z-[70] bg-overlay/60"
+        />
+        <DialogPopup className="dialog-popup fixed inset-0 z-[70] m-auto h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-xl border bg-background p-6">
           <Dialog.Title className="pr-10 text-xl">
             Закрыть без сохранения?
           </Dialog.Title>

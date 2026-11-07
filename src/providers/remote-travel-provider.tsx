@@ -5,6 +5,12 @@ import type { User } from "@/api/generated/types.gen";
 import type { TravelData, Trip } from "@/configs/types/travel.type";
 import { deleteMaterialFiles } from "@/lib/material-storage";
 import {
+  isUploadedCover,
+  loadRemoteCover,
+  remoteCoverKey,
+  saveRemoteCover,
+} from "@/lib/remote-covers";
+import {
   readRemotePreferences,
   writeRemotePreferences,
 } from "@/lib/remote-preferences";
@@ -54,6 +60,9 @@ export function RemoteTravelProvider({
       try {
         writeRemotePreferences(user.id ?? user.username, {
           activeId: next.activeId,
+          coverIds: next.trips
+            .filter((trip) => isUploadedCover(trip.cover))
+            .map((trip) => trip.id),
           materials: Object.fromEntries(
             next.trips.flatMap((trip) =>
               (trip.events ?? []).map((event) => [event.id, event.materials]),
@@ -73,11 +82,28 @@ export function RemoteTravelProvider({
       const account = await apiResult(sdk.authGetSelf());
       const trips = await loadTrips();
       const local = preferences(account);
+      const covers = new Map<string, string>();
+      await Promise.all(
+        (local.coverIds ?? []).map(async (id) => {
+          if (!trips.some((trip) => trip.id === id)) return;
+          try {
+            const cover = await loadRemoteCover(
+              account.id ?? account.username,
+              id,
+            );
+            if (cover) covers.set(id, cover);
+          } catch {
+            if (generation.current === expected)
+              setWarning("Не удалось прочитать обложку из браузера.");
+          }
+        }),
+      );
       if (generation.current !== expected) return;
       setUser(account);
       setData({
         trips: trips.map((trip) => ({
           ...trip,
+          cover: covers.get(trip.id) ?? trip.cover,
           events: trip.events?.map((event) => ({
             ...event,
             materials: local.materials[event.id] ?? [],
@@ -153,6 +179,17 @@ export function RemoteTravelProvider({
   function check(error: string | null) {
     if (error) throw new Error(error);
   }
+  async function applyCover(trip: Trip, cover: string | null): Promise<Trip> {
+    if (!user || !isUploadedCover(cover)) return trip;
+    try {
+      await saveRemoteCover(user.id ?? user.username, trip.id, cover);
+    } catch {
+      setWarning(
+        "Поездка сохранена, но обложку сохранить в браузере не удалось. Выберите файл повторно после освобождения места.",
+      );
+    }
+    return { ...trip, cover };
+  }
   const value: TravelContextValue = {
     ...data,
     user,
@@ -196,7 +233,10 @@ export function RemoteTravelProvider({
         const trip = mapTrip(
           await apiResult(sdk.tripsPostTrip({ body: tripBody(values) })),
         );
-        persist({ trips: [...data.trips, trip], activeId: trip.id });
+        persist({
+          trips: [...data.trips, await applyCover(trip, values.cover)],
+          activeId: trip.id,
+        });
       }),
     saveTrip: (id, values) =>
       mutate(async () => {
@@ -220,7 +260,7 @@ export function RemoteTravelProvider({
           ),
         );
         replace({
-          ...saved,
+          ...(await applyCover(saved, values.cover)),
           events: trip.events,
           points: trip.points,
           legs: trip.legs,
@@ -255,11 +295,12 @@ export function RemoteTravelProvider({
           activeId:
             data.activeId === id ? (trips[0]?.id ?? null) : data.activeId,
         });
-        void deleteMaterialFiles(
-          (trip.events ?? []).flatMap((event) =>
+        void deleteMaterialFiles([
+          remoteCoverKey(user?.id ?? user?.username ?? "", id),
+          ...(trip.events ?? []).flatMap((event) =>
             event.materials.map((material) => material.id),
           ),
-        );
+        ]);
       }),
     savePoint: (id, values, pointId) =>
       mutate(async () => {

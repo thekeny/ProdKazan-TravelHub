@@ -43,7 +43,7 @@ export function TripSettings({
       {confirmation}
       <Dialog.Portal>
         <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-[60] bg-overlay/35" />
-        <DialogPopup className="dialog-popup fixed inset-3 z-[60] mx-auto max-w-lg overflow-y-auto rounded-xl border bg-background p-5 sm:inset-y-8 sm:p-8">
+        <DialogPopup className="dialog-popup fixed inset-3 z-[60] mx-auto max-w-3xl overflow-y-auto rounded-xl border bg-background p-5 sm:inset-y-8 sm:p-8">
           <Dialog.Title className="pr-10 text-xl">
             Настройки путешествия
           </Dialog.Title>

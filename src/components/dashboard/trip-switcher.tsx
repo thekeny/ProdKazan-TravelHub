@@ -12,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { StatusToast } from "@/components/ui/status-toast";
 import { pages } from "@/configs/paths/pages.path";
 import { formatTripDates } from "@/lib/travel-format";
 import { useTravel } from "@/providers/travel-provider";
@@ -30,7 +29,6 @@ export function TripSwitcher({
   const { trips, activeId, selectTrip } = useTravel();
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const active = trips.find((trip) => trip.id === activeId);
@@ -128,10 +126,8 @@ export function TripSwitcher({
           key={active.id}
           trip={active}
           onClose={() => setSettingsOpen(false)}
-          onSaved={() => setStatus("Путешествие обновлено.")}
         />
       )}
-      <StatusToast message={status} onClose={() => setStatus(null)} />
       {error && (
         <p role="alert" className="mt-2 text-sm text-destructive">
           {error}

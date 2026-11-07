@@ -16,11 +16,12 @@ import { TripTimeline } from "@/components/dashboard/trip-timeline";
 import { StorageWarning } from "@/components/layout/storage-warning";
 import { TripActions } from "@/components/trips/trip-actions";
 import { Button } from "@/components/ui/button";
+import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import { DialogPopup } from "@/components/ui/dialog-popup";
-import { StatusToast } from "@/components/ui/status-toast";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
 import type { Trip } from "@/configs/types/travel.type";
+import { actionToast } from "@/lib/action-toast";
 import { tripDays } from "@/lib/travel-events";
 import { formatDayShort, formatTripDates, todayIso } from "@/lib/travel-format";
 import {
@@ -97,8 +98,6 @@ function Overview({ trip }: { trip: Trip }) {
   const deletingRef = useRef(false);
   const [detailsEvent, setDetailsEvent] = useState<TripEvent | null>(null);
   const [detailsPointId, setDetailsPointId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
   const [timelineInset, setTimelineInset] = useState(176);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const initializedRef = useRef(false);
@@ -246,23 +245,25 @@ function Overview({ trip }: { trip: Trip }) {
     setDeleting(true);
     try {
       if (deletion.kind === "event")
-        await deleteEvent(trip.id, deletion.event.id);
+        await actionToast(
+          () => deleteEvent(trip.id, deletion.event.id),
+          "Удаляем…",
+          "Запись удалена.",
+        );
       if (deletion.kind === "point")
-        await deletePoint(trip.id, deletion.point.id);
-      if (deletion.kind === "leg") await deleteLeg(trip.id, deletion.leg.id);
-      setStatus(
-        deletion.kind === "event"
-          ? "Событие удалено."
-          : deletion.kind === "point"
-            ? "Точка удалена. Связанные события остались без места."
-            : "Перемещение удалено.",
-      );
+        await actionToast(
+          () => deletePoint(trip.id, deletion.point.id),
+          "Удаляем…",
+          "Запись удалена.",
+        );
+      if (deletion.kind === "leg")
+        await actionToast(
+          () => deleteLeg(trip.id, deletion.leg.id),
+          "Удаляем…",
+          "Запись удалена.",
+        );
       setDeletion(null);
-      setError(null);
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Не удалось удалить запись.",
-      );
+    } catch {
     } finally {
       deletingRef.current = false;
       setDeleting(false);
@@ -297,7 +298,6 @@ function Overview({ trip }: { trip: Trip }) {
           <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
             <TripActions
               trip={trip}
-              onSaved={() => setStatus("Поездка обновлена.")}
               onCheckSchedule={() => setScheduleOpen(true)}
             />
             <Button
@@ -417,7 +417,6 @@ function Overview({ trip }: { trip: Trip }) {
           onSelectLeg={(leg) => jumpToLeg(leg.id)}
           onEditEvent={(event) => openEventEditor(event)}
           onDeleteEvent={(event) => {
-            setError(null);
             setDetailsEvent(null);
             setDeletion({ kind: "event", event });
           }}
@@ -426,7 +425,6 @@ function Overview({ trip }: { trip: Trip }) {
             setLegEditor({ leg });
           }}
           onDeleteLeg={(leg) => {
-            setError(null);
             setDetailsEvent(null);
             setDeletion({ kind: "leg", leg });
           }}
@@ -507,13 +505,11 @@ function Overview({ trip }: { trip: Trip }) {
                   onAddPoint={() => openPointEditor()}
                   onEditPoint={(point) => openPointEditor(point)}
                   onDeletePoint={(point) => {
-                    setError(null);
                     setDeletion({ kind: "point", point });
                   }}
                   onAddLeg={() => setLegEditor({})}
                   onEditLeg={(leg) => setLegEditor({ leg })}
                   onDeleteLeg={(leg) => {
-                    setError(null);
                     setDeletion({ kind: "leg", leg });
                   }}
                 />
@@ -530,7 +526,6 @@ function Overview({ trip }: { trip: Trip }) {
           onClose={() => setDetailsEvent(null)}
           onEdit={() => openEventEditor(detailsEvent)}
           onDelete={() => {
-            setError(null);
             setDetailsEvent(null);
             setDeletion({ kind: "event", event: detailsEvent });
           }}
@@ -551,7 +546,6 @@ function Overview({ trip }: { trip: Trip }) {
           }}
           onEdit={() => openPointEditor(detailsPoint)}
           onDelete={() => {
-            setError(null);
             setDetailsPointId(null);
             setDeletion({ kind: "point", point: detailsPoint });
           }}
@@ -591,7 +585,6 @@ function Overview({ trip }: { trip: Trip }) {
             setDay(values.start.slice(0, 10));
             setShowAll(false);
             setMinutes(timeToMinutes(values.start));
-            setStatus("Событие сохранено.");
           }}
         />
       )}
@@ -603,7 +596,6 @@ function Overview({ trip }: { trip: Trip }) {
           onSave={async (values) => {
             await savePoint(trip.id, values, pointEditor.point?.id);
             setPointEditor(null);
-            setStatus("Точка сохранена.");
           }}
         />
       )}
@@ -620,11 +612,9 @@ function Overview({ trip }: { trip: Trip }) {
             setDay(values.start.slice(0, 10));
             setShowAll(false);
             setMinutes(timeToMinutes(values.start));
-            setStatus("Перемещение сохранено.");
           }}
         />
       )}
-      <StatusToast message={status} onClose={() => setStatus(null)} />
       <ScheduleCheckDialog
         open={scheduleOpen}
         onOpenChange={setScheduleOpen}
@@ -633,47 +623,15 @@ function Overview({ trip }: { trip: Trip }) {
         points={points}
         onShowIssue={showIssue}
       />
-      <Dialog.Root
+      <ConfirmDelete
         open={!!deletion}
-        onOpenChange={(open) => {
-          if (!open && !deletingRef.current) setDeletion(null);
-        }}
+        title={deletion ? deletionTitle[deletion.kind] : ""}
+        busy={deleting}
+        onClose={() => setDeletion(null)}
+        onConfirm={confirmDelete}
       >
-        <Dialog.Portal>
-          <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-50 bg-overlay/35" />
-          <DialogPopup className="dialog-popup fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background p-6 ">
-            <Dialog.Title className="text-lg font-semibold">
-              {deletion ? deletionTitle[deletion.kind] : ""}
-            </Dialog.Title>
-            <Dialog.Description className="mt-2 break-words text-sm text-muted-foreground">
-              {deletion ? deletionText(deletion) : ""}
-            </Dialog.Description>
-            {error && (
-              <p role="alert" className="mt-3 text-sm text-destructive">
-                {error}
-              </p>
-            )}
-            <div className="mt-6 flex justify-end gap-3">
-              <Button
-                variant="outline"
-                className="h-11"
-                onClick={() => setDeletion(null)}
-                disabled={deleting}
-              >
-                Отмена
-              </Button>
-              <Button
-                variant="destructive"
-                className="h-11"
-                onClick={confirmDelete}
-                disabled={deleting}
-              >
-                {deleting ? "Удаляем…" : "Удалить"}
-              </Button>
-            </div>
-          </DialogPopup>
-        </Dialog.Portal>
-      </Dialog.Root>
+        {deletion ? deletionText(deletion) : ""}
+      </ConfirmDelete>
     </div>
   );
 }

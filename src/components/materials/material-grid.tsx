@@ -4,6 +4,7 @@ import { ImageOff, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { MaterialThumbnail } from "@/components/materials/material-thumbnail";
 import { Button } from "@/components/ui/button";
+import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import type { Material } from "@/configs/types/material.type";
 import { useMaterialUrls } from "@/hooks/use-material-urls";
 
@@ -14,6 +15,7 @@ export function MaterialGrid({
   materials: readonly Material[];
   onRemove?: (material: Material) => void;
 }) {
+  const [removing, setRemoving] = useState<Material | null>(null);
   const list = useMemo(() => [...materials], [materials]);
   const urls = useMaterialUrls(list);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -21,6 +23,18 @@ export function MaterialGrid({
   const openUrl = open ? urls[open.id] : null;
   return (
     <>
+      <ConfirmDelete
+        open={!!removing}
+        title="Удалить материал?"
+        onClose={() => setRemoving(null)}
+        onConfirm={() => {
+          if (removing) onRemove?.(removing);
+          setRemoving(null);
+        }}
+      >
+        Материал «{removing?.name}» будет удалён из события после сохранения
+        изменений.
+      </ConfirmDelete>
       <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
         {list.map((material) => (
           <li key={material.id} className="min-w-0">
@@ -40,7 +54,7 @@ export function MaterialGrid({
                   size="icon"
                   className="size-9 shrink-0 text-destructive"
                   aria-label={`Удалить материал «${material.name}»`}
-                  onClick={() => onRemove(material)}
+                  onClick={() => setRemoving(material)}
                 >
                   <X />
                 </Button>

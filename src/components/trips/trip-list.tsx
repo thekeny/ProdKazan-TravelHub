@@ -8,7 +8,6 @@ import { useState } from "react";
 import { TripActions } from "@/components/trips/trip-actions";
 import { TripRouteSketch } from "@/components/trips/trip-route-sketch";
 import { buttonVariants } from "@/components/ui/button";
-import { StatusToast } from "@/components/ui/status-toast";
 import { images } from "@/configs/paths/images.path";
 import { pages } from "@/configs/paths/pages.path";
 import { formatTripDates } from "@/lib/travel-format";
@@ -18,7 +17,6 @@ export function TripList() {
   const { trips, selectTrip } = useTravel();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
 
   return (
     <>
@@ -85,11 +83,7 @@ export function TripList() {
                 </span>
               </button>
               <div className="absolute right-2 top-2 rounded-full bg-surface/85  backdrop-blur">
-                <TripActions
-                  trip={trip}
-                  onSaved={() => setStatus(`Поездка «${trip.name}» обновлена.`)}
-                  onDeleted={() => setStatus(`Поездка «${trip.name}» удалена.`)}
-                />
+                <TripActions trip={trip} />
               </div>
             </article>
           ))
@@ -124,7 +118,6 @@ export function TripList() {
         <Plus />
         Создать путешествие
       </Link>
-      <StatusToast message={status} onClose={() => setStatus(null)} />
     </>
   );
 }

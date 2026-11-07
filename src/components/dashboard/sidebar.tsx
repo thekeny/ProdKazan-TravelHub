@@ -8,10 +8,10 @@ import { TripSwitcher } from "@/components/dashboard/trip-switcher";
 import { UserSettings } from "@/components/dashboard/user-settings";
 import { Logo } from "@/components/layout/logo";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { StatusToast } from "@/components/ui/status-toast";
 import { TRIP_NAVIGATION } from "@/configs/consts/navigation.const";
 import { images } from "@/configs/paths/images.path";
 import { pages } from "@/configs/paths/pages.path";
+import { actionToast } from "@/lib/action-toast";
 import { useTravel } from "@/providers/travel-provider";
 
 export function Sidebar({
@@ -21,11 +21,11 @@ export function Sidebar({
   onNavigate?: () => void;
   hideLogo?: boolean;
 }) {
+  const [loggingOut, setLoggingOut] = useState(false);
   const { username, logout } = useTravel();
   const router = useRouter();
   const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   return (
     <div className="flex min-h-full flex-col p-5">
@@ -78,9 +78,16 @@ export function Sidebar({
               className="size-10"
               aria-label="Выйти из аккаунта"
               title="Выйти"
+              disabled={loggingOut}
               onClick={async () => {
+                if (loggingOut) return;
+                setLoggingOut(true);
                 try {
-                  await logout();
+                  await actionToast(
+                    () => logout(),
+                    "Выходим…",
+                    "Вы вышли из аккаунта.",
+                  );
                   router.replace(pages.LOGIN);
                 } catch (logoutError) {
                   setError(
@@ -88,6 +95,8 @@ export function Sidebar({
                       ? logoutError.message
                       : "Не удалось выйти из аккаунта.",
                   );
+                } finally {
+                  setLoggingOut(false);
                 }
               }}
             >
@@ -105,12 +114,8 @@ export function Sidebar({
           </div>
         </div>
         {settingsOpen && (
-          <UserSettings
-            onClose={() => setSettingsOpen(false)}
-            onSaved={() => setStatus("Настройки пользователя сохранены.")}
-          />
+          <UserSettings onClose={() => setSettingsOpen(false)} />
         )}
-        <StatusToast message={status} onClose={() => setStatus(null)} />
         {error && (
           <p role="alert" className="mt-2 text-sm text-destructive">
             {error}
