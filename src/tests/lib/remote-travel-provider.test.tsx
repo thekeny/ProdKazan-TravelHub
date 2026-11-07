@@ -3,10 +3,13 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as sdk from "@/api/generated/sdk.gen";
 import type { Event, Trip, User, Waypoint } from "@/api/generated/types.gen";
+import { AuthGuard } from "@/components/layout/auth-guard";
 import { RemoteTravelProvider } from "@/providers/remote-travel-provider";
 import { useTravel } from "@/providers/travel-provider";
 
 vi.mock("@/api/generated/sdk.gen");
+const navigation = vi.hoisted(() => ({ replace: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
 const files = vi.hoisted(() => new Map<string, Blob>());
 vi.mock("@/lib/material-storage", () => ({
   getMaterialFile: vi.fn(async (id: string) => files.get(id) ?? null),
@@ -76,7 +79,7 @@ async function mount() {
     await act(async () => {
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     });
-    expect(travel.ready).toBe(true);
+    expect(travel.ready || container.textContent?.includes("500")).toBe(true);
   });
 }
 beforeEach(async () => {
@@ -105,6 +108,59 @@ afterEach(async () => {
 });
 
 describe("remote travel state", () => {
+  it("shows the error page when loading trips fails after authentication", async () => {
+    await act(async () => root.unmount());
+    vi.mocked(sdk.tripsGetTrips).mockResolvedValue(fail(502));
+    await mount();
+    expect(container.textContent).toContain("500");
+  });
+  it("shows the error page on network failure", async () => {
+    await act(async () => root.unmount());
+    vi.mocked(sdk.authGetSelf).mockRejectedValue(
+      new TypeError("Failed to fetch"),
+    );
+    await mount();
+    expect(container.textContent).toContain("500");
+  });
+  it("shows the error page when a mutation returns a server error", async () => {
+    vi.mocked(sdk.tripsPatchTrip).mockResolvedValue(fail(503));
+    await act(async () => {
+      await expect(travel.saveTrip(trip.id, values)).rejects.toThrow();
+    });
+    expect(container.textContent).toContain("500");
+  });
+  it("keeps unauthenticated sessions eligible for login", async () => {
+    await act(async () => root.unmount());
+    vi.mocked(sdk.authGetSelf).mockResolvedValue(fail(401));
+    await mount();
+    expect(travel.ready).toBe(true);
+    expect(travel.username).toBeNull();
+    expect(container.textContent).not.toContain("500");
+  });
+  it.each([500, 502, 503])(
+    "shows the error page instead of redirecting to login on %s",
+    async (status) => {
+      await act(async () => root.unmount());
+      vi.mocked(sdk.authGetSelf).mockResolvedValue(fail(status));
+      root = createRoot(container);
+      await act(async () => {
+        root.render(
+          <RemoteTravelProvider>
+            <AuthGuard>
+              <Probe />
+            </AuthGuard>
+          </RemoteTravelProvider>,
+        );
+      });
+      await vi.waitFor(() =>
+        expect(container.textContent).toContain(
+          "Не удалось загрузить страницу",
+        ),
+      );
+      expect(container.textContent).toContain("500");
+      expect(navigation.replace).not.toHaveBeenCalled();
+    },
+  );
   it("rejects invalid input before API calls and allows unchanged historical dates", async () => {
     const snapshot = travel.trips;
     await expect(
@@ -144,6 +200,11 @@ describe("remote travel state", () => {
     vi.mocked(sdk.tripsPatchTrip).mockResolvedValue(ok(trip));
     vi.mocked(sdk.eventsPatchEvent).mockResolvedValue(ok(event));
     await act(async () => travel.saveTrip(trip.id, values));
+    expect(sdk.tripsPatchTrip).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({ cover: null }),
+      }),
+    );
     await act(async () => travel.saveEvent(trip.id, eventValues, event.id));
     expect(sdk.tripsPatchTrip).toHaveBeenCalledOnce();
     expect(sdk.eventsPatchEvent).toHaveBeenCalledOnce();
@@ -157,33 +218,36 @@ describe("remote travel state", () => {
     expect(sdk.eventsPatchEvent).toHaveBeenCalledOnce();
   });
 
-  it("stores uploaded covers outside the API and restores them only for the current account", async () => {
+  it("uploads covers through the SDK and restores the server image path", async () => {
     const cover = "data:image/webp;base64,dGVzdA==";
-    vi.mocked(sdk.tripsPatchTrip).mockResolvedValue(
-      ok({ ...trip, cover: null }),
-    );
+    const serverTrip = { ...trip, cover: `/trips/${trip.id}/cover/photo.webp` };
+    vi.mocked(sdk.tripsPatchTrip).mockResolvedValue(ok(trip));
+    vi.mocked(sdk.tripsPutTripCover).mockResolvedValue(ok(serverTrip));
     await act(async () => travel.saveTrip(trip.id, { ...values, cover }));
-    expect(sdk.tripsPatchTrip).toHaveBeenCalledWith(
+    expect(sdk.tripsPutTripCover).toHaveBeenCalledWith(
       expect.objectContaining({
-        body: expect.objectContaining({ cover: null }),
+        path: { trip_id: trip.id },
+        body: expect.any(Blob),
+        headers: { "Content-Type": "image/webp" },
       }),
     );
-    expect(travel.trips[0].cover).toBe(cover);
-    expect(localStorage.getItem(`travelhub.remote.${user.id}`)).not.toContain(
-      "base64",
-    );
+    expect(travel.trips[0].cover).toBe(`/api/backend${serverTrip.cover}`);
+    vi.mocked(sdk.tripsGetTrips).mockResolvedValue(ok([serverTrip]));
     await act(async () => root.unmount());
     await mount();
-    expect(travel.trips[0].cover).toBe(cover);
-    await act(async () => root.unmount());
-    vi.mocked(sdk.authGetSelf).mockResolvedValue(
-      ok({ ...user, id: "1568610886538672099" }),
+    expect(travel.trips[0].cover).toBe(`/api/backend${serverTrip.cover}`);
+    await act(async () =>
+      travel.saveTrip(trip.id, { ...values, cover: travel.trips[0].cover }),
     );
-    await mount();
-    expect(travel.trips[0].cover).toBeNull();
+    expect(
+      vi.mocked(sdk.tripsPatchTrip).mock.lastCall?.[0].body,
+    ).not.toHaveProperty("cover");
   });
 
   it("does not restore an uploaded cover after it is removed", async () => {
+    vi.mocked(sdk.tripsPutTripCover).mockResolvedValue(
+      ok({ ...trip, cover: `/trips/${trip.id}/cover/photo.webp` }),
+    );
     vi.mocked(sdk.tripsPatchTrip).mockResolvedValue(
       ok({ ...trip, cover: null }),
     );
@@ -194,6 +258,11 @@ describe("remote travel state", () => {
       }),
     );
     await act(async () => travel.saveTrip(trip.id, values));
+    expect(sdk.tripsPatchTrip).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({ cover: null }),
+      }),
+    );
     await act(async () => root.unmount());
     await mount();
     expect(travel.trips[0].cover).toBeNull();
@@ -209,7 +278,7 @@ describe("remote travel state", () => {
     ).toBe(trip.id);
   });
   it("leaves state intact when saving fails, and uses the server response on success", async () => {
-    vi.mocked(sdk.tripsPatchTrip).mockResolvedValueOnce(fail(500));
+    vi.mocked(sdk.tripsPatchTrip).mockResolvedValueOnce(fail(409));
     await act(async () => {
       await expect(travel.saveTrip(trip.id, values)).rejects.toThrow();
     });
@@ -218,6 +287,11 @@ describe("remote travel state", () => {
       ok({ ...trip, name: "Server value" }),
     );
     await act(async () => travel.saveTrip(trip.id, values));
+    expect(sdk.tripsPatchTrip).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({ cover: null }),
+      }),
+    );
     expect(travel.trips[0].name).toBe("Server value");
     expect(travel.trips[0].points?.[0].id).toBe(point.id);
   });
@@ -239,7 +313,7 @@ describe("remote travel state", () => {
   it("reloads the graph after a compound delete partially fails", async () => {
     vi.mocked(sdk.eventsRemoveEvent).mockResolvedValue(ok(undefined));
     vi.mocked(sdk.eventsGetEvents).mockResolvedValue(ok([]));
-    vi.mocked(sdk.pointsRemovePoint).mockResolvedValue(fail(500));
+    vi.mocked(sdk.pointsRemovePoint).mockResolvedValue(fail(409));
     await act(async () => {
       await expect(travel.deleteTrip(trip.id)).rejects.toThrow();
     });

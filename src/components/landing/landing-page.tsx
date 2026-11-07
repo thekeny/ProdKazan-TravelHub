@@ -51,7 +51,7 @@ export function LandingPage() {
       </header>
 
       <section className="mx-auto w-full max-w-3xl px-6 pt-16 pb-20 text-center lg:pt-24 lg:pb-28">
-        <h1 className="mx-auto max-w-2xl text-[3rem] leading-[0.95] text-balance text-foreground sm:text-[4.5rem]">
+        <h1 className="font-display mx-auto max-w-2xl text-[3rem] leading-[0.95] text-balance text-foreground sm:text-[4.5rem]">
           {LANDING.TITLE}
           <span className="mt-1 block text-primary-strong">
             {LANDING.TITLE_ACCENT}

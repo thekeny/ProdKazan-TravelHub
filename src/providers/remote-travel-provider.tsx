@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as sdk from "@/api/generated/sdk.gen";
 import type { User } from "@/api/generated/types.gen";
+import { ServerError } from "@/components/layout/server-error";
 import type { TravelData, Trip } from "@/configs/types/travel.type";
 import {
   authErrors,
@@ -13,10 +14,10 @@ import {
 import { assertValidInput } from "@/lib/input-validation";
 import { deleteMaterialFiles } from "@/lib/material-storage";
 import {
+  coverBlob,
   isUploadedCover,
   loadRemoteCover,
   remoteCoverKey,
-  saveRemoteCover,
 } from "@/lib/remote-covers";
 import {
   readRemotePreferences,
@@ -47,6 +48,7 @@ export function RemoteTravelProvider({
   const [user, setUser] = useState<User>();
   const [data, setData] = useState<TravelData>(empty);
   const [ready, setReady] = useState(false);
+  const [serverError, setServerError] = useState(false);
   const [storageWarning, setWarning] = useState<string | null>(null);
   const busy = useRef(false);
   const generation = useRef(0);
@@ -108,7 +110,7 @@ export function RemoteTravelProvider({
       setData({
         trips: trips.map((trip) => ({
           ...trip,
-          cover: covers.get(trip.id) ?? trip.cover,
+          cover: trip.cover ?? covers.get(trip.id) ?? null,
           events: trip.events?.map((event) => ({
             ...event,
             materials: local.materials[event.id] ?? [],
@@ -128,12 +130,9 @@ export function RemoteTravelProvider({
       try {
         await initialize(current);
       } catch (error) {
+        if (generation.current !== current) return;
         if (!(error instanceof ApiError && error.status === 401))
-          setWarning(
-            error instanceof Error
-              ? error.message
-              : "Не удалось загрузить данные.",
-          );
+          setServerError(true);
       } finally {
         if (generation.current === current) setReady(true);
       }
@@ -151,6 +150,14 @@ export function RemoteTravelProvider({
     try {
       return await operation();
     } catch (error) {
+      if (
+        (error instanceof ApiError &&
+          (error.status >= 500 || error.status === 0)) ||
+        error instanceof TypeError ||
+        (error instanceof Error && error.name === "TimeoutError")
+      ) {
+        setServerError(true);
+      }
       if (error instanceof ApiError && error.status === 401) {
         setUser(undefined);
         setData(empty);
@@ -182,16 +189,19 @@ export function RemoteTravelProvider({
     });
   }
   async function applyCover(trip: Trip, cover: string | null): Promise<Trip> {
-    if (!user || !isUploadedCover(cover)) return trip;
-    try {
-      await saveRemoteCover(user.id ?? user.username, trip.id, cover);
-    } catch {
-      setWarning(
-        "Поездка сохранена, но обложку сохранить в браузере не удалось. Выберите файл повторно после освобождения места.",
-      );
-    }
-    return { ...trip, cover };
+    if (!isUploadedCover(cover)) return trip;
+    const blob = coverBlob(cover);
+    return mapTrip(
+      await apiResult(
+        sdk.tripsPutTripCover({
+          path: { trip_id: apiId(trip.id) },
+          body: blob,
+          headers: { "Content-Type": blob.type },
+        }),
+      ),
+    );
   }
+
   const value: TravelContextValue = {
     ...data,
     user,
@@ -242,6 +252,7 @@ export function RemoteTravelProvider({
         const trip = mapTrip(
           await apiResult(sdk.tripsPostTrip({ body: tripBody(values) })),
         );
+        reconcile.current = true;
         persist({
           trips: [...data.trips, await applyCover(trip, values.cover)],
           activeId: trip.id,
@@ -268,6 +279,7 @@ export function RemoteTravelProvider({
             }),
           ),
         );
+        reconcile.current = true;
         replace({
           ...(await applyCover(saved, values.cover)),
           events: trip.events,
@@ -474,6 +486,8 @@ export function RemoteTravelProvider({
       }),
   };
   return (
-    <TravelContext.Provider value={value}>{children}</TravelContext.Provider>
+    <TravelContext.Provider value={value}>
+      {serverError ? <ServerError /> : children}
+    </TravelContext.Provider>
   );
 }

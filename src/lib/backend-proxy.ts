@@ -52,7 +52,7 @@ export async function proxyBackend(request: NextRequest, path: string[]) {
       );
   }
   if (
-    !/^(auth\/(login|register|refresh|logout|me)|health|trips(?:\/\d+(?:\/(?:points|events|transfers)(?:\/\d+)?)?)?)$/.test(
+    !/^(auth\/(login|register|refresh|logout|me)|health|trips(?:\/\d+(?:\/(?:(?:points|events|transfers)(?:\/\d+)?|cover(?:\/[a-zA-Z0-9._-]+)?))?)?)$/.test(
       path.join("/"),
     )
   )
@@ -66,8 +66,8 @@ export async function proxyBackend(request: NextRequest, path: string[]) {
     let rotated = false;
     const body = ["GET", "HEAD"].includes(request.method)
       ? undefined
-      : await request.text();
-    const send = (target: string, method: string, payload?: string) => {
+      : await request.arrayBuffer();
+    const send = (target: string, method: string, payload?: ArrayBuffer) => {
       const headers = new Headers();
       if (access) headers.set("Authorization", `Bearer ${access}`);
       if (refresh)
@@ -131,7 +131,7 @@ export async function proxyBackend(request: NextRequest, path: string[]) {
         ? null
         : isTokenResponse
           ? JSON.stringify({ token_type: "bearer" })
-          : await response.text(),
+          : await response.arrayBuffer(),
       {
         status: response.status,
         headers: {

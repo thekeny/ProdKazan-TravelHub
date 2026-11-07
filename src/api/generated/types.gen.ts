@@ -365,6 +365,23 @@ export type NotFoundError = {
 };
 
 /**
+ * PayloadTooLargeError
+ */
+export type PayloadTooLargeError = {
+    /**
+     * Detail
+     */
+    detail?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Occuredat
+     */
+    occuredAt?: string;
+    errorCode?: ErrorCode;
+};
+
+/**
  * RateLimitError
  */
 export type RateLimitError = {
@@ -458,6 +475,23 @@ export type Trip = {
      * Updatedat
      */
     updatedAt?: string;
+};
+
+/**
+ * UnsupportedMediaTypeError
+ */
+export type UnsupportedMediaTypeError = {
+    /**
+     * Detail
+     */
+    detail?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Occuredat
+     */
+    occuredAt?: string;
+    errorCode?: ErrorCode;
 };
 
 /**
@@ -1138,6 +1172,116 @@ export type TripsPatchTripResponses = {
 };
 
 export type TripsPatchTripResponse = TripsPatchTripResponses[keyof TripsPatchTripResponses];
+
+export type TripsPutTripCoverData = {
+    body: Blob | File;
+    path: {
+        /**
+         * Trip Id
+         */
+        trip_id: number;
+    };
+    query?: never;
+    url: '/trips/{trip_id}/cover';
+};
+
+export type TripsPutTripCoverErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Not Found
+     */
+    404: NotFoundError;
+    /**
+     * Content Too Large
+     */
+    413: PayloadTooLargeError;
+    /**
+     * Unsupported Media Type
+     */
+    415: UnsupportedMediaTypeError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+    /**
+     * Service Unavailable
+     */
+    503: ServiceUnavailableError;
+};
+
+export type TripsPutTripCoverError = TripsPutTripCoverErrors[keyof TripsPutTripCoverErrors];
+
+export type TripsPutTripCoverResponses = {
+    /**
+     * Successful Response
+     */
+    200: Trip;
+};
+
+export type TripsPutTripCoverResponse = TripsPutTripCoverResponses[keyof TripsPutTripCoverResponses];
+
+export type TripsGetTripCoverData = {
+    body?: never;
+    path: {
+        /**
+         * Trip Id
+         */
+        trip_id: number;
+        /**
+         * Cover Id
+         */
+        cover_id: string;
+    };
+    query?: never;
+    url: '/trips/{trip_id}/cover/{cover_id}';
+};
+
+export type TripsGetTripCoverErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Not Found
+     */
+    404: NotFoundError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+    /**
+     * Service Unavailable
+     */
+    503: ServiceUnavailableError;
+};
+
+export type TripsGetTripCoverError = TripsGetTripCoverErrors[keyof TripsGetTripCoverErrors];
+
+export type TripsGetTripCoverResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type PointsGetPointsData = {
     body?: never;

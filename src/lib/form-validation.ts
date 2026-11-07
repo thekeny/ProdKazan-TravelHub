@@ -15,7 +15,7 @@ import {
   type ValidationContext,
 } from "@/lib/input-validation";
 import { validateBookingUrl, validateMaterials } from "@/lib/materials";
-import { isUploadedCover } from "@/lib/remote-covers";
+import { isServerCover, isUploadedCover } from "@/lib/remote-covers";
 import { validDateTime } from "@/lib/travel-events";
 import { validateTrip } from "@/lib/travel-storage";
 
@@ -53,6 +53,7 @@ export function tripErrors(
     remote &&
     value.cover &&
     !isUploadedCover(value.cover) &&
+    !(isServerCover(value.cover) && value.cover === context.initial?.cover) &&
     !httpUrl(value.cover)
   )
     errors.cover = "Укажите HTTP(S)-ссылку на изображение.";

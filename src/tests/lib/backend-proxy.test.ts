@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as backendRoute from "@/app/api/backend/[...path]/route";
 import { proxyBackend } from "@/lib/backend-proxy";
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -104,4 +105,38 @@ describe("backend proxy", () => {
     expect(failed.status).toBe(502);
     expect(await failed.text()).not.toContain("private network details");
   });
+});
+
+it("preserves binary image bytes on upload and authenticated download", async () => {
+  expect(backendRoute).toHaveProperty("PUT", expect.any(Function));
+  if (!("PUT" in backendRoute) || typeof backendRoute.PUT !== "function")
+    throw new Error("The backend route must handle PUT requests");
+  const bytes = new Uint8Array([0, 255, 128, 13, 10]);
+  fetchMock.mockResolvedValueOnce(new Response("{}"));
+  await backendRoute.PUT(
+    new NextRequest("http://localhost:3000/api/backend/trips/123/cover", {
+      method: "PUT",
+      body: bytes,
+      headers: {
+        "Content-Type": "image/png",
+        Cookie: "travelhub_access=secret",
+      },
+    }),
+    { params: Promise.resolve({ path: ["trips", "123", "cover"] }) },
+  );
+  expect(
+    new Uint8Array(fetchMock.mock.calls[0][1]?.body as ArrayBuffer),
+  ).toEqual(bytes);
+  fetchMock.mockResolvedValueOnce(
+    new Response(bytes, { headers: { "Content-Type": "image/png" } }),
+  );
+  const response = await proxyBackend(
+    request("trips/123/cover/photo.png", "GET", "travelhub_access=secret"),
+    ["trips", "123", "cover", "photo.png"],
+  );
+  expect(new Uint8Array(await response.arrayBuffer())).toEqual(bytes);
+  expect(response.headers.get("Content-Type")).toBe("image/png");
+  expect(
+    new Headers(fetchMock.mock.calls[1][1]?.headers).get("Authorization"),
+  ).toBe("Bearer secret");
 });

@@ -181,7 +181,7 @@
   h2,
   h3,
   h4 {
-    font-family: var(--font-heading);
+    font-family: var(--font-lora);
     font-weight: 500;
     letter-spacing: -0.015em;
   }

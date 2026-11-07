@@ -14,7 +14,7 @@ import { actionToast } from "@/lib/action-toast";
 import { tripErrors } from "@/lib/form-validation";
 import { compressCover } from "@/lib/image";
 import { dateInputBounds } from "@/lib/input-validation";
-import { isUploadedCover } from "@/lib/remote-covers";
+import { isServerCover, isUploadedCover } from "@/lib/remote-covers";
 
 export function TripForm({
   initial,
@@ -223,7 +223,9 @@ export function TripForm({
                   maxLength={TEXT_LIMITS.URL}
                   pattern="https?://.*"
                   value={
-                    isUploadedCover(values.cover) ? "" : (values.cover ?? "")
+                    isUploadedCover(values.cover) || isServerCover(values.cover)
+                      ? ""
+                      : (values.cover ?? "")
                   }
                   aria-describedby={describedBy}
                   onChange={(event) =>
@@ -239,7 +241,7 @@ export function TripForm({
             label="Обложка · необязательно"
             hint={
               remote
-                ? "JPEG, PNG или WebP до 12 МБ. Файл сохраняется только в этом браузере."
+                ? "JPEG, PNG или WebP до 12 МБ. Обложка сжимается и загружается на сервер."
                 : "JPEG, PNG или WebP до 12 МБ. Обложка сжимается автоматически."
             }
           >
