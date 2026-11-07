@@ -24,6 +24,7 @@ import {
   readOfflineSnapshot,
   saveOfflineSnapshot,
 } from "@/lib/offline-cache";
+import { disablePush, resumePush } from "@/lib/push";
 import {
   coverBlob,
   isUploadedCover,
@@ -48,6 +49,7 @@ import {
   pointBody,
   tripBody,
 } from "@/lib/travel-api";
+import { PushProvider } from "./push-provider";
 import { TravelContext, type TravelContextValue } from "./travel-context";
 
 const empty: TravelData = { trips: [], activeId: null };
@@ -135,6 +137,7 @@ export function RemoteTravelProvider({
         return snapshot.data;
       }
       const account = await apiResult(sdk.authGetSelf());
+      resumePush(account.id ?? account.username);
       restoredAccount.current = account.id ?? account.username;
       const trips = await loadTrips();
       const local = preferences(account);
@@ -190,6 +193,9 @@ export function RemoteTravelProvider({
       } catch (error) {
         if (generation.current !== current) return;
         if (error instanceof ApiError && error.status === 401) {
+          void disablePush(restoredAccount.current, true).catch(
+            () => undefined,
+          );
           void clearOfflineSnapshot();
         } else if (
           error instanceof TypeError ||
@@ -250,6 +256,10 @@ export function RemoteTravelProvider({
         setErrorStatus(error.status);
       }
       if (error instanceof ApiError && error.status === 401) {
+        if (user)
+          void disablePush(user.id ?? user.username, true).catch(
+            () => undefined,
+          );
         void clearOfflineSnapshot();
         setUser(undefined);
         setData(empty);
@@ -282,6 +292,10 @@ export function RemoteTravelProvider({
       )
         setConnected(false);
       if (error instanceof ApiError && error.status === 401) {
+        if (user)
+          void disablePush(user.id ?? user.username, true).catch(
+            () => undefined,
+          );
         void clearOfflineSnapshot();
         setUser(undefined);
         setData(empty);
@@ -349,7 +363,16 @@ export function RemoteTravelProvider({
       }),
     logout: () =>
       mutate(async () => {
-        await apiResult(sdk.authLogout());
+        if (user)
+          await disablePush(user.id ?? user.username, true).catch(
+            () => undefined,
+          );
+        try {
+          await apiResult(sdk.authLogout());
+        } catch (error) {
+          if (user) resumePush(user.id ?? user.username);
+          throw error;
+        }
         await clearOfflineSnapshot();
         setUser(undefined);
         setData(empty);
@@ -724,7 +747,28 @@ export function RemoteTravelProvider({
   };
   return (
     <TravelContext.Provider value={value}>
-      {errorStatus !== null ? <ServerError status={errorStatus} /> : children}
+      <PushProvider
+        onRequestError={(error, foreground) => {
+          if (error instanceof ApiError && error.status === 401) {
+            if (user)
+              void disablePush(user.id ?? user.username, true).catch(
+                () => undefined,
+              );
+            void clearOfflineSnapshot();
+            setUser(undefined);
+            setData(empty);
+          } else if (
+            foreground &&
+            error instanceof ApiError &&
+            error.status >= 500 &&
+            error.status < 600
+          ) {
+            setErrorStatus(error.status);
+          }
+        }}
+      >
+        {errorStatus !== null ? <ServerError status={errorStatus} /> : children}
+      </PushProvider>
     </TravelContext.Provider>
   );
 }

@@ -32,12 +32,18 @@ function samplePath(path: string) {
     .replaceAll("{eventId}", "456")
     .replaceAll("{cover_id}", "photo.webp")
     .replaceAll("{code}", "Invite-1")
+    .replaceAll("{subscriptionId}", "9223372036854775806")
     .replace(/^\//, "")
     .replace(/\/+$/, "");
 }
 
 describe("SDK and backend proxy contract", () => {
   const entries = sdkEntries();
+  // Newly generated features remain closed until their frontend integration.
+  const deferred = (name: string) =>
+    name.startsWith("googleDrive") ||
+    name.startsWith("tickets") ||
+    ["tripsPostTripImport", "tripsGetTripExport"].includes(name);
 
   it("parses every generated SDK endpoint", () => {
     expect(entries.length).toBeGreaterThan(30);
@@ -45,12 +51,20 @@ describe("SDK and backend proxy contract", () => {
     expect(entries.map((entry) => entry.name)).toContain("tripsJoinTrip");
   });
 
-  it("allows every non-admin SDK endpoint through the proxy", () => {
+  it("allows integrated non-admin SDK endpoints through the proxy", () => {
     const rejected = entries
       .filter((entry) => !entry.name.startsWith("admin"))
+      .filter((entry) => !deferred(entry.name))
       .filter((entry) => !isAllowedBackendPath(samplePath(entry.url)))
       .map((entry) => `${entry.name} (${entry.url})`);
     expect(rejected).toEqual([]);
+  });
+
+  it("keeps unintegrated SDK features outside the proxy", () => {
+    for (const entry of entries.filter((entry) => deferred(entry.name)))
+      expect(isAllowedBackendPath(samplePath(entry.url)), entry.name).toBe(
+        false,
+      );
   });
 
   it("keeps admin endpoints outside the public proxy surface", () => {

@@ -1,31 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import { MAP } from "@/configs/consts/map.const";
 import { OFFLINE } from "@/configs/consts/offline.const";
-import { images } from "@/configs/paths/images.path";
+import { registerAppServiceWorker } from "@/lib/app-service-worker";
 import { isConnected } from "@/lib/connectivity";
 
 export function PwaRegistration() {
   useEffect(() => {
-    if (
-      process.env.NODE_ENV !== "production" ||
-      !("serviceWorker" in navigator)
-    )
-      return;
-    const params = new URLSearchParams({
-      routes: JSON.stringify(OFFLINE.routes),
-      assets: JSON.stringify(Object.values(images)),
-      tiles: OFFLINE.cacheTiles ? MAP.tiles : "",
+    if (!("serviceWorker" in navigator)) return;
+    void registerAppServiceWorker().catch(() => {
+      // Online use must remain available if the browser blocks service workers.
     });
-    void navigator.serviceWorker
-      .register(`${OFFLINE.worker}?${params}`, {
-        scope: "/",
-        updateViaCache: "none",
-      })
-      .catch(() => {
-        // Online use must remain available if the browser blocks service workers.
-      });
+    if (process.env.NODE_ENV !== "production") return;
     // Full navigations use cached HTML. RSC responses depend on router state and
     // must never be replaced with HTML or another route's Flight payload.
     const navigate = (event: MouseEvent) => {

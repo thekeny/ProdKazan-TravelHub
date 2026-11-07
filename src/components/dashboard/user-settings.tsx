@@ -2,6 +2,7 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
+import { PushSettings } from "@/components/dashboard/push-settings";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field } from "@/components/ui/field";
@@ -12,6 +13,7 @@ import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { authErrors, passwordErrors } from "@/lib/form-validation";
 import { ApiError } from "@/lib/travel-api";
+import { usePush } from "@/providers/push-provider";
 import { useTravel } from "@/providers/travel-provider";
 export function UserSettings({
   onClose,
@@ -21,6 +23,7 @@ export function UserSettings({
   onSaved?: () => void;
 }) {
   const { username, renameAccount, changePassword, remote, user } = useTravel();
+  const push = usePush();
   const [values, setValues, form] = useFormValues(
     {
       username: username ?? "",
@@ -46,7 +49,7 @@ export function UserSettings({
   const { requestClose, confirmation } = useDiscardConfirmation(
     values,
     onClose,
-    pending,
+    pending || Boolean(push?.pending),
   );
   return (
     <Dialog.Root
@@ -250,6 +253,7 @@ export function UserSettings({
               </div>
             </form>
           </FormProvider>
+          {remote && <PushSettings />}
         </DialogPopup>
       </Dialog.Portal>
     </Dialog.Root>

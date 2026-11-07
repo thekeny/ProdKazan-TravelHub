@@ -2,6 +2,8 @@
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PushPrompt } from "@/components/dashboard/push-prompt";
+import { UserSettingsButton } from "@/components/dashboard/user-settings-button";
 import { Logo } from "@/components/layout/logo";
 import { StorageWarning } from "@/components/layout/storage-warning";
 import { JoinTripButton } from "@/components/trips/join-trip";
@@ -19,21 +21,24 @@ export default function Page() {
       <section className="flow-card max-w-3xl">
         <div className="flex items-center justify-between gap-4">
           <Logo />
-          <Button
-            variant="ghost"
-            className="h-10 px-3 text-muted-foreground"
-            onClick={async () => {
-              try {
-                await logout();
-                router.replace(pages.LOGIN);
-              } catch (logoutError) {
-                setError((logoutError as Error).message);
-              }
-            }}
-          >
-            <LogOut />
-            <span className="hidden sm:inline">Выйти</span>
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            <UserSettingsButton />
+            <Button
+              variant="ghost"
+              className="h-10 px-3 text-muted-foreground"
+              onClick={async () => {
+                try {
+                  await logout();
+                  router.replace(pages.LOGIN);
+                } catch (logoutError) {
+                  setError((logoutError as Error).message);
+                }
+              }}
+            >
+              <LogOut />
+              <span className="hidden sm:inline">Выйти</span>
+            </Button>
+          </div>
         </div>
         <h1 className="mt-8 text-4xl leading-tight sm:text-5xl">
           Ваши путешествия
@@ -42,6 +47,7 @@ export default function Page() {
           Выберите поездку или создайте новую.
         </p>
         <StorageWarning className="mt-4" />
+        <PushPrompt />
         <TripList />
         <JoinTripButton />
         {error && (

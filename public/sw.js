@@ -2,6 +2,7 @@ const VERSION = "travelhub-app-v1";
 const TILES = "travelhub-tiles-v1";
 const MAX_TILES = 300;
 const config = new URL(self.location.href).searchParams;
+const offline = config.get("offline") !== "false";
 const routes = JSON.parse(config.get("routes") || "[]");
 const assets = JSON.parse(config.get("assets") || "[]");
 const tileTemplate = config.get("tiles");
@@ -56,7 +57,12 @@ async function warmShell() {
 }
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(warmShell());
+  event.waitUntil(
+    (async () => {
+      if (offline) await warmShell();
+      await self.skipWaiting();
+    })(),
+  );
 });
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -96,6 +102,7 @@ async function tileResponse(request) {
 }
 
 self.addEventListener("fetch", (event) => {
+  if (!offline) return;
   const { request } = event;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
@@ -152,6 +159,88 @@ self.addEventListener("fetch", (event) => {
       const response = await fetch(request);
       if (response.ok) await save(cache, request, response);
       return response;
+    })(),
+  );
+});
+
+function readPushPayload(event) {
+  if (!event.data) return {};
+  try {
+    const value = event.data.json();
+    return value && typeof value === "object"
+      ? value
+      : { body: String(value ?? "") };
+  } catch {
+    return { body: event.data.text() };
+  }
+}
+
+function notificationUrl(value) {
+  try {
+    const url = new URL(
+      typeof value === "string" ? value : "/dashboard",
+      self.location.origin,
+    );
+    if (
+      url.origin === self.location.origin &&
+      !url.username &&
+      !url.password &&
+      ["http:", "https:"].includes(url.protocol)
+    )
+      return url.href;
+  } catch {
+    /* Malformed links open the dashboard. */
+  }
+  return new URL("/dashboard", self.location.origin).href;
+}
+
+self.addEventListener("push", (event) => {
+  const payload = readPushPayload(event);
+  const nested =
+    payload.notification && typeof payload.notification === "object"
+      ? payload.notification
+      : {};
+  const title =
+    [payload.title, nested.title].find(
+      (value) => typeof value === "string" && value,
+    ) || "TravelHub";
+  const body =
+    [payload.body, payload.message, nested.body].find(
+      (value) => typeof value === "string",
+    ) || "";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: config.get("icon") || "/brand-icon.png",
+      badge: config.get("icon") || "/brand-icon.png",
+      data: { url: notificationUrl(payload.url || nested.url) },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = notificationUrl(event.notification.data?.url);
+  event.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      const exact = clients.find((client) => client.url === url);
+      if (exact) return exact.focus();
+      const existing = clients.find(
+        (client) => new URL(client.url).origin === self.location.origin,
+      );
+      if (existing) {
+        try {
+          const navigated = await existing.navigate(url);
+          if (navigated) return navigated.focus();
+        } catch {
+          /* A closing tab may no longer accept navigation. */
+        }
+      }
+      return self.clients.openWindow(url);
     })(),
   );
 });

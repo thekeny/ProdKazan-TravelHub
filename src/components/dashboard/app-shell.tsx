@@ -1,6 +1,8 @@
 import { MobileNavigation } from "@/components/dashboard/mobile-navigation";
+import { PushPrompt } from "@/components/dashboard/push-prompt";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TripSwitcher } from "@/components/dashboard/trip-switcher";
+import { UserSettingsButton } from "@/components/dashboard/user-settings-button";
 import { Logo } from "@/components/layout/logo";
 import { OfflineBanner } from "@/components/layout/offline-banner";
 
@@ -12,11 +14,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
       <div className="flex min-h-0 flex-1 flex-col lg:ml-72">
         <OfflineBanner />
+        <PushPrompt />
         <header className="flex shrink-0 items-center gap-3 bg-background px-3 py-2 lg:hidden">
           <Logo />
           <div className="ml-auto w-52 min-w-0 max-w-[55%]">
             <TripSwitcher compact />
           </div>
+          <UserSettingsButton />
         </header>
         <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
         <MobileNavigation />

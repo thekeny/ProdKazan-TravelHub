@@ -12,7 +12,7 @@ const COOKIE_OPTIONS = {
 // collaborators route keeps the backend's historical "collaboratrs" spelling,
 // while the correctly spelled alias is accepted for future compatibility.
 const ALLOWED_PATH =
-  /^(?:auth\/(?:login|register|refresh|logout|me(?:\/password)?)|health|trips(?:\/(?:\d+(?:\/(?:(?:points|events|transfers)(?:\/\d+)?|cover(?:\/[a-zA-Z0-9._-]+)?|code\/generate|collaborat(?:ors|rs)))?|code\/redeem\/[A-Za-z0-9_~-][A-Za-z0-9._~-]{0,127}))?)$/;
+  /^(?:auth\/(?:login|register|refresh|logout|me(?:\/password)?)|health|push\/(?:vapid-public-key|subscriptions(?:\/[1-9]\d*)?|test)|trips(?:\/(?:\d+(?:\/(?:(?:points|events|transfers)(?:\/\d+)?|cover(?:\/[a-zA-Z0-9._-]+)?|code\/generate|collaborat(?:ors|rs)))?|code\/redeem\/[A-Za-z0-9_~-][A-Za-z0-9._~-]{0,127}))?)$/;
 
 export function isAllowedBackendPath(path: string) {
   return ALLOWED_PATH.test(path);
