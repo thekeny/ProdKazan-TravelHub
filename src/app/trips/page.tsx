@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/layout/logo";
 import { StorageWarning } from "@/components/layout/storage-warning";
+import { JoinTripButton } from "@/components/trips/join-trip";
 import { TripList } from "@/components/trips/trip-list";
 import { Button } from "@/components/ui/button";
 import { pages } from "@/configs/paths/pages.path";
@@ -42,6 +43,7 @@ export default function Page() {
         </p>
         <StorageWarning className="mt-4" />
         <TripList />
+        <JoinTripButton />
         {error && (
           <p role="alert" className="mt-4 text-sm text-destructive">
             {error}

@@ -1,8 +1,15 @@
 "use client";
 
-import { EllipsisVertical, ListChecks, Pencil, Trash2 } from "lucide-react";
+import {
+  EllipsisVertical,
+  ListChecks,
+  Pencil,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { useRef, useState } from "react";
 import { TripSettings } from "@/components/trips/trip-settings";
+import { TripSharing } from "@/components/trips/trip-sharing";
 import { Button } from "@/components/ui/button";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import {
@@ -27,9 +34,10 @@ export function TripActions({
   onDeleted?: () => void;
   onCheckSchedule?: () => void;
 }) {
-  const { deleteTrip } = useTravel();
+  const { deleteTrip, remote } = useTravel();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [sharingOpen, setSharingOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const deletingRef = useRef(false);
@@ -90,6 +98,18 @@ export function TripActions({
               Проверить расписание
             </DropdownMenuItem>
           )}
+          {remote && (
+            <DropdownMenuItem
+              className="min-h-10 cursor-pointer px-3"
+              onClick={() => {
+                setMenuOpen(false);
+                setSharingOpen(true);
+              }}
+            >
+              <Users />
+              Совместный доступ
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"
@@ -111,6 +131,10 @@ export function TripActions({
           onClose={() => setEditorOpen(false)}
           onSaved={onSaved}
         />
+      )}
+
+      {sharingOpen && (
+        <TripSharing trip={trip} onClose={() => setSharingOpen(false)} />
       )}
 
       <ConfirmDelete

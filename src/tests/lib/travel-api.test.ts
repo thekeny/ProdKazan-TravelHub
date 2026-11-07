@@ -49,6 +49,15 @@ describe("backend adapters", () => {
         endsAtWaypointId: "2",
       }).end,
     ).toBe(values.end);
+    expect(
+      mapLeg({
+        ...leg,
+        id: "4",
+        transportType: "hyperloop",
+        startsAtWaypointId: "1",
+        endsAtWaypointId: "2",
+      }).transport,
+    ).toBe("other");
   });
   it("turns authorization and validation failures into actionable errors", async () => {
     await expect(
@@ -62,10 +71,50 @@ describe("backend adapters", () => {
     await expect(
       apiResult(
         Promise.resolve({
+          response: new Response(null, { status: 403 }),
+          error: {},
+        }),
+      ),
+    ).rejects.toThrow("Недостаточно прав для этого действия.");
+    await expect(
+      apiResult(
+        Promise.resolve({
+          response: new Response(null, { status: 413 }),
+          error: {},
+        }),
+      ),
+    ).rejects.toThrow("Файл слишком большой.");
+    await expect(
+      apiResult(
+        Promise.resolve({
+          response: new Response(null, { status: 415 }),
+          error: {},
+        }),
+      ),
+    ).rejects.toThrow("Неподдерживаемый тип файла.");
+    await expect(
+      apiResult(
+        Promise.resolve({
           response: new Response(null, { status: 409 }),
           error: { errorCode: "UsernameIsAlreadyInUse" },
         }),
       ),
     ).rejects.toThrow("Это имя пользователя уже занято.");
+    await expect(
+      apiResult(
+        Promise.resolve({
+          response: new Response(null, { status: 409 }),
+          error: { errorCode: "UserIsAlreadyACollaborator" },
+        }),
+      ),
+    ).rejects.toThrow("Вы уже участвуете в этой поездке.");
+    await expect(
+      apiResult(
+        Promise.resolve({
+          response: new Response(null, { status: 410 }),
+          error: { errorCode: "ExpiredLink" },
+        }),
+      ),
+    ).rejects.toThrow("Срок действия кода приглашения истёк.");
   });
 });

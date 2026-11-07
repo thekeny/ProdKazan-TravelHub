@@ -251,6 +251,21 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
             };
           });
         },
+        async loadCollaborators() {
+          throw new Error(
+            "Совместный доступ доступен только для поездок на сервере.",
+          );
+        },
+        async generateInviteCode() {
+          throw new Error(
+            "Совместный доступ доступен только для поездок на сервере.",
+          );
+        },
+        async joinTrip() {
+          throw new Error(
+            "Присоединиться по коду можно только к поездке на сервере.",
+          );
+        },
         login(name) {
           assertValidInput(
             authErrors(

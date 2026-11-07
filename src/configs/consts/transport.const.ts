@@ -4,6 +4,7 @@ export const TRANSPORT_TYPES = {
   train: "Поезд",
   plane: "Самолёт",
   bus: "Автобус",
+  other: "Другое",
 } as const;
 
 export type TransportKind = keyof typeof TRANSPORT_TYPES;
@@ -20,4 +21,5 @@ export const TRANSPORT_STYLES: Record<TransportKind, TransportStyle> = {
   train: { color: "var(--transport-train)", dashArray: "10 6", weight: 4 },
   plane: { color: "var(--transport-plane)", dashArray: "4 10", weight: 3 },
   bus: { color: "var(--transport-bus)", dashArray: "7 5", weight: 4 },
+  other: { color: "var(--transport-other)", dashArray: "6 6", weight: 3 },
 };

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as backendRoute from "@/app/api/backend/[...path]/route";
+import { COLLABORATION } from "@/configs/consts/collaboration.const";
 import { proxyBackend } from "@/lib/backend-proxy";
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -168,6 +169,87 @@ describe("backend proxy", () => {
       expect(response.status).toBe(200);
       expect(response.cookies.get("travelhub_access")?.value).toBe("renewed");
     }
+  });
+  it("forwards invite codes, joins and the collaborators list", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ code: "Invite-1", uses: 5 }), {
+          status: 201,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            owner: { username: "owner" },
+            collaborators: [{ username: "friend" }],
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const cookie = "travelhub_access=access";
+    const generated = await proxyBackend(
+      request("trips/123/code/generate?max_uses=5", "POST", cookie),
+      ["trips", "123", "code", "generate"],
+    );
+    expect(generated.status).toBe(201);
+    expect(await generated.json()).toEqual({ code: "Invite-1", uses: 5 });
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://backend.example/api/v1/trips/123/code/generate?max_uses=5",
+    );
+    const collaborators = await proxyBackend(
+      request("trips/123/collaboratrs", "GET", cookie),
+      ["trips", "123", "collaboratrs"],
+    );
+    expect(collaborators.status).toBe(200);
+    expect(
+      new Headers(fetchMock.mock.calls[1][1]?.headers).get("Authorization"),
+    ).toBe("Bearer access");
+    const joined = await proxyBackend(
+      request("trips/code/redeem/Invite-1", "POST", cookie),
+      ["trips", "code", "redeem", "Invite-1"],
+    );
+    expect(joined.status).toBe(204);
+    expect(fetchMock.mock.calls[2][0]).toBe(
+      "https://backend.example/api/v1/trips/code/redeem/Invite-1",
+    );
+  });
+  it("normalizes an empty trailing segment from collection URLs", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("[]"));
+    const response = await proxyBackend(request("trips/", "GET"), [
+      "trips",
+      "",
+    ]);
+    expect(response.status).toBe(200);
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://backend.example/api/v1/trips",
+    );
+  });
+  it("rejects traversal segments in invite codes before contacting the backend", async () => {
+    for (const code of ["..", ".", "a/../../auth/me"]) {
+      const response = await proxyBackend(
+        request("trips/code/redeem", "POST", "travelhub_access=access"),
+        ["trips", "code", "redeem", code],
+      );
+      expect(response.status).toBe(404);
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it("keeps the invite code length aligned with the shared limit", async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+    const maxLength = "a".repeat(COLLABORATION.CODE_MAX_LENGTH);
+    const accepted = await proxyBackend(
+      request("trips/code/redeem", "POST", "travelhub_access=access"),
+      ["trips", "code", "redeem", maxLength],
+    );
+    expect(accepted.status).toBe(204);
+    fetchMock.mockClear();
+    const tooLong = "a".repeat(COLLABORATION.CODE_MAX_LENGTH + 1);
+    const rejected = await proxyBackend(
+      request("trips/code/redeem", "POST", "travelhub_access=access"),
+      ["trips", "code", "redeem", tooLong],
+    );
+    expect(rejected.status).toBe(404);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
   it("rejects cross-origin writes and unknown API paths before contacting the backend", async () => {
     expect(

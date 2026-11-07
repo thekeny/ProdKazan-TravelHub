@@ -2,11 +2,10 @@ import { defineConfig } from "@hey-api/openapi-ts";
 import { loadEnvConfig } from "@next/env";
 
 loadEnvConfig(process.cwd());
+const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
 
 export default defineConfig({
-  input: process.env.NEXT_PUBLIC_API_URL
-    ? `${process.env.NEXT_PUBLIC_API_URL}/openapi.json`
-    : "./openapi.json",
+  input: apiUrl ? `${apiUrl}/openapi.json` : "./openapi.json",
   output: {
     path: "src/api/generated",
   },

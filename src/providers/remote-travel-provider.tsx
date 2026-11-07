@@ -3,6 +3,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as sdk from "@/api/generated/sdk.gen";
 import type { User } from "@/api/generated/types.gen";
 import { ServerError } from "@/components/layout/server-error";
+import {
+  COLLABORATION,
+  inviteCodeError,
+} from "@/configs/consts/collaboration.const";
 import type { TravelData, Trip } from "@/configs/types/travel.type";
 import { isConnected, setConnected } from "@/lib/connectivity";
 import {
@@ -120,7 +124,7 @@ export function RemoteTravelProvider({
       );
   }
   const initialize = useCallback(
-    async (expected = generation.current) => {
+    async (expected = generation.current): Promise<TravelData | undefined> => {
       if (!isConnected()) {
         const snapshot = await readOfflineSnapshot();
         if (generation.current !== expected) return;
@@ -128,7 +132,7 @@ export function RemoteTravelProvider({
           throw new Error("Нет сохранённых данных для офлайн-просмотра.");
         setUser(snapshot.user);
         setData(snapshot.data);
-        return;
+        return snapshot.data;
       }
       const account = await apiResult(sdk.authGetSelf());
       restoredAccount.current = account.id ?? account.username;
@@ -174,6 +178,7 @@ export function RemoteTravelProvider({
       void saveOfflineSnapshot(account, next).catch(() =>
         setWarning("Не удалось сохранить данные для офлайн-просмотра."),
       );
+      return next;
     },
     [preferences],
   );
@@ -261,6 +266,27 @@ export function RemoteTravelProvider({
     } finally {
       busy.current = false;
       reconcile.current = false;
+    }
+  }
+  async function read<T>(operation: () => Promise<T>): Promise<T> {
+    if (!isConnected())
+      throw new Error(
+        "Вы оффлайн. Доступен только просмотр сохранённых данных.",
+      );
+    try {
+      return await operation();
+    } catch (error) {
+      if (
+        error instanceof TypeError ||
+        (error instanceof ApiError && error.status === 0)
+      )
+        setConnected(false);
+      if (error instanceof ApiError && error.status === 401) {
+        void clearOfflineSnapshot();
+        setUser(undefined);
+        setData(empty);
+      }
+      throw error;
     }
   }
   function findTrip(id: string, requireActive = true) {
@@ -618,6 +644,82 @@ export function RemoteTravelProvider({
           ...trip,
           legs: trip.legs?.filter((leg) => leg.id !== legId),
         });
+      }),
+    loadCollaborators: (id) =>
+      read(async () => {
+        findTrip(id, false);
+        return apiResult(
+          sdk.tripsGetTripByIdCollaborators({
+            path: { trip_id: apiId(id) },
+          }),
+        );
+      }),
+    generateInviteCode: (id, maxUses) =>
+      mutate(async () => {
+        findTrip(id, false);
+        if (
+          maxUses !== undefined &&
+          (!Number.isInteger(maxUses) ||
+            maxUses < 1 ||
+            maxUses > COLLABORATION.MAX_USES)
+        )
+          throw new Error(
+            `Количество использований: от 1 до ${COLLABORATION.MAX_USES}.`,
+          );
+        return apiResult(
+          sdk.tripsGenerateCode({
+            path: { trip_id: apiId(id) },
+            ...(maxUses === undefined ? {} : { query: { max_uses: maxUses } }),
+          }),
+        );
+      }),
+    joinTrip: (code) =>
+      mutate(async () => {
+        if (!user) throw new Error("Сначала войдите в аккаунт.");
+        const codeError = inviteCodeError(code);
+        if (codeError) throw new Error(codeError);
+        const invite = code.trim();
+        const before = new Set(data.trips.map((trip) => trip.id));
+        try {
+          await apiResult(sdk.tripsJoinTrip({ path: { code: invite } }));
+        } catch (error) {
+          if (error instanceof ApiError && error.status === 404)
+            throw new ApiError(
+              404,
+              "Код приглашения не найден или больше не действует.",
+            );
+          if (error instanceof ApiError && error.status === 409)
+            throw new ApiError(
+              409,
+              error.message ===
+                "Данные связаны с другими записями или уже существуют."
+                ? "Вы уже участвуете в этой поездке или код больше не действует."
+                : error.message,
+            );
+          throw error;
+        }
+        reconcile.current = true;
+        let reloaded: TravelData | undefined;
+        try {
+          reloaded = await initialize();
+        } catch (error) {
+          // The join already succeeded on the server. Do not report a false
+          // failure because the follow-up reload failed.
+          if (
+            error instanceof TypeError ||
+            (error instanceof ApiError && error.status === 0)
+          )
+            setConnected(false);
+          if (error instanceof ApiError && error.status === 401) throw error;
+          setWarning(
+            "Вы присоединились к поездке, но не удалось обновить список. Обновите страницу.",
+          );
+          return null;
+        }
+        if (!reloaded) return null;
+        const joined = reloaded.trips.find((trip) => !before.has(trip.id));
+        if (joined) persist({ ...reloaded, activeId: joined.id });
+        return joined?.id ?? null;
       }),
   };
   return (

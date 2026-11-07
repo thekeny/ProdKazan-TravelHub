@@ -96,6 +96,18 @@ try {
     (await request(base, "PATCH", { name: "Updated integration test" })).name,
     "Updated integration test",
   );
+  const invite = await request(
+    `${base}/code/generate?max_uses=1`,
+    "POST",
+    undefined,
+    201,
+  );
+  assert.equal(typeof invite.code, "string");
+  assert.ok(invite.code.length > 0);
+  assert.equal(typeof invite.uses, "number");
+  const collaborators = await request(`${base}/collaboratrs`);
+  assert.equal(collaborators.owner.username, username);
+  assert.ok(Array.isArray(collaborators.collaborators));
   const point = await request(
     `${base}/points`,
     "POST",

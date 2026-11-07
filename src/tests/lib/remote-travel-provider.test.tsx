@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as sdk from "@/api/generated/sdk.gen";
 import type { Event, Trip, User, Waypoint } from "@/api/generated/types.gen";
 import { AuthGuard } from "@/components/layout/auth-guard";
+import { COLLABORATION } from "@/configs/consts/collaboration.const";
 import { setConnected } from "@/lib/connectivity";
 import { RemoteTravelProvider } from "@/providers/remote-travel-provider";
 import { useTravel } from "@/providers/travel-provider";
@@ -255,6 +256,123 @@ describe("remote travel state", () => {
     expect(travel.trips[0].eventTypes).toEqual(["Утренний кофе", "Музей"]);
     expect(travel.trips[0].events?.[0].customType).toBe("Утренний кофе");
   });
+  it("creates invite codes and loads the collaborators of a server trip", async () => {
+    vi.mocked(sdk.tripsGenerateCode).mockResolvedValue(
+      ok({ code: "Invite-1", uses: 5 }),
+    );
+    vi.mocked(sdk.tripsGetTripByIdCollaborators).mockResolvedValue(
+      ok({ owner: user, collaborators: [] }),
+    );
+    let invite: { code: string; uses: number } | undefined;
+    await act(async () => {
+      invite = await travel.generateInviteCode(trip.id, 5);
+    });
+    expect(invite).toEqual({ code: "Invite-1", uses: 5 });
+    expect(sdk.tripsGenerateCode).toHaveBeenCalledWith({
+      path: { trip_id: trip.id },
+      query: { max_uses: 5 },
+    });
+    const collaborators = await travel.loadCollaborators(trip.id);
+    expect(collaborators.owner.username).toBe(user.username);
+    expect(sdk.tripsGetTripByIdCollaborators).toHaveBeenCalledWith({
+      path: { trip_id: trip.id },
+    });
+  });
+
+  it("joins by invite code, reloads trips and selects the new trip", async () => {
+    const joinedTrip = {
+      ...trip,
+      id: "1568610886538672099",
+      name: "Joined trip",
+    } satisfies Trip;
+    vi.mocked(sdk.tripsJoinTrip).mockResolvedValue(ok(undefined));
+    vi.mocked(sdk.tripsGetTrips).mockResolvedValue(ok([trip, joinedTrip]));
+    let joinedId: string | null = null;
+    await act(async () => {
+      joinedId = await travel.joinTrip("  Invite-1  ");
+    });
+    expect(joinedId).toBe(joinedTrip.id);
+    expect(sdk.tripsJoinTrip).toHaveBeenCalledWith({
+      path: { code: "Invite-1" },
+    });
+    expect(travel.activeId).toBe(joinedTrip.id);
+    expect(travel.trips.map((item) => item.id)).toEqual([
+      trip.id,
+      joinedTrip.id,
+    ]);
+  });
+
+  it("does not report a false join failure when the follow-up reload fails", async () => {
+    vi.mocked(sdk.tripsJoinTrip).mockResolvedValue(ok(undefined));
+    vi.mocked(sdk.tripsGetTrips).mockRejectedValue(
+      new TypeError("Failed to fetch"),
+    );
+    let joinedId: string | null = "not-set";
+    await act(async () => {
+      joinedId = await travel.joinTrip("Invite-1");
+    });
+    expect(joinedId).toBeNull();
+    expect(travel.storageWarning).toContain(
+      "Вы присоединились к поездке, но не удалось обновить список",
+    );
+  });
+
+  it("maps an unknown or expired invite code to a useful message", async () => {
+    vi.mocked(sdk.tripsJoinTrip).mockResolvedValue(fail(404));
+    await act(async () => {
+      await expect(travel.joinTrip("missing")).rejects.toThrow(
+        "Код приглашения не найден или больше не действует.",
+      );
+    });
+  });
+
+  it("maps an existing collaborator conflict to a useful message", async () => {
+    vi.mocked(sdk.tripsJoinTrip).mockResolvedValue({
+      data: undefined,
+      request: new Request("https://example.com"),
+      error: { errorCode: "UserIsAlreadyACollaborator" },
+      response: new Response(null, { status: 409 }),
+    });
+    await act(async () => {
+      await expect(travel.joinTrip("Invite-1")).rejects.toThrow(
+        "Вы уже участвуете в этой поездке",
+      );
+    });
+  });
+
+  it("validates the invite use limit before calling the API", async () => {
+    await act(async () => {
+      await expect(
+        travel.generateInviteCode(trip.id, COLLABORATION.MAX_USES + 1),
+      ).rejects.toThrow("Количество использований");
+    });
+    expect(sdk.tripsGenerateCode).not.toHaveBeenCalled();
+  });
+
+  it("does not block invite generation while collaborators are loading", async () => {
+    vi.mocked(sdk.tripsGetTripByIdCollaborators).mockReturnValue(
+      new Promise<never>(() => {}),
+    );
+    vi.mocked(sdk.tripsGenerateCode).mockResolvedValue(
+      ok({ code: "Invite-1", uses: 1 }),
+    );
+    // Intentionally left pending: the read must not take the mutation lock.
+    void travel.loadCollaborators(trip.id);
+    await act(async () => {
+      await expect(travel.generateInviteCode(trip.id, 1)).resolves.toEqual({
+        code: "Invite-1",
+        uses: 1,
+      });
+    });
+  });
+
+  it("rejects invite codes before sending obvious traversal values", async () => {
+    await act(async () => {
+      await expect(travel.joinTrip("..")).rejects.toThrow();
+    });
+    expect(sdk.tripsJoinTrip).not.toHaveBeenCalled();
+  });
+
   it("changes the password without reloading trips or persisting passwords", async () => {
     vi.mocked(sdk.authChangePassword).mockResolvedValue({
       ...ok(undefined),

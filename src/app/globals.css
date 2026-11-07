@@ -84,6 +84,7 @@
   --transport-train: var(--primary);
   --transport-plane: var(--water);
   --transport-bus: color-mix(in srgb, var(--road) 45%, var(--text));
+  --transport-other: color-mix(in srgb, var(--text) 45%, var(--background));
 
   --event-walk: var(--green);
   --event-tour: var(--primary);
@@ -141,6 +142,11 @@
   --border: color-mix(in srgb, var(--foreground) 20%, var(--surface));
   --transport-car: var(--foreground);
   --transport-bus: color-mix(in srgb, var(--road) 45%, var(--foreground));
+  --transport-other: color-mix(
+    in srgb,
+    var(--foreground) 45%,
+    var(--background)
+  );
   --event-restaurant: color-mix(in srgb, var(--road) 55%, var(--foreground));
   --event-other: color-mix(in srgb, var(--foreground) 45%, var(--background));
   --sidebar-foreground: var(--foreground);

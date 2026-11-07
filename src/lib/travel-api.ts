@@ -36,21 +36,30 @@ export async function apiResult<T>(
     let message =
       status === 401
         ? "Сессия истекла или неверное имя пользователя / пароль. Войдите снова."
-        : status === 409
-          ? "Данные связаны с другими записями или уже существуют."
-          : status === 422
-            ? "Сервер отклонил данные. Проверьте поля формы."
-            : status === 429
-              ? "Слишком много запросов. Попробуйте немного позже."
-              : "Не удалось выполнить запрос. Попробуйте ещё раз.";
+        : status === 403
+          ? "Недостаточно прав для этого действия."
+          : status === 409
+            ? "Данные связаны с другими записями или уже существуют."
+            : status === 413
+              ? "Файл слишком большой."
+              : status === 415
+                ? "Неподдерживаемый тип файла."
+                : status === 422
+                  ? "Сервер отклонил данные. Проверьте поля формы."
+                  : status === 429
+                    ? "Слишком много запросов. Попробуйте немного позже."
+                    : "Не удалось выполнить запрос. Попробуйте ещё раз.";
     if (typeof result.error === "object" && result.error) {
       if ("message" in result.error && typeof result.error.message === "string")
         message = result.error.message;
-      if (
-        "errorCode" in result.error &&
-        result.error.errorCode === "UsernameIsAlreadyInUse"
-      )
-        message = "Это имя пользователя уже занято.";
+      if ("errorCode" in result.error) {
+        if (result.error.errorCode === "UsernameIsAlreadyInUse")
+          message = "Это имя пользователя уже занято.";
+        else if (result.error.errorCode === "UserIsAlreadyACollaborator")
+          message = "Вы уже участвуете в этой поездке.";
+        else if (result.error.errorCode === "ExpiredLink")
+          message = "Срок действия кода приглашения истёк.";
+      }
       if ("errors" in result.error && Array.isArray(result.error.errors)) {
         const details = result.error.errors.flatMap((error: unknown) => {
           if (
@@ -105,11 +114,13 @@ export function mapPoint(point: Waypoint) {
   };
 }
 export function mapLeg(leg: Movement) {
-  const transport = Object.keys(TRANSPORT_TYPES).find(
-    (kind) => kind === leg.transportType,
-  ) as keyof typeof TRANSPORT_TYPES | undefined;
-  if (!transport)
-    throw new Error(`Неизвестный вид транспорта: ${leg.transportType}`);
+  // A server or another client may introduce a transport type this build does
+  // not know yet. Keep the trip usable and show it as "Другое".
+  const transport = (
+    Object.hasOwn(TRANSPORT_TYPES, leg.transportType)
+      ? leg.transportType
+      : "other"
+  ) as keyof typeof TRANSPORT_TYPES;
   return {
     id: requiredId(leg.id),
     transport,

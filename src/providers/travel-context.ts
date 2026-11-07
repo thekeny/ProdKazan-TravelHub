@@ -1,4 +1,8 @@
 import { createContext } from "react";
+import type {
+  TripCollaborators,
+  TripInviteLink,
+} from "@/api/generated/types.gen";
 import type { EventValues } from "@/configs/types/event.type";
 import type {
   RoutePointValues,
@@ -45,5 +49,11 @@ export type TravelContextValue = TravelData & {
     legId?: string,
   ) => string | Promise<string>;
   deleteLeg: (tripId: string, legId: string) => void | Promise<void>;
+  loadCollaborators: (tripId: string) => Promise<TripCollaborators>;
+  generateInviteCode: (
+    tripId: string,
+    maxUses?: number,
+  ) => Promise<TripInviteLink>;
+  joinTrip: (code: string) => Promise<string | null>;
 };
 export const TravelContext = createContext<TravelContextValue | null>(null);

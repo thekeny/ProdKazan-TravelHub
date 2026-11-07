@@ -8,6 +8,15 @@ const COOKIE_OPTIONS = {
   path: "/api/backend",
   secure: process.env.NODE_ENV === "production",
 };
+// Keep the proxy allowlist in sync with the SDK calls used by the app. The
+// collaborators route keeps the backend's historical "collaboratrs" spelling,
+// while the correctly spelled alias is accepted for future compatibility.
+const ALLOWED_PATH =
+  /^(?:auth\/(?:login|register|refresh|logout|me(?:\/password)?)|health|trips(?:\/(?:\d+(?:\/(?:(?:points|events|transfers)(?:\/\d+)?|cover(?:\/[a-zA-Z0-9._-]+)?|code\/generate|collaborat(?:ors|rs)))?|code\/redeem\/[A-Za-z0-9_~-][A-Za-z0-9._~-]{0,127}))?)$/;
+
+export function isAllowedBackendPath(path: string) {
+  return ALLOWED_PATH.test(path);
+}
 // Several SDK reads can encounter expiration together. Share the rotation so
 // single-use refresh cookies are not consumed by competing requests.
 const renewals = new Map<
@@ -51,16 +60,14 @@ export async function proxyBackend(request: NextRequest, path: string[]) {
         { status: 403 },
       );
   }
-  if (
-    !/^(auth\/(login|register|refresh|logout|me(?:\/password)?)|health|trips(?:\/\d+(?:\/(?:(?:points|events|transfers)(?:\/\d+)?|cover(?:\/[a-zA-Z0-9._-]+)?))?)?)$/.test(
-      path.join("/"),
-    )
-  )
+  // Next.js can pass an empty trailing segment for URLs like /trips/ and the
+  // SDK uses trailing slashes for collection endpoints. Normalize both.
+  const route = path.filter(Boolean).join("/");
+  if (!isAllowedBackendPath(route))
     return new NextResponse(null, { status: 404 });
 
   try {
     const base = backendUrl();
-    const route = path.join("/");
     let access = request.cookies.get(ACCESS_COOKIE)?.value;
     let refresh = request.cookies.get(REFRESH_COOKIE)?.value;
     let rotated = false;

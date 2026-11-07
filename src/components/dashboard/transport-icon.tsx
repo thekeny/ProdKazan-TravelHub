@@ -1,6 +1,13 @@
 "use client";
 
-import { BusFront, Car, Footprints, Plane, TrainFront } from "lucide-react";
+import {
+  BusFront,
+  Car,
+  Footprints,
+  Plane,
+  Route,
+  TrainFront,
+} from "lucide-react";
 import type { TransportKind } from "@/configs/consts/transport.const";
 
 const icons = {
@@ -9,6 +16,7 @@ const icons = {
   train: TrainFront,
   plane: Plane,
   bus: BusFront,
+  other: Route,
 } as const;
 
 export function TransportIcon({
