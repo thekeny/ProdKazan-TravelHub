@@ -215,7 +215,7 @@ export function LegForm({
                     </div>
                     <Field
                       name="description"
-                      label="Описание · необязательно"
+                      label="Описание (необязательно)"
                       hint={
                         remote && leg
                           ? "API пока не поддерживает изменение описания перемещения."

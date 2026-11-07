@@ -54,14 +54,14 @@ export function Sidebar({
         })}
       </nav>
       <div className="mt-auto pt-10">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center">
           <span className="flex size-10 shrink-0 items-center justify-center">
             <Image
               src={images.USER}
               alt=""
               width={40}
               height={40}
-              className="size-10 object-contain"
+              className="size-9 object-contain"
             />
           </span>
           <span className="min-w-0 flex-1 user-text whitespace-normal text-sm font-medium">

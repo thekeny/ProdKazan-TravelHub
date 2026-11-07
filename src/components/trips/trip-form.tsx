@@ -186,7 +186,7 @@ export function TripForm({
               />
             )}
           </Field>
-          <Field name="description" label="Описание · необязательно">
+          <Field name="description" label="Описание (необязательно)">
             {(id) => (
               <Textarea
                 data-field-control
@@ -255,7 +255,7 @@ export function TripForm({
           {remote && (
             <Field
               name="cover"
-              label="Ссылка на обложку · необязательно"
+              label="Ссылка на обложку (необязательно)"
               hint="Можно указать ссылку или выбрать файл ниже."
             >
               {(id, describedBy) => (
@@ -283,7 +283,7 @@ export function TripForm({
           )}
           <Field
             name="cover"
-            label="Обложка · необязательно"
+            label="Обложка (необязательно)"
             hint={
               remote
                 ? "JPEG, PNG или WebP до 12 МБ. Обложка сжимается и загружается на сервер."
@@ -303,6 +303,16 @@ export function TripForm({
                         sizes="100vw"
                         className="object-cover"
                       />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="absolute right-2 top-2 z-10 size-11 bg-surface text-foreground hover:text-destructive"
+                        type="button"
+                        aria-label="Убрать обложку"
+                        onClick={() => setRemoveCover(true)}
+                      >
+                        <X aria-hidden="true" />
+                      </Button>
                     </div>
                   )}
                   <label
@@ -331,17 +341,6 @@ export function TripForm({
                     />
                   </label>
                 </div>
-                {values.cover && (
-                  <Button
-                    variant="ghost"
-                    className="mt-2 h-11"
-                    type="button"
-                    onClick={() => setRemoveCover(true)}
-                  >
-                    <X />
-                    Убрать обложку
-                  </Button>
-                )}
               </div>
             )}
           </Field>

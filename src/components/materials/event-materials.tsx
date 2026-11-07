@@ -75,7 +75,7 @@ export function EventMaterials({
             {value === "document" && (
               <Field
                 name="bookingUrl"
-                label="Ссылка на билет или бронирование · необязательно"
+                label="Ссылка на билет или бронирование (необязательно)"
               >
                 {(id) => (
                   <Input

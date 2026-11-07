@@ -82,6 +82,27 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 describe("travel session flow", () => {
+  it("removes only the current local account and preserves it if storage fails", async () => {
+    await act(async () => travel.login("bob"));
+    await act(async () => travel.createTrip(values));
+    await act(async () => travel.login("alice"));
+    await act(async () => travel.createTrip(values));
+    const writer = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("blocked");
+      });
+    expect(() => travel.deleteAccount("")).toThrow();
+    expect(travel.username).toBe("alice");
+    expect(travel.trips).toHaveLength(1);
+    writer.mockRestore();
+    await act(async () => travel.deleteAccount(""));
+    expect(travel.username).toBeNull();
+    await act(async () => travel.login("alice"));
+    expect(travel.trips).toEqual([]);
+    await act(async () => travel.login("bob"));
+    expect(travel.trips).toHaveLength(1);
+  });
   it("adds types immediately without changing the rest of a trip and preserves them after reload", async () => {
     await act(async () => travel.login("alice"));
     await act(async () => travel.createTrip(values));

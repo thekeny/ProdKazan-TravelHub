@@ -34,6 +34,7 @@ import {
 } from "@/lib/remote-covers";
 import {
   readRemotePreferences,
+  removeRemotePreferences,
   writeRemotePreferences,
 } from "@/lib/remote-preferences";
 import {
@@ -383,6 +384,56 @@ export function RemoteTravelProvider({
         "Бэкенд пока не поддерживает изменение имени пользователя.",
       );
     },
+    deleteAccount: (password) =>
+      mutate(async () => {
+        if (!user) throw new Error("Сначала войдите в аккаунт.");
+        if (!password) throw new ApiError(403, "Введите текущий пароль.");
+        // DELETE /auth/me has no password field; verify it through login first.
+        try {
+          await apiResult(
+            sdk.authLogin({
+              body: {
+                grant_type: "password",
+                username: user.username,
+                password,
+              },
+            }),
+          );
+        } catch (error) {
+          if (
+            error instanceof ApiError &&
+            (error.status === 401 || error.status === 403)
+          )
+            throw new ApiError(403, "Неверный текущий пароль.");
+          throw error;
+        }
+        const accountId = user.id ?? user.username;
+        await disablePush(accountId, true).catch(() => undefined);
+        try {
+          await apiResult(sdk.authDeleteSelf());
+        } catch (error) {
+          resumePush(accountId);
+          throw error;
+        }
+        setUser(undefined);
+        setData(empty);
+        await clearOfflineSnapshot().catch(() => undefined);
+        try {
+          removeRemotePreferences(accountId);
+        } catch {
+          setWarning(
+            "Аккаунт удалён, но очистить локальные настройки не удалось.",
+          );
+        }
+        void deleteMaterialFiles(
+          data.trips.flatMap((trip) => [
+            remoteCoverKey(accountId, trip.id),
+            ...(trip.events ?? []).flatMap((event) =>
+              event.materials.map((material) => material.id),
+            ),
+          ]),
+        );
+      }),
     changePassword: (currentPassword, newPassword) =>
       mutate(async () => {
         if (!user) throw new Error("Сначала войдите в аккаунт.");

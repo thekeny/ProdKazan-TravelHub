@@ -320,6 +320,13 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
         logout() {
           commit({ ...state, username: null });
         },
+        deleteAccount() {
+          if (!state.username) throw new Error("Сначала войдите в аккаунт.");
+          const accounts = { ...state.accounts };
+          delete accounts[state.username];
+          commit({ ...state, username: null, accounts });
+          void deleteMaterialFiles(data.trips.flatMap(materialIdsOf));
+        },
         createTrip(values) {
           assertValidInput(tripErrors(values, false));
           const trip: Trip = {

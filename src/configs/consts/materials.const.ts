@@ -5,7 +5,7 @@ export const MATERIAL_KINDS = {
 
 export const MATERIAL_TABS = [
   { value: "photo", label: "Фото" },
-  { value: "document", label: "Документы" },
+  { value: "document", label: "Билеты и документы" },
 ] as const;
 
 export const MATERIAL_TYPES = [

@@ -134,7 +134,7 @@ export function PointForm({
                         />
                       )}
                     </Field>
-                    <Field name="description" label="Описание · необязательно">
+                    <Field name="description" label="Описание (необязательно)">
                       {(id) => (
                         <Textarea
                           data-field-control

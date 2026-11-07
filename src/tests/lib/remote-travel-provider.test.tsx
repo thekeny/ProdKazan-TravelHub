@@ -133,6 +133,40 @@ afterEach(async () => {
 });
 
 describe("remote travel state", () => {
+  it("keeps the account signed in and does not delete it after an incorrect password", async () => {
+    vi.mocked(sdk.authLogin).mockResolvedValue(fail(401));
+    await act(async () => {
+      await expect(travel.deleteAccount("wrong-password")).rejects.toThrow(
+        "Неверный текущий пароль.",
+      );
+    });
+    expect(sdk.authDeleteSelf).not.toHaveBeenCalled();
+    expect(travel.username).toBe(user.username);
+    expect(travel.trips).toHaveLength(1);
+  });
+
+  it("verifies the password before deleting and clears the account only on success", async () => {
+    vi.mocked(sdk.authLogin).mockResolvedValue(
+      ok({ access_token: "token", token_type: "bearer" }),
+    );
+    vi.mocked(sdk.authDeleteSelf).mockResolvedValueOnce(fail(409));
+    await act(async () => {
+      await expect(travel.deleteAccount("current-password")).rejects.toThrow();
+    });
+    expect(travel.username).toBe(user.username);
+    vi.mocked(sdk.authDeleteSelf).mockResolvedValue(ok(undefined));
+    await act(async () => travel.deleteAccount("current-password"));
+    expect(sdk.authLogin).toHaveBeenLastCalledWith({
+      body: {
+        grant_type: "password",
+        username: user.username,
+        password: "current-password",
+      },
+    });
+    expect(travel.username).toBeNull();
+    expect(travel.trips).toEqual([]);
+    expect(offline.snapshot).toBeNull();
+  });
   it("adds types immediately without a trip PATCH and persists them across reloads", async () => {
     const before = travel.trips[0];
     await act(async () => travel.addEventType(trip.id, " Утренний кофе "));

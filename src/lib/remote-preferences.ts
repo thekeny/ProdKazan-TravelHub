@@ -13,6 +13,9 @@ type Preferences = {
 function key(userId: string) {
   return `travelhub.remote.${userId}`;
 }
+export function removeRemotePreferences(userId: string) {
+  localStorage.removeItem(key(userId));
+}
 export function readRemotePreferences(userId: string): Preferences {
   const raw: unknown = JSON.parse(localStorage.getItem(key(userId)) ?? "null");
   const result: Preferences = { activeId: null, materials: {} };

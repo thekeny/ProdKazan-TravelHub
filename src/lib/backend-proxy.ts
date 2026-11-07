@@ -185,7 +185,7 @@ export async function proxyBackend(request: NextRequest, path: string[]) {
       ((route === "auth/logout" ||
         (route === "auth/me" && request.method === "DELETE")) &&
         response.ok) ||
-      response.status === 401
+      (response.status === 401 && route !== "auth/login")
     ) {
       if (refresh) renewals.delete(refresh);
       result.cookies.set(ACCESS_COOKIE, "", { ...COOKIE_OPTIONS, maxAge: 0 });

@@ -23,6 +23,30 @@ afterEach(() => {
 });
 
 describe("backend proxy", () => {
+  it("preserves session cookies when password verification through login fails", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 401 }));
+    const response = await proxyBackend(
+      request(
+        "auth/login",
+        "POST",
+        "travelhub_access=access; travelhub_refresh=refresh",
+      ),
+      ["auth", "login"],
+    );
+    expect(response.status).toBe(401);
+    expect(response.headers.get("set-cookie")).toBeNull();
+  });
+
+  it("clears session cookies after successful account deletion", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const response = await proxyBackend(
+      request("auth/me", "DELETE", "travelhub_access=access"),
+      ["auth", "me"],
+    );
+    expect(response.status).toBe(204);
+    expect(response.cookies.get("travelhub_access")?.value).toBe("");
+    expect(response.cookies.get("travelhub_refresh")?.value).toBe("");
+  });
   it("follows a trailing-slash redirect on the server with authentication", async () => {
     fetchMock
       .mockResolvedValueOnce(

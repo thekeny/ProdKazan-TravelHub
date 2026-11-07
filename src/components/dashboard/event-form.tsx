@@ -234,7 +234,7 @@ export function EventForm({
                           />
                         )}
                       </Field>
-                      <Field name="end" label="Окончание · необязательно">
+                      <Field name="end" label="Окончание (необязательно)">
                         {(id) => (
                           <Input
                             data-field-control
@@ -254,7 +254,7 @@ export function EventForm({
                         )}
                       </Field>
                     </div>
-                    <Field name="description" label="Описание · необязательно">
+                    <Field name="description" label="Описание (необязательно)">
                       {(id) => (
                         <Textarea
                           data-field-control
@@ -272,7 +272,7 @@ export function EventForm({
                     </Field>
                     <Field
                       name="pointId"
-                      label="Точка маршрута · необязательно"
+                      label="Точка маршрута (необязательно)"
                     >
                       {(id) => (
                         <TextSelect

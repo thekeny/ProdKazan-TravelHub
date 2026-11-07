@@ -41,7 +41,7 @@ export function MaterialGrid({
       </ConfirmDelete>
       <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
         {list.map((material) => (
-          <li key={material.id} className="min-w-0">
+          <li key={material.id} className="relative min-w-0">
             <MaterialThumbnail
               material={material}
               className="aspect-square w-full"
@@ -59,7 +59,7 @@ export function MaterialGrid({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="size-9 shrink-0 text-destructive"
+                  className="absolute right-1 top-1 size-11 bg-surface text-foreground shadow-sm hover:bg-surface hover:text-destructive"
                   aria-label={`Удалить материал «${material.name}»`}
                   onClick={() => setRemoving(material)}
                 >

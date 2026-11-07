@@ -22,6 +22,7 @@ export type TravelContextValue = TravelData & {
     register?: boolean,
   ) => void | Promise<void>;
   logout: () => void | Promise<void>;
+  deleteAccount: (password: string) => void | Promise<void>;
   renameAccount: (name: string) => void | Promise<void>;
   changePassword: (
     currentPassword: string,
