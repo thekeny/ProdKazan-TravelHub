@@ -68,6 +68,13 @@
   --border: #d8d8d8;
   --text: #2f3a33;
 
+  --map-point-sage: #b5cfa8;
+  --map-point-sky: #acd3e4;
+  --map-point-sand: #e6d8b5;
+  --map-point-peach: #e9bea5;
+  --map-point-rose: #dfb6bd;
+  --map-point-lavender: #c9bddc;
+
   --transport-walk: var(--green);
   --transport-car: var(--text);
   --transport-train: var(--primary);

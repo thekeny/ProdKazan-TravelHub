@@ -20,6 +20,7 @@ import {
   TRANSPORT_TYPES,
 } from "@/configs/consts/transport.const";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
+import { mapPointColor } from "@/lib/map-point-color";
 
 const travelerIcon = divIcon({
   className: "",
@@ -134,7 +135,6 @@ export default function TripMap(props: Props) {
       <MapContainer
         center={initialView.center}
         zoom={initialView.zoom}
-        preferCanvas
         attributionControl={false}
         className="h-full w-full"
       >
@@ -196,7 +196,7 @@ export default function TripMap(props: Props) {
                 point.id === props.selectedPointId
                   ? MAP.colors.selected
                   : MAP.colors.marker,
-              fillColor: MAP.colors.fill,
+              fillColor: mapPointColor(point.id),
               fillOpacity: 1,
               weight: 3,
             }}
