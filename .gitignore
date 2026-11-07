@@ -44,3 +44,4 @@ next-env.d.ts
 code-quality-report.json
 
 .prototype
+openapi.json

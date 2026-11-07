@@ -4,6 +4,7 @@ import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field, inputClass } from "@/components/ui/field";
+import { BACKEND_LIMITS } from "@/configs/consts/backend.const";
 import {
   TRANSPORT_TYPES,
   type TransportKind,
@@ -16,6 +17,7 @@ import type {
 import type { TripValues } from "@/configs/types/travel.type";
 import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { validateLeg } from "@/lib/travel-route";
+import { useTravel } from "@/providers/travel-provider";
 
 export function LegForm({
   trip,
@@ -30,8 +32,9 @@ export function LegForm({
   leg?: TripLeg;
   day: string;
   onClose: () => void;
-  onSave: (values: TripLegValues) => void;
+  onSave: (values: TripLegValues) => void | Promise<void>;
 }) {
+  const { remote } = useTravel();
   const [values, setValues] = useState<TripLegValues>(
     leg ?? {
       fromPointId: points[0]?.id ?? "",
@@ -71,7 +74,7 @@ export function LegForm({
           <form
             className="flex min-h-0 flex-1 flex-col"
             aria-busy={pending}
-            onSubmit={(event) => {
+            onSubmit={async (event) => {
               event.preventDefault();
               if (pendingRef.current) return;
               const validation = validateLeg(values, trip, points);
@@ -83,7 +86,7 @@ export function LegForm({
               setPending(true);
               setError(null);
               try {
-                onSave(values);
+                await onSave(values);
               } catch (error) {
                 pendingRef.current = false;
                 setPending(false);
@@ -201,13 +204,22 @@ export function LegForm({
                     )}
                   </Field>
                 </div>
-                <Field label="Описание · необязательно">
-                  {(id) => (
+                <Field
+                  label="Описание · необязательно"
+                  hint={
+                    remote && leg
+                      ? "API пока не поддерживает изменение описания перемещения."
+                      : undefined
+                  }
+                >
+                  {(id, describedBy) => (
                     <textarea
                       id={id}
                       className={`${inputClass} h-20 py-3`}
                       aria-invalid={error ? true : undefined}
-                      aria-describedby={error ? errorId : undefined}
+                      aria-describedby={error ? errorId : describedBy}
+                      maxLength={BACKEND_LIMITS.DESCRIPTION}
+                      readOnly={Boolean(remote && leg)}
                       value={values.description}
                       onChange={(event) =>
                         update("description", event.target.value)

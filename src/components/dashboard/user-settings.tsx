@@ -13,10 +13,15 @@ export function UserSettings({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const { username, renameAccount } = useTravel();
+  const { username, renameAccount, remote, user } = useTravel();
   const [name, setName] = useState(username ?? "");
   const [error, setError] = useState<string | null>(null);
-  const { requestClose, confirmation } = useDiscardConfirmation(name, onClose);
+  const [pending, setPending] = useState(false);
+  const { requestClose, confirmation } = useDiscardConfirmation(
+    name,
+    onClose,
+    pending,
+  );
   return (
     <Dialog.Root
       open
@@ -32,14 +37,18 @@ export function UserSettings({
             Настройки пользователя
           </Dialog.Title>
           <Dialog.Description className="mt-2 text-sm text-muted-foreground">
-            Данные вашего аккаунта.
+            {remote
+              ? "Данные аккаунта загружены с сервера. Изменение имени и пароля пока не поддерживается API."
+              : "Данные вашего аккаунта."}
           </Dialog.Description>
           <form
             className="mt-6 grid gap-5"
-            onSubmit={(event) => {
+            onSubmit={async (event) => {
               event.preventDefault();
+              if (pending || remote) return;
+              setPending(true);
               try {
-                renameAccount(name);
+                await renameAccount(name);
                 onSaved();
                 onClose();
               } catch (error) {
@@ -48,6 +57,8 @@ export function UserSettings({
                     ? error.message
                     : "Не удалось сохранить имя.",
                 );
+              } finally {
+                setPending(false);
               }
             }}
           >
@@ -57,6 +68,7 @@ export function UserSettings({
                   id={id}
                   className={inputClass}
                   value={name}
+                  readOnly={remote}
                   required
                   minLength={3}
                   maxLength={32}
@@ -67,7 +79,11 @@ export function UserSettings({
             </Field>
             <Field
               label="Пароль"
-              hint="Смена пароля станет доступна после подключения авторизации."
+              hint={
+                remote
+                  ? "В API пока нет метода смены пароля."
+                  : "Смена пароля станет доступна после подключения авторизации."
+              }
             >
               {(id, describedBy) => (
                 <input
@@ -79,6 +95,12 @@ export function UserSettings({
                 />
               )}
             </Field>
+            {remote && user?.createdAt && (
+              <p className="text-sm text-muted-foreground">
+                Аккаунт создан:{" "}
+                {new Date(user.createdAt).toLocaleDateString("ru-RU")}
+              </p>
+            )}
             {error && (
               <p role="alert" className="text-sm text-destructive">
                 {error}
@@ -86,9 +108,13 @@ export function UserSettings({
             )}
             <div className="flex justify-end gap-3">
               <Button type="button" variant="outline" onClick={requestClose}>
-                Отмена
+                {remote ? "Закрыть" : "Отмена"}
               </Button>
-              <Button type="submit">Сохранить</Button>
+              {!remote && (
+                <Button type="submit" disabled={pending}>
+                  Сохранить
+                </Button>
+              )}
             </div>
           </form>
         </DialogPopup>

@@ -4,6 +4,7 @@ import { Upload, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, inputClass } from "@/components/ui/field";
+import { BACKEND_LIMITS } from "@/configs/consts/backend.const";
 import { COVER_LIMITS, MATERIAL_TYPES } from "@/configs/consts/materials.const";
 import type { TripValues } from "@/configs/types/travel.type";
 import { compressCover } from "@/lib/image";
@@ -15,12 +16,14 @@ export function TripForm({
   onSubmit,
   onCancel,
   onStateChange,
+  remote = false,
 }: {
   initial?: TripValues;
   submitLabel: string;
   onSubmit: (values: TripValues) => void | Promise<void>;
   onCancel?: () => void;
   onStateChange?: (values: TripValues, busy: boolean) => void;
+  remote?: boolean;
 }) {
   const [values, setValues] = useState<TripValues>(() =>
     initial
@@ -126,7 +129,7 @@ export function TripForm({
         {(id) => (
           <textarea
             id={id}
-            maxLength={2000}
+            maxLength={BACKEND_LIMITS.DESCRIPTION}
             rows={3}
             placeholder="Несколько слов о поездке"
             className={`${inputClass} h-auto resize-y py-3`}
@@ -167,63 +170,83 @@ export function TripForm({
           )}
         </Field>
       </div>
-      <Field
-        label="Обложка · необязательно"
-        hint="JPEG, PNG или WebP до 12 МБ. Обложка сжимается автоматически."
-      >
-        {(id, describedBy) => (
-          <div>
-            <div className="relative overflow-hidden rounded-lg border border-dashed bg-muted">
+      {remote ? (
+        <Field
+          label="Ссылка на обложку · необязательно"
+          hint="Ссылка на изображение по HTTPS. Загрузка файлов пока недоступна."
+        >
+          {(id, describedBy) => (
+            <input
+              id={id}
+              className={inputClass}
+              type="url"
+              pattern="https?://.*"
+              value={values.cover ?? ""}
+              aria-describedby={describedBy}
+              onChange={(event) => update("cover", event.target.value || null)}
+              placeholder="https://…"
+            />
+          )}
+        </Field>
+      ) : (
+        <Field
+          label="Обложка · необязательно"
+          hint="JPEG, PNG или WebP до 12 МБ. Обложка сжимается автоматически."
+        >
+          {(id, describedBy) => (
+            <div>
+              <div className="relative overflow-hidden rounded-lg border border-dashed bg-muted">
+                {values.cover && (
+                  <div
+                    role="img"
+                    aria-label="Предпросмотр обложки"
+                    className="h-40 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${values.cover})` }}
+                  />
+                )}
+                <label
+                  htmlFor={id}
+                  className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 p-4 text-sm outline-none hover:bg-accent focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+                >
+                  <Upload className="size-5" />
+                  {reading
+                    ? "Обрабатываем…"
+                    : values.cover
+                      ? "Заменить обложку"
+                      : "Выбрать изображение"}
+                  <input
+                    ref={fileRef}
+                    id={id}
+                    type="file"
+                    accept={MATERIAL_TYPES.join(",")}
+                    disabled={reading || pending}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    aria-describedby={describedBy}
+                    onChange={(event) => {
+                      void handleCover(event.target.files?.[0]);
+                      event.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
               {values.cover && (
-                <div
-                  role="img"
-                  aria-label="Предпросмотр обложки"
-                  className="h-40 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${values.cover})` }}
-                />
-              )}
-              <label
-                htmlFor={id}
-                className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 p-4 text-sm outline-none hover:bg-accent focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
-              >
-                <Upload className="size-5" />
-                {reading
-                  ? "Обрабатываем…"
-                  : values.cover
-                    ? "Заменить обложку"
-                    : "Выбрать изображение"}
-                <input
-                  ref={fileRef}
-                  id={id}
-                  type="file"
-                  accept={MATERIAL_TYPES.join(",")}
-                  disabled={reading || pending}
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  aria-describedby={describedBy}
-                  onChange={(event) => {
-                    void handleCover(event.target.files?.[0]);
-                    event.target.value = "";
+                <Button
+                  variant="ghost"
+                  className="mt-2 h-11"
+                  type="button"
+                  onClick={() => {
+                    update("cover", null);
+                    if (fileRef.current) fileRef.current.value = "";
                   }}
-                />
-              </label>
+                >
+                  <X />
+                  Убрать обложку
+                </Button>
+              )}
             </div>
-            {values.cover && (
-              <Button
-                variant="ghost"
-                className="mt-2 h-11"
-                type="button"
-                onClick={() => {
-                  update("cover", null);
-                  if (fileRef.current) fileRef.current.value = "";
-                }}
-              >
-                <X />
-                Убрать обложку
-              </Button>
-            )}
-          </div>
-        )}
-      </Field>
+          )}
+        </Field>
+      )}
       {error && (
         <p id={errorId} role="alert" className="text-sm text-destructive">
           {error}

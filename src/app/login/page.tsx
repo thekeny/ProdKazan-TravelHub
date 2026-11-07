@@ -15,10 +15,11 @@ const MODES = [
 ] as const;
 
 export default function Page() {
-  const { ready, username, login, storageWarning } = useTravel();
+  const { ready, username, login, remote, storageWarning } = useTravel();
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   const errorId = useId();
   useEffect(() => {
     if (ready && username) router.replace(pages.TRIPS);
@@ -29,9 +30,6 @@ export default function Page() {
         <aside className="relative hidden flex-col overflow-hidden bg-secondary p-8 lg:flex">
           <div>
             <Logo size="lg" />
-            <p className="mt-1 font-sans text-sm leading-snug text-foreground">
-              Твоя история на карте
-            </p>
           </div>
           <div className="relative mt-8 min-h-64 flex-1">
             <Image
@@ -48,9 +46,6 @@ export default function Page() {
         <div className="p-6 sm:p-10">
           <div className="lg:hidden">
             <Logo />
-            <p className="mt-1 font-sans text-sm leading-snug text-foreground">
-              Твоя история на карте
-            </p>
           </div>
           <h1 className="mt-8 text-4xl leading-tight lg:mt-0">
             {mode === "login" ? "Вход" : "Регистрация"}
@@ -58,7 +53,9 @@ export default function Page() {
           <p className="mt-2 text-sm text-muted-foreground">
             {mode === "login"
               ? "Войдите, чтобы открыть свои поездки."
-              : "Аккаунт создаётся в этом браузере."}
+              : remote
+                ? "Создайте аккаунт, чтобы сохранять поездки на сервере."
+                : "Аккаунт создаётся в этом браузере."}
           </p>
           <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-muted/80 p-1">
             {MODES.map(({ value, label }) => (
@@ -79,7 +76,7 @@ export default function Page() {
           <form
             key={mode}
             className="mt-6 grid gap-4"
-            onSubmit={(event) => {
+            onSubmit={async (event) => {
               event.preventDefault();
               setError(null);
               const values = new FormData(event.currentTarget);
@@ -97,11 +94,21 @@ export default function Page() {
                 setError("Пароли не совпадают.");
                 return;
               }
+              if (pending) return;
+              setPending(true);
               try {
-                login(name);
+                await login(
+                  name,
+                  String(values.get("password") ?? ""),
+                  mode === "register",
+                );
                 router.replace(pages.TRIPS);
               } catch (error) {
-                setError((error as Error).message);
+                setError(
+                  error instanceof Error ? error.message : "Не удалось войти.",
+                );
+              } finally {
+                setPending(false);
               }
             }}
           >
@@ -114,6 +121,12 @@ export default function Page() {
                   required
                   minLength={3}
                   maxLength={32}
+                  pattern={remote ? "[a-zA-Z0-9._]+" : undefined}
+                  title={
+                    remote
+                      ? "Латинские буквы, цифры, точка и подчёркивание"
+                      : undefined
+                  }
                   autoComplete="username"
                   autoCapitalize="none"
                   spellCheck={false}
@@ -129,9 +142,9 @@ export default function Page() {
                   className={inputClass}
                   name="password"
                   type="password"
-                  required={mode === "register"}
+                  required={remote || mode === "register"}
                   minLength={mode === "register" ? 8 : undefined}
-                  maxLength={128}
+                  maxLength={remote ? 64 : 128}
                   autoComplete={
                     mode === "login" ? "current-password" : "new-password"
                   }
@@ -150,7 +163,7 @@ export default function Page() {
                     type="password"
                     required
                     minLength={8}
-                    maxLength={128}
+                    maxLength={remote ? 64 : 128}
                     autoComplete="new-password"
                     aria-invalid={error ? true : undefined}
                     aria-describedby={error ? errorId : undefined}
@@ -163,8 +176,16 @@ export default function Page() {
                 {error || storageWarning}
               </p>
             )}
-            <Button type="submit" disabled={!ready} className="mt-2 h-12">
-              {mode === "login" ? "Войти" : "Зарегистрироваться"}
+            <Button
+              type="submit"
+              disabled={!ready || pending}
+              className="mt-2 h-12"
+            >
+              {pending
+                ? "Подождите…"
+                : mode === "login"
+                  ? "Войти"
+                  : "Зарегистрироваться"}
             </Button>
           </form>
         </div>

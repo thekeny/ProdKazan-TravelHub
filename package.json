@@ -9,6 +9,7 @@
     "lint": "biome check",
     "format": "biome format --write",
     "test": "vitest run",
+    "test:backend": "node scripts/test-backend.mjs",
     "test:watch": "vitest",
     "openapi": "openapi-ts",
     "knip": "knip",

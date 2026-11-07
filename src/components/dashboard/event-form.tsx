@@ -6,6 +6,7 @@ import { MaterialUploader } from "@/components/materials/material-uploader";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field, inputClass } from "@/components/ui/field";
+import { BACKEND_LIMITS } from "@/configs/consts/backend.const";
 import { EVENT_TYPES } from "@/configs/consts/events.const";
 import { MATERIAL_LIMITS } from "@/configs/consts/materials.const";
 import type { EventValues, TripEvent } from "@/configs/types/event.type";
@@ -226,7 +227,7 @@ export function EventForm({
                   {(id) => (
                     <textarea
                       id={id}
-                      maxLength={2000}
+                      maxLength={BACKEND_LIMITS.DESCRIPTION}
                       className={`${inputClass} h-24 py-3`}
                       aria-invalid={error ? true : undefined}
                       aria-describedby={describedBy}

@@ -1,18 +1,13 @@
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { API_URL } from "@/configs/consts/api.const";
 import { APP } from "@/configs/consts/app.const";
-import type { EventValues, TripEvent } from "@/configs/types/event.type";
-import type {
-  RoutePoint,
-  RoutePointValues,
-  TripLeg,
-  TripLegValues,
-} from "@/configs/types/route.type";
+import type { TripEvent } from "@/configs/types/event.type";
+import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
 import type {
   TravelData,
   TravelState,
   Trip,
-  TripValues,
 } from "@/configs/types/travel.type";
 import { createId } from "@/lib/id";
 import { deleteMaterialFiles } from "@/lib/material-storage";
@@ -26,6 +21,8 @@ import {
   validateTrip,
   writeState,
 } from "@/lib/travel-storage";
+import { RemoteTravelProvider } from "./remote-travel-provider";
+import { TravelContext } from "./travel-context";
 
 function materialIdsOf(trip: Trip) {
   return (trip.events ?? []).flatMap((event) =>
@@ -33,31 +30,7 @@ function materialIdsOf(trip: Trip) {
   );
 }
 
-type TravelContextValue = TravelData & {
-  ready: boolean;
-  username: string | null;
-  storageWarning: string | null;
-  dismissStorageWarning: () => void;
-  login: (name: string) => void;
-  logout: () => void;
-  renameAccount: (name: string) => void;
-  createTrip: (values: TripValues) => void;
-  saveTrip: (tripId: string, values: TripValues) => void;
-  deleteTrip: (tripId: string) => void;
-  selectTrip: (id: string) => void;
-  saveEvent: (tripId: string, values: EventValues, eventId?: string) => string;
-  deleteEvent: (tripId: string, eventId: string) => void;
-  savePoint: (
-    tripId: string,
-    values: RoutePointValues,
-    pointId?: string,
-  ) => string;
-  deletePoint: (tripId: string, pointId: string) => void;
-  saveLeg: (tripId: string, values: TripLegValues, legId?: string) => string;
-  deleteLeg: (tripId: string, legId: string) => void;
-};
-const TravelContext = createContext<TravelContextValue | null>(null);
-export function TravelProvider({ children }: { children: React.ReactNode }) {
+function LocalTravelProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<TravelState>(emptyState);
   const [ready, setReady] = useState(false);
   const [storageWarning, setStorageWarning] = useState<string | null>(null);
@@ -353,6 +326,13 @@ export function TravelProvider({ children }: { children: React.ReactNode }) {
     >
       {children}
     </TravelContext.Provider>
+  );
+}
+export function TravelProvider({ children }: { children: React.ReactNode }) {
+  return API_URL ? (
+    <RemoteTravelProvider>{children}</RemoteTravelProvider>
+  ) : (
+    <LocalTravelProvider>{children}</LocalTravelProvider>
   );
 }
 export function useTravel() {

@@ -78,9 +78,9 @@ export function Sidebar({
               className="size-10"
               aria-label="Выйти из аккаунта"
               title="Выйти"
-              onClick={() => {
+              onClick={async () => {
                 try {
-                  logout();
+                  await logout();
                   router.replace(pages.LOGIN);
                 } catch (logoutError) {
                   setError(

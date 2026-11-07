@@ -35,13 +35,13 @@ export function TripActions({
   const deletingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
-  const remove = () => {
+  const remove = async () => {
     if (deletingRef.current) return;
     deletingRef.current = true;
     setDeleting(true);
     setError(null);
     try {
-      deleteTrip(trip.id);
+      await deleteTrip(trip.id);
       setDeleteOpen(false);
       onDeleted?.();
     } catch (deleteError) {
@@ -117,7 +117,12 @@ export function TripActions({
         />
       )}
 
-      <Dialog.Root open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <Dialog.Root
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          if (!deletingRef.current) setDeleteOpen(open);
+        }}
+      >
         <Dialog.Portal>
           <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-50 bg-overlay/35" />
           <DialogPopup className="dialog-popup fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background p-6 ">

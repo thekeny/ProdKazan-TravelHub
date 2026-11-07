@@ -21,9 +21,9 @@ export default function Page() {
           <Button
             variant="ghost"
             className="h-10 px-3 text-muted-foreground"
-            onClick={() => {
+            onClick={async () => {
               try {
-                logout();
+                await logout();
                 router.replace(pages.LOGIN);
               } catch (logoutError) {
                 setError((logoutError as Error).message);

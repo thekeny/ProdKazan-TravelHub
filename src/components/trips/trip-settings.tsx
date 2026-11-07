@@ -15,7 +15,7 @@ export function TripSettings({
   onClose: () => void;
   onSaved?: () => void;
 }) {
-  const { saveTrip } = useTravel();
+  const { saveTrip, remote } = useTravel();
   const [values, setValues] = useState<TripValues>(() => ({
     name: trip.name,
     description: trip.description,
@@ -52,12 +52,13 @@ export function TripSettings({
           </Dialog.Description>
           <div className="mt-6">
             <TripForm
+              remote={remote}
               initial={trip}
               submitLabel="Сохранить изменения"
               onStateChange={changed}
               onCancel={requestClose}
-              onSubmit={(next) => {
-                saveTrip(trip.id, next);
+              onSubmit={async (next) => {
+                await saveTrip(trip.id, next);
                 onSaved?.();
                 onClose();
               }}

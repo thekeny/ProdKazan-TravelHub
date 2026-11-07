@@ -5,6 +5,7 @@ import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field, inputClass } from "@/components/ui/field";
+import { BACKEND_LIMITS } from "@/configs/consts/backend.const";
 import type { RoutePoint, RoutePointValues } from "@/configs/types/route.type";
 import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { validatePoint } from "@/lib/travel-route";
@@ -26,8 +27,8 @@ export function PointForm({
 }: {
   points: RoutePoint[];
   point?: RoutePoint;
-  onClose: () => void;
-  onSave: (values: RoutePointValues) => void;
+  onClose: () => void | Promise<void>;
+  onSave: (values: RoutePointValues) => void | Promise<void>;
 }) {
   const [values, setValues] = useState<RoutePointValues>(
     point ?? { name: "", description: "", lat: 0, lng: 0 },
@@ -66,7 +67,7 @@ export function PointForm({
           <form
             className="flex min-h-0 flex-1 flex-col"
             aria-busy={pending}
-            onSubmit={(event) => {
+            onSubmit={async (event) => {
               event.preventDefault();
               if (pendingRef.current) return;
               const next = {
@@ -83,7 +84,7 @@ export function PointForm({
               setPending(true);
               setError(null);
               try {
-                onSave(next);
+                await onSave(next);
               } catch (error) {
                 pendingRef.current = false;
                 setPending(false);
@@ -127,7 +128,7 @@ export function PointForm({
                   {(id) => (
                     <textarea
                       id={id}
-                      maxLength={1000}
+                      maxLength={BACKEND_LIMITS.DESCRIPTION}
                       className={`${inputClass} h-20 py-3`}
                       aria-invalid={error ? true : undefined}
                       aria-describedby={error ? errorId : undefined}

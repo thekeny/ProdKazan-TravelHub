@@ -1,0 +1,427 @@
+"use client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import * as sdk from "@/api/generated/sdk.gen";
+import type { User } from "@/api/generated/types.gen";
+import type { TravelData, Trip } from "@/configs/types/travel.type";
+import { deleteMaterialFiles } from "@/lib/material-storage";
+import {
+  readRemotePreferences,
+  writeRemotePreferences,
+} from "@/lib/remote-preferences";
+import {
+  ApiError,
+  apiId,
+  apiResult,
+  eventBody,
+  legBody,
+  loadTrips,
+  mapEvent,
+  mapLeg,
+  mapPoint,
+  mapTrip,
+  pointBody,
+  tripBody,
+} from "@/lib/travel-api";
+import { validateEvent } from "@/lib/travel-events";
+import { validateLeg, validatePoint } from "@/lib/travel-route";
+import { validateTrip } from "@/lib/travel-storage";
+import { TravelContext, type TravelContextValue } from "./travel-context";
+
+const empty: TravelData = { trips: [], activeId: null };
+export function RemoteTravelProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [user, setUser] = useState<User>();
+  const [data, setData] = useState<TravelData>(empty);
+  const [ready, setReady] = useState(false);
+  const [storageWarning, setWarning] = useState<string | null>(null);
+  const busy = useRef(false);
+  const generation = useRef(0);
+  const reconcile = useRef(false);
+
+  const preferences = useCallback((account: User) => {
+    try {
+      return readRemotePreferences(account.id ?? account.username);
+    } catch {
+      setWarning("Не удалось прочитать локальные материалы и выбор поездки.");
+      return { activeId: null, materials: {} };
+    }
+  }, []);
+  function persist(next: TravelData) {
+    if (user) {
+      try {
+        writeRemotePreferences(user.id ?? user.username, {
+          activeId: next.activeId,
+          materials: Object.fromEntries(
+            next.trips.flatMap((trip) =>
+              (trip.events ?? []).map((event) => [event.id, event.materials]),
+            ),
+          ),
+        });
+      } catch {
+        setWarning(
+          "Изменения сохранены на сервере, но локальные материалы и выбор поездки сохранить не удалось.",
+        );
+      }
+    }
+    setData(next);
+  }
+  const initialize = useCallback(
+    async (expected = generation.current) => {
+      const account = await apiResult(sdk.authGetSelf());
+      const trips = await loadTrips();
+      const local = preferences(account);
+      if (generation.current !== expected) return;
+      setUser(account);
+      setData({
+        trips: trips.map((trip) => ({
+          ...trip,
+          events: trip.events?.map((event) => ({
+            ...event,
+            materials: local.materials[event.id] ?? [],
+          })),
+        })),
+        activeId:
+          trips.find((trip) => trip.id === local.activeId)?.id ??
+          trips[0]?.id ??
+          null,
+      });
+    },
+    [preferences],
+  );
+  useEffect(() => {
+    const current = ++generation.current;
+    async function restore() {
+      try {
+        await initialize(current);
+      } catch (error) {
+        if (!(error instanceof ApiError && error.status === 401))
+          setWarning(
+            error instanceof Error
+              ? error.message
+              : "Не удалось загрузить данные.",
+          );
+      } finally {
+        if (generation.current === current) setReady(true);
+      }
+    }
+    void restore();
+    return () => {
+      generation.current++;
+    };
+  }, [initialize]);
+
+  async function mutate<T>(operation: () => Promise<T>): Promise<T> {
+    if (busy.current)
+      throw new Error("Дождитесь завершения предыдущего запроса.");
+    busy.current = true;
+    try {
+      return await operation();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        setUser(undefined);
+        setData(empty);
+      } else if (reconcile.current && user) {
+        try {
+          await initialize();
+        } catch {
+          setWarning(
+            "Часть изменений могла сохраниться. Обновите страницу, чтобы загрузить состояние сервера.",
+          );
+        }
+      }
+      throw error;
+    } finally {
+      busy.current = false;
+      reconcile.current = false;
+    }
+  }
+  function findTrip(id: string, requireActive = true) {
+    const trip = data.trips.find((item) => item.id === id);
+    if (!user || !trip || (requireActive && data.activeId !== id))
+      throw new Error("Выберите путешествие.");
+    return trip;
+  }
+  function replace(trip: Trip) {
+    persist({
+      ...data,
+      trips: data.trips.map((item) => (item.id === trip.id ? trip : item)),
+    });
+  }
+  function check(error: string | null) {
+    if (error) throw new Error(error);
+  }
+  const value: TravelContextValue = {
+    ...data,
+    user,
+    remote: true,
+    username: user?.username ?? null,
+    ready,
+    storageWarning,
+    dismissStorageWarning: () => setWarning(null),
+    login: (name, password = "", register = false) =>
+      mutate(async () => {
+        if (register)
+          await apiResult(
+            sdk.authRegister({ body: { username: name.trim(), password } }),
+          );
+        await apiResult(
+          sdk.authLogin({
+            body: { grant_type: "password", username: name.trim(), password },
+          }),
+        );
+        await initialize();
+      }),
+    logout: () =>
+      mutate(async () => {
+        await apiResult(sdk.authLogout());
+        setUser(undefined);
+        setData(empty);
+      }),
+    renameAccount() {
+      throw new Error(
+        "Бэкенд пока не поддерживает изменение имени пользователя.",
+      );
+    },
+    selectTrip(id) {
+      findTrip(id, false);
+      persist({ ...data, activeId: id });
+    },
+    createTrip: (values) =>
+      mutate(async () => {
+        if (!user) throw new Error("Сначала войдите в аккаунт.");
+        check(validateTrip(values));
+        const trip = mapTrip(
+          await apiResult(sdk.tripsPostTrip({ body: tripBody(values) })),
+        );
+        persist({ trips: [...data.trips, trip], activeId: trip.id });
+      }),
+    saveTrip: (id, values) =>
+      mutate(async () => {
+        const trip = findTrip(id, false);
+        check(validateTrip(values));
+        const outside = [...(trip.events ?? []), ...(trip.legs ?? [])].some(
+          (item) =>
+            item.start.slice(0, 10) < values.startDate ||
+            (item.end || item.start).slice(0, 10) > values.endDate,
+        );
+        if (outside)
+          throw new Error(
+            "Новые даты не покрывают события или перемещения поездки. Сначала перенесите их.",
+          );
+        const saved = mapTrip(
+          await apiResult(
+            sdk.tripsPatchTrip({
+              path: { trip_id: apiId(id) },
+              body: tripBody(values),
+            }),
+          ),
+        );
+        replace({
+          ...saved,
+          events: trip.events,
+          points: trip.points,
+          legs: trip.legs,
+        });
+      }),
+    deleteTrip: (id) =>
+      mutate(async () => {
+        const trip = findTrip(id, false);
+        reconcile.current = true;
+        for (const leg of trip.legs ?? [])
+          await apiResult(
+            sdk.transfersRemoveTransfer({
+              path: { tripId: apiId(id), transferId: apiId(leg.id) },
+            }),
+          );
+        for (const event of trip.events ?? [])
+          await apiResult(
+            sdk.eventsRemoveEvent({
+              path: { tripId: apiId(id), eventId: apiId(event.id) },
+            }),
+          );
+        for (const point of trip.points ?? [])
+          await apiResult(
+            sdk.pointsRemovePoint({
+              path: { tripId: apiId(id), pointId: apiId(point.id) },
+            }),
+          );
+        await apiResult(sdk.tripsRemoveTrip({ path: { trip_id: apiId(id) } }));
+        const trips = data.trips.filter((item) => item.id !== id);
+        persist({
+          trips,
+          activeId:
+            data.activeId === id ? (trips[0]?.id ?? null) : data.activeId,
+        });
+        void deleteMaterialFiles(
+          (trip.events ?? []).flatMap((event) =>
+            event.materials.map((material) => material.id),
+          ),
+        );
+      }),
+    savePoint: (id, values, pointId) =>
+      mutate(async () => {
+        const trip = findTrip(id);
+        check(validatePoint(values));
+        const body = pointBody(values);
+        const point = mapPoint(
+          await apiResult(
+            pointId
+              ? sdk.pointsPatchPoint({
+                  path: { tripId: apiId(id), pointId: apiId(pointId) },
+                  body,
+                })
+              : sdk.pointsPostPoint({ path: { tripId: apiId(id) }, body }),
+          ),
+        );
+        replace({
+          ...trip,
+          points: pointId
+            ? trip.points?.map((item) => (item.id === pointId ? point : item))
+            : [...(trip.points ?? []), point],
+        });
+        return point.id;
+      }),
+    deletePoint: (id, pointId) =>
+      mutate(async () => {
+        const trip = findTrip(id);
+        reconcile.current = true;
+        // The backend rejects deleting points used by transfers. Remove those first.
+        for (const leg of trip.legs ?? []) {
+          if (leg.fromPointId !== pointId && leg.toPointId !== pointId)
+            continue;
+          await apiResult(
+            sdk.transfersRemoveTransfer({
+              path: { tripId: apiId(id), transferId: apiId(leg.id) },
+            }),
+          );
+        }
+        for (const event of trip.events ?? []) {
+          if (event.pointId === pointId)
+            await apiResult(
+              sdk.eventsPatchEvent({
+                path: { tripId: apiId(id), eventId: apiId(event.id) },
+                body: { waypointId: null },
+              }),
+            );
+        }
+        await apiResult(
+          sdk.pointsRemovePoint({
+            path: { tripId: apiId(id), pointId: apiId(pointId) },
+          }),
+        );
+        replace({
+          ...trip,
+          points: trip.points?.filter((point) => point.id !== pointId),
+          legs: trip.legs?.filter(
+            (leg) => leg.fromPointId !== pointId && leg.toPointId !== pointId,
+          ),
+          events: trip.events?.map((event) =>
+            event.pointId === pointId ? { ...event, pointId: null } : event,
+          ),
+        });
+      }),
+    saveEvent: (id, values, eventId) =>
+      mutate(async () => {
+        const trip = findTrip(id);
+        check(
+          validateEvent(
+            values,
+            trip,
+            new Set(trip.points?.map((point) => point.id)),
+          ),
+        );
+        const body = eventBody(values);
+        const event = {
+          ...mapEvent(
+            await apiResult(
+              eventId
+                ? sdk.eventsPatchEvent({
+                    path: { tripId: apiId(id), eventId: apiId(eventId) },
+                    body,
+                  })
+                : sdk.eventsPostEvent({ path: { tripId: apiId(id) }, body }),
+            ),
+          ),
+          materials: values.materials,
+        };
+        replace({
+          ...trip,
+          events: eventId
+            ? trip.events?.map((item) => (item.id === eventId ? event : item))
+            : [...(trip.events ?? []), event],
+        });
+        return event.id;
+      }),
+    deleteEvent: (id, eventId) =>
+      mutate(async () => {
+        const trip = findTrip(id);
+        await apiResult(
+          sdk.eventsRemoveEvent({
+            path: { tripId: apiId(id), eventId: apiId(eventId) },
+          }),
+        );
+        const materials =
+          trip.events?.find((event) => event.id === eventId)?.materials ?? [];
+        replace({
+          ...trip,
+          events: trip.events?.filter((event) => event.id !== eventId),
+        });
+        void deleteMaterialFiles(materials.map((material) => material.id));
+      }),
+    saveLeg: (id, values, legId) =>
+      mutate(async () => {
+        const trip = findTrip(id);
+        check(validateLeg(values, trip, trip.points ?? []));
+        const body = legBody(values);
+        if (
+          legId &&
+          values.description.trim() !==
+            (trip.legs?.find((leg) => leg.id === legId)?.description ?? "")
+        )
+          throw new Error(
+            "API пока не поддерживает изменение описания перемещения.",
+          );
+        // PATCH currently omits description in the backend schema. Recreating would
+        // change identity, so keep the server's description when editing a transfer.
+        const leg = mapLeg(
+          await apiResult(
+            legId
+              ? sdk.transfersPatchTransfer({
+                  path: { tripId: apiId(id), transferId: apiId(legId) },
+                  body,
+                })
+              : sdk.transfersPostTransfer({
+                  path: { tripId: apiId(id) },
+                  body,
+                }),
+          ),
+        );
+        replace({
+          ...trip,
+          legs: legId
+            ? trip.legs?.map((item) => (item.id === legId ? leg : item))
+            : [...(trip.legs ?? []), leg],
+        });
+        return leg.id;
+      }),
+    deleteLeg: (id, legId) =>
+      mutate(async () => {
+        const trip = findTrip(id);
+        await apiResult(
+          sdk.transfersRemoveTransfer({
+            path: { tripId: apiId(id), transferId: apiId(legId) },
+          }),
+        );
+        replace({
+          ...trip,
+          legs: trip.legs?.filter((leg) => leg.id !== legId),
+        });
+      }),
+  };
+  return (
+    <TravelContext.Provider value={value}>{children}</TravelContext.Provider>
+  );
+}

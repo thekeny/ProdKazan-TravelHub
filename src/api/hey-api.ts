@@ -1,9 +1,10 @@
 import type { CreateClientConfig } from "@/api/generated/client.gen";
-import { API, API_URL } from "@/configs/consts/api.const";
+import { API } from "@/configs/consts/api.const";
 
 export const createClientConfig: CreateClientConfig = (config) => ({
   ...config,
-  baseUrl: API_URL,
+  baseUrl: "/api/backend",
+  credentials: "same-origin",
   timeout: API.TIMEOUT,
   retry: {
     limit: API.LIMIT,

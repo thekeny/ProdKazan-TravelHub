@@ -93,6 +93,8 @@ function Overview({ trip }: { trip: Trip }) {
   );
   const [legEditor, setLegEditor] = useState<{ leg?: TripLeg } | null>(null);
   const [deletion, setDeletion] = useState<Deletion | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
   const [detailsEvent, setDetailsEvent] = useState<TripEvent | null>(null);
   const [detailsPointId, setDetailsPointId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -238,12 +240,16 @@ function Overview({ trip }: { trip: Trip }) {
     setMinutes(timeToMinutes(leg.start));
   }
 
-  function confirmDelete() {
-    if (!deletion) return;
+  async function confirmDelete() {
+    if (!deletion || deletingRef.current) return;
+    deletingRef.current = true;
+    setDeleting(true);
     try {
-      if (deletion.kind === "event") deleteEvent(trip.id, deletion.event.id);
-      if (deletion.kind === "point") deletePoint(trip.id, deletion.point.id);
-      if (deletion.kind === "leg") deleteLeg(trip.id, deletion.leg.id);
+      if (deletion.kind === "event")
+        await deleteEvent(trip.id, deletion.event.id);
+      if (deletion.kind === "point")
+        await deletePoint(trip.id, deletion.point.id);
+      if (deletion.kind === "leg") await deleteLeg(trip.id, deletion.leg.id);
       setStatus(
         deletion.kind === "event"
           ? "Событие удалено."
@@ -257,6 +263,9 @@ function Overview({ trip }: { trip: Trip }) {
       setError(
         error instanceof Error ? error.message : "Не удалось удалить запись.",
       );
+    } finally {
+      deletingRef.current = false;
+      setDeleting(false);
     }
   }
 
@@ -576,8 +585,8 @@ function Overview({ trip }: { trip: Trip }) {
           time={minutesToTime(minutes)}
           initialPointId={eventEditor.pointId}
           onClose={() => setEventEditor(null)}
-          onSave={(values) => {
-            saveEvent(trip.id, values, eventEditor.event?.id);
+          onSave={async (values) => {
+            await saveEvent(trip.id, values, eventEditor.event?.id);
             setEventEditor(null);
             setDay(values.start.slice(0, 10));
             setShowAll(false);
@@ -591,8 +600,8 @@ function Overview({ trip }: { trip: Trip }) {
           points={points}
           point={pointEditor.point}
           onClose={() => setPointEditor(null)}
-          onSave={(values) => {
-            savePoint(trip.id, values, pointEditor.point?.id);
+          onSave={async (values) => {
+            await savePoint(trip.id, values, pointEditor.point?.id);
             setPointEditor(null);
             setStatus("Точка сохранена.");
           }}
@@ -605,8 +614,8 @@ function Overview({ trip }: { trip: Trip }) {
           leg={legEditor.leg}
           day={day}
           onClose={() => setLegEditor(null)}
-          onSave={(values) => {
-            saveLeg(trip.id, values, legEditor.leg?.id);
+          onSave={async (values) => {
+            await saveLeg(trip.id, values, legEditor.leg?.id);
             setLegEditor(null);
             setDay(values.start.slice(0, 10));
             setShowAll(false);
@@ -627,7 +636,7 @@ function Overview({ trip }: { trip: Trip }) {
       <Dialog.Root
         open={!!deletion}
         onOpenChange={(open) => {
-          if (!open) setDeletion(null);
+          if (!open && !deletingRef.current) setDeletion(null);
         }}
       >
         <Dialog.Portal>
@@ -649,6 +658,7 @@ function Overview({ trip }: { trip: Trip }) {
                 variant="outline"
                 className="h-11"
                 onClick={() => setDeletion(null)}
+                disabled={deleting}
               >
                 Отмена
               </Button>
@@ -656,8 +666,9 @@ function Overview({ trip }: { trip: Trip }) {
                 variant="destructive"
                 className="h-11"
                 onClick={confirmDelete}
+                disabled={deleting}
               >
-                Удалить
+                {deleting ? "Удаляем…" : "Удалить"}
               </Button>
             </div>
           </DialogPopup>
