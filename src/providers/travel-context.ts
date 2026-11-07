@@ -19,6 +19,10 @@ export type TravelContextValue = TravelData & {
   ) => void | Promise<void>;
   logout: () => void | Promise<void>;
   renameAccount: (name: string) => void | Promise<void>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<void>;
   createTrip: (values: TripValues) => void | Promise<void>;
   saveTrip: (tripId: string, values: TripValues) => void | Promise<void>;
   deleteTrip: (tripId: string) => void | Promise<void>;

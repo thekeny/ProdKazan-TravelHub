@@ -166,6 +166,30 @@ export type AuthValues = {
   password: string;
   confirm: string;
 };
+export type PasswordValues = {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+export function passwordErrors(
+  value: PasswordValues,
+): FormErrors<PasswordValues> {
+  const errors: FormErrors<PasswordValues> = {};
+  if (!value.currentPassword)
+    errors.currentPassword = "Введите текущий пароль.";
+  else if (value.currentPassword.length > TEXT_LIMITS.REMOTE_PASSWORD)
+    errors.currentPassword = `До ${TEXT_LIMITS.REMOTE_PASSWORD} символов.`;
+  if (!value.newPassword) errors.newPassword = "Введите новый пароль.";
+  else if (value.newPassword.length < TEXT_LIMITS.PASSWORD_MIN)
+    errors.newPassword = `Минимум ${TEXT_LIMITS.PASSWORD_MIN} символов.`;
+  else if (value.newPassword.length > TEXT_LIMITS.REMOTE_PASSWORD)
+    errors.newPassword = `До ${TEXT_LIMITS.REMOTE_PASSWORD} символов.`;
+  if (!value.confirmPassword)
+    errors.confirmPassword = "Повторите новый пароль.";
+  else if (value.confirmPassword !== value.newPassword)
+    errors.confirmPassword = "Пароли не совпадают.";
+  return errors;
+}
 export function authErrors(
   value: AuthValues,
   remote: boolean,

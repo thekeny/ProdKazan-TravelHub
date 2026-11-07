@@ -52,7 +52,7 @@ export async function proxyBackend(request: NextRequest, path: string[]) {
       );
   }
   if (
-    !/^(auth\/(login|register|refresh|logout|me)|health|trips(?:\/\d+(?:\/(?:(?:points|events|transfers)(?:\/\d+)?|cover(?:\/[a-zA-Z0-9._-]+)?))?)?)$/.test(
+    !/^(auth\/(login|register|refresh|logout|me(?:\/password)?)|health|trips(?:\/\d+(?:\/(?:(?:points|events|transfers)(?:\/\d+)?|cover(?:\/[a-zA-Z0-9._-]+)?))?)?)$/.test(
       path.join("/"),
     )
   )

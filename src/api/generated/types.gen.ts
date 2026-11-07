@@ -12,10 +12,6 @@ export type AdminCreateUserRequest = {
      * Username
      */
     username: string;
-    /**
-     * Password
-     */
-    password: string;
     role?: UserRole;
 };
 
@@ -78,6 +74,20 @@ export type BodyAuthLogin = {
      * Client Secret
      */
     client_secret?: string | null;
+};
+
+/**
+ * ChangePasswordRequest
+ */
+export type ChangePasswordRequest = {
+    /**
+     * Currentpassword
+     */
+    currentPassword: string;
+    /**
+     * Newpassword
+     */
+    newPassword: string;
 };
 
 /**
@@ -406,10 +416,6 @@ export type RegisterUserRequest = {
      * Username
      */
     username: string;
-    /**
-     * Password
-     */
-    password: string;
 };
 
 /**
@@ -646,8 +652,39 @@ export type AppModelsTypesMissingMaybeMissingUnionAnnotatedStrStringConstraintsN
 
 export type AppModelsTypesMissingMaybeMissingUnionAnnotatedStrStringConstraintsNoneType3 = string | null;
 
+/**
+ * AdminCreateUserRequest
+ */
+export type AdminCreateUserRequestWritable = {
+    /**
+     * Username
+     */
+    username: string;
+    /**
+     * Password
+     */
+    password: string;
+    role?: UserRole;
+};
+
+export type MaybeMissingEventTypeWritable = EventType;
+
+/**
+ * RegisterUserRequest
+ */
+export type RegisterUserRequestWritable = {
+    /**
+     * Username
+     */
+    username: string;
+    /**
+     * Password
+     */
+    password: string;
+};
+
 export type AuthRegisterData = {
-    body: RegisterUserRequest;
+    body: RegisterUserRequestWritable;
     path?: never;
     query?: never;
     url: '/auth/register';
@@ -868,8 +905,53 @@ export type AuthGetSelfResponses = {
 
 export type AuthGetSelfResponse = AuthGetSelfResponses[keyof AuthGetSelfResponses];
 
+export type AuthChangePasswordData = {
+    body: ChangePasswordRequest;
+    path?: never;
+    query?: never;
+    url: '/auth/me/password';
+};
+
+export type AuthChangePasswordErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Forbidden
+     */
+    403: ForbiddenError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+    /**
+     * Service Unavailable
+     */
+    503: ServiceUnavailableError;
+};
+
+export type AuthChangePasswordError = AuthChangePasswordErrors[keyof AuthChangePasswordErrors];
+
+export type AuthChangePasswordResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthChangePasswordResponse = AuthChangePasswordResponses[keyof AuthChangePasswordResponses];
+
 export type AdminCreateUserData = {
-    body: AdminCreateUserRequest;
+    body: AdminCreateUserRequestWritable;
     path?: never;
     query?: never;
     url: '/admin/user/create';

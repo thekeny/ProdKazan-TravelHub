@@ -22,6 +22,38 @@ afterEach(() => {
 });
 
 describe("backend proxy", () => {
+  it("forwards password changes to the backend with the session and JSON body", async () => {
+    const body = JSON.stringify({
+      currentPassword: "old-pass",
+      newPassword: "new-pass",
+    });
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const response = await backendRoute.PUT(
+      new NextRequest("http://localhost:3000/api/backend/auth/me/password", {
+        method: "PUT",
+        body,
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: "travelhub_access=test-access",
+          Origin: "http://localhost:3000",
+        },
+      }),
+      { params: Promise.resolve({ path: ["auth", "me", "password"] }) },
+    );
+    expect(response.status).toBe(204);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://backend.example/api/v1/auth/me/password");
+    expect(options?.method).toBe("PUT");
+    expect(new Headers(options?.headers).get("Authorization")).toBe(
+      "Bearer test-access",
+    );
+    expect(new Headers(options?.headers).get("Content-Type")).toBe(
+      "application/json",
+    );
+    expect(new TextDecoder().decode(options?.body as ArrayBuffer)).toBe(body);
+    expect(response.headers.get("Set-Cookie")).toBeNull();
+  });
   it("keeps access and refresh tokens in HttpOnly cookies", async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(

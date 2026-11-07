@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, type Options as Options2, type RequestResult, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { AdminCreateUserData, AdminCreateUserErrors, AdminCreateUserResponses, AdminListAllUsersData, AdminListAllUsersErrors, AdminListAllUsersResponses, AuthDeleteSelfData, AuthDeleteSelfErrors, AuthDeleteSelfResponses, AuthGetSelfData, AuthGetSelfErrors, AuthGetSelfResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutErrors, AuthLogoutResponses, AuthRefreshTokenData, AuthRefreshTokenErrors, AuthRefreshTokenResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, EventsGetEventData, EventsGetEventErrors, EventsGetEventResponses, EventsGetEventsData, EventsGetEventsErrors, EventsGetEventsResponses, EventsPatchEventData, EventsPatchEventErrors, EventsPatchEventResponses, EventsPostEventData, EventsPostEventErrors, EventsPostEventResponses, EventsRemoveEventData, EventsRemoveEventErrors, EventsRemoveEventResponses, PointsGetPointByIdData, PointsGetPointByIdErrors, PointsGetPointByIdResponses, PointsGetPointsData, PointsGetPointsErrors, PointsGetPointsResponses, PointsPatchPointData, PointsPatchPointErrors, PointsPatchPointResponses, PointsPostPointData, PointsPostPointErrors, PointsPostPointResponses, PointsRemovePointData, PointsRemovePointErrors, PointsRemovePointResponses, RootHealthData, RootHealthErrors, RootHealthResponses, TransfersGetTransferByIdData, TransfersGetTransferByIdErrors, TransfersGetTransferByIdResponses, TransfersGetTransfersData, TransfersGetTransfersErrors, TransfersGetTransfersResponses, TransfersPatchTransferData, TransfersPatchTransferErrors, TransfersPatchTransferResponses, TransfersPostTransferData, TransfersPostTransferErrors, TransfersPostTransferResponses, TransfersRemoveTransferData, TransfersRemoveTransferErrors, TransfersRemoveTransferResponses, TripsGetTripByIdData, TripsGetTripByIdErrors, TripsGetTripByIdResponses, TripsGetTripCoverData, TripsGetTripCoverErrors, TripsGetTripCoverResponses, TripsGetTripsData, TripsGetTripsErrors, TripsGetTripsResponses, TripsPatchTripData, TripsPatchTripErrors, TripsPatchTripResponses, TripsPostTripData, TripsPostTripErrors, TripsPostTripResponses, TripsPutTripCoverData, TripsPutTripCoverErrors, TripsPutTripCoverResponses, TripsRemoveTripData, TripsRemoveTripErrors, TripsRemoveTripResponses } from './types.gen';
+import type { AdminCreateUserData, AdminCreateUserErrors, AdminCreateUserResponses, AdminListAllUsersData, AdminListAllUsersErrors, AdminListAllUsersResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthDeleteSelfData, AuthDeleteSelfErrors, AuthDeleteSelfResponses, AuthGetSelfData, AuthGetSelfErrors, AuthGetSelfResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutErrors, AuthLogoutResponses, AuthRefreshTokenData, AuthRefreshTokenErrors, AuthRefreshTokenResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, EventsGetEventData, EventsGetEventErrors, EventsGetEventResponses, EventsGetEventsData, EventsGetEventsErrors, EventsGetEventsResponses, EventsPatchEventData, EventsPatchEventErrors, EventsPatchEventResponses, EventsPostEventData, EventsPostEventErrors, EventsPostEventResponses, EventsRemoveEventData, EventsRemoveEventErrors, EventsRemoveEventResponses, PointsGetPointByIdData, PointsGetPointByIdErrors, PointsGetPointByIdResponses, PointsGetPointsData, PointsGetPointsErrors, PointsGetPointsResponses, PointsPatchPointData, PointsPatchPointErrors, PointsPatchPointResponses, PointsPostPointData, PointsPostPointErrors, PointsPostPointResponses, PointsRemovePointData, PointsRemovePointErrors, PointsRemovePointResponses, RootHealthData, RootHealthErrors, RootHealthResponses, TransfersGetTransferByIdData, TransfersGetTransferByIdErrors, TransfersGetTransferByIdResponses, TransfersGetTransfersData, TransfersGetTransfersErrors, TransfersGetTransfersResponses, TransfersPatchTransferData, TransfersPatchTransferErrors, TransfersPatchTransferResponses, TransfersPostTransferData, TransfersPostTransferErrors, TransfersPostTransferResponses, TransfersRemoveTransferData, TransfersRemoveTransferErrors, TransfersRemoveTransferResponses, TripsGetTripByIdData, TripsGetTripByIdErrors, TripsGetTripByIdResponses, TripsGetTripCoverData, TripsGetTripCoverErrors, TripsGetTripCoverResponses, TripsGetTripsData, TripsGetTripsErrors, TripsGetTripsResponses, TripsPatchTripData, TripsPatchTripErrors, TripsPatchTripResponses, TripsPostTripData, TripsPostTripErrors, TripsPostTripResponses, TripsPutTripCoverData, TripsPutTripCoverErrors, TripsPutTripCoverResponses, TripsRemoveTripData, TripsRemoveTripErrors, TripsRemoveTripResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -75,6 +75,19 @@ export const authGetSelf = <ThrowOnError extends boolean = false>(options?: Opti
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/auth/me',
     ...options
+});
+
+/**
+ * Change Password
+ */
+export const authChangePassword = <ThrowOnError extends boolean = false>(options: Options<AuthChangePasswordData, ThrowOnError>): RequestResult<AuthChangePasswordResponses, AuthChangePasswordErrors, ThrowOnError> => (options.client ?? client).put<AuthChangePasswordResponses, AuthChangePasswordErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/auth/me/password',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

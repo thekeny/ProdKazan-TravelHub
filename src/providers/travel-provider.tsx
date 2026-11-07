@@ -282,6 +282,11 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
           delete accounts[state.username];
           commit({ ...state, username, accounts });
         },
+        async changePassword() {
+          throw new Error(
+            "Смена пароля доступна только для серверного аккаунта.",
+          );
+        },
         logout() {
           commit({ ...state, username: null });
         },

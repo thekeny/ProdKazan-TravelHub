@@ -108,6 +108,44 @@ afterEach(async () => {
 });
 
 describe("remote travel state", () => {
+  it("changes the password without reloading trips or persisting passwords", async () => {
+    vi.mocked(sdk.authChangePassword).mockResolvedValue({
+      ...ok(undefined),
+      response: new Response(null, { status: 204 }),
+    });
+    await act(async () => travel.changePassword("old-pass", "new-pass"));
+    expect(sdk.authChangePassword).toHaveBeenCalledWith({
+      body: { currentPassword: "old-pass", newPassword: "new-pass" },
+    });
+    expect(sdk.authGetSelf).toHaveBeenCalledTimes(1);
+    expect(travel.username).toBe(user.username);
+    expect(JSON.stringify(localStorage)).not.toContain("new-pass");
+  });
+  it("keeps the session and trip data when the current password is incorrect", async () => {
+    vi.mocked(sdk.authChangePassword).mockResolvedValue(fail(403));
+    await act(async () => {
+      await expect(
+        travel.changePassword("wrong-pass", "new-pass"),
+      ).rejects.toThrow("Неверный текущий пароль.");
+    });
+    expect(travel.username).toBe(user.username);
+    expect(travel.trips[0].id).toBe(trip.id);
+  });
+  it("rejects invalid passwords before sending a request", async () => {
+    await act(async () => {
+      await expect(travel.changePassword("", "short")).rejects.toThrow();
+    });
+    expect(sdk.authChangePassword).not.toHaveBeenCalled();
+  });
+  it("shows the server error screen if changing the password fails on the server", async () => {
+    vi.mocked(sdk.authChangePassword).mockResolvedValue(fail(503));
+    await act(async () => {
+      await expect(
+        travel.changePassword("old-pass", "new-pass"),
+      ).rejects.toThrow();
+    });
+    expect(container.textContent).toContain("500");
+  });
   it("shows the error page when loading trips fails after authentication", async () => {
     await act(async () => root.unmount());
     vi.mocked(sdk.tripsGetTrips).mockResolvedValue(fail(502));

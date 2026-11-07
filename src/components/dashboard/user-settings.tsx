@@ -9,7 +9,8 @@ import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
-import { authErrors } from "@/lib/form-validation";
+import { authErrors, passwordErrors } from "@/lib/form-validation";
+import { ApiError } from "@/lib/travel-api";
 import { useTravel } from "@/providers/travel-provider";
 export function UserSettings({
   onClose,
@@ -18,23 +19,31 @@ export function UserSettings({
   onClose: () => void;
   onSaved?: () => void;
 }) {
-  const { username, renameAccount, remote, user } = useTravel();
+  const { username, renameAccount, changePassword, remote, user } = useTravel();
   const [values, setValues, form] = useFormValues(
-    { username: username ?? "" },
-    (values) => ({
-      username: authErrors(
-        { ...values, password: "", confirm: "" },
-        false,
-        false,
-      ).username,
-    }),
+    {
+      username: username ?? "",
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+    (values) =>
+      remote
+        ? passwordErrors(values)
+        : {
+            username: authErrors(
+              { ...values, password: "", confirm: "" },
+              false,
+              false,
+            ).username,
+          },
   );
   const name = values.username;
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
   const { requestClose, confirmation } = useDiscardConfirmation(
-    name,
+    values,
     onClose,
     pending,
   );
@@ -54,7 +63,7 @@ export function UserSettings({
           </Dialog.Title>
           <Dialog.Description className="mt-2 text-sm text-muted-foreground">
             {remote
-              ? "Данные аккаунта загружены с сервера. Изменение имени и пароля пока не поддерживается API."
+              ? "Здесь можно изменить пароль. Имя пользователя изменить пока нельзя."
               : "Данные вашего аккаунта."}
           </Dialog.Description>
           <FormProvider {...form}>
@@ -63,26 +72,44 @@ export function UserSettings({
               className="mt-6 grid gap-4"
               onSubmit={async (event) => {
                 event.preventDefault();
-                if (pending || remote) return;
+                if (pendingRef.current) return;
                 if (!(await form.trigger(undefined, { shouldFocus: true })))
                   return;
                 if (pendingRef.current) return;
                 pendingRef.current = true;
                 setPending(true);
+                setError(null);
                 try {
                   await actionToast(
-                    () => renameAccount(name),
+                    () =>
+                      remote
+                        ? changePassword(
+                            values.currentPassword,
+                            values.newPassword,
+                          )
+                        : renameAccount(name),
                     "Сохраняем…",
-                    "Изменения сохранены.",
+                    remote ? "Пароль изменён." : "Изменения сохранены.",
                   );
                   onSaved?.();
                   onClose();
                 } catch (error) {
-                  setError(
-                    error instanceof Error
-                      ? error.message
-                      : "Не удалось сохранить имя.",
-                  );
+                  if (
+                    remote &&
+                    error instanceof ApiError &&
+                    error.status === 403
+                  ) {
+                    form.setError(
+                      "currentPassword",
+                      { message: error.message },
+                      { shouldFocus: true },
+                    );
+                  } else
+                    setError(
+                      error instanceof Error
+                        ? error.message
+                        : "Не удалось сохранить изменения.",
+                    );
                 } finally {
                   pendingRef.current = false;
                   setPending(false);
@@ -102,30 +129,96 @@ export function UserSettings({
                     maxLength={TEXT_LIMITS.USERNAME}
                     autoComplete="username"
                     onChange={(event) =>
-                      setValues({ username: event.target.value })
+                      setValues({ ...values, username: event.target.value })
                     }
                   />
                 )}
               </Field>
-              <Field
-                name="password"
-                label="Пароль"
-                hint={
-                  remote
-                    ? "В API пока нет метода смены пароля."
-                    : "Смена пароля станет доступна после подключения авторизации."
-                }
-              >
-                {(id, describedBy) => (
-                  <input
-                    id={id}
-                    type="password"
-                    disabled
-                    className={inputClass}
-                    aria-describedby={describedBy}
-                  />
-                )}
-              </Field>
+              {remote ? (
+                <>
+                  <Field name="currentPassword" label="Текущий пароль">
+                    {(id) => (
+                      <input
+                        id={id}
+                        type="password"
+                        className={inputClass}
+                        value={values.currentPassword}
+                        disabled={pending}
+                        autoComplete="current-password"
+                        maxLength={TEXT_LIMITS.REMOTE_PASSWORD}
+                        onChange={(event) =>
+                          setValues({
+                            ...values,
+                            currentPassword: event.target.value,
+                          })
+                        }
+                      />
+                    )}
+                  </Field>
+                  <Field
+                    name="newPassword"
+                    label="Новый пароль"
+                    hint={`От ${TEXT_LIMITS.PASSWORD_MIN} до ${TEXT_LIMITS.REMOTE_PASSWORD} символов.`}
+                  >
+                    {(id, describedBy) => (
+                      <input
+                        id={id}
+                        type="password"
+                        className={inputClass}
+                        value={values.newPassword}
+                        disabled={pending}
+                        autoComplete="new-password"
+                        aria-describedby={describedBy}
+                        minLength={TEXT_LIMITS.PASSWORD_MIN}
+                        maxLength={TEXT_LIMITS.REMOTE_PASSWORD}
+                        onChange={(event) =>
+                          setValues({
+                            ...values,
+                            newPassword: event.target.value,
+                          })
+                        }
+                      />
+                    )}
+                  </Field>
+                  <Field name="confirmPassword" label="Повторите новый пароль">
+                    {(id) => (
+                      <input
+                        id={id}
+                        type="password"
+                        className={inputClass}
+                        value={values.confirmPassword}
+                        disabled={pending}
+                        autoComplete="new-password"
+                        maxLength={TEXT_LIMITS.REMOTE_PASSWORD}
+                        onChange={(event) =>
+                          setValues({
+                            ...values,
+                            confirmPassword: event.target.value,
+                          })
+                        }
+                      />
+                    )}
+                  </Field>
+                </>
+              ) : (
+                <Field
+                  name="password"
+                  label="Пароль"
+                  hint={
+                    "Смена пароля станет доступна после подключения авторизации."
+                  }
+                >
+                  {(id, describedBy) => (
+                    <input
+                      id={id}
+                      type="password"
+                      disabled
+                      className={inputClass}
+                      aria-describedby={describedBy}
+                    />
+                  )}
+                </Field>
+              )}
               {remote && user?.createdAt && (
                 <p className="text-sm text-muted-foreground">
                   Аккаунт создан:{" "}
@@ -141,11 +234,13 @@ export function UserSettings({
                 <Button type="button" variant="outline" onClick={requestClose}>
                   {remote ? "Закрыть" : "Отмена"}
                 </Button>
-                {!remote && (
-                  <Button type="submit" disabled={pending}>
-                    Сохранить
-                  </Button>
-                )}
+                <Button type="submit" disabled={pending}>
+                  {pending
+                    ? "Сохраняем…"
+                    : remote
+                      ? "Изменить пароль"
+                      : "Сохранить"}
+                </Button>
               </div>
             </form>
           </FormProvider>

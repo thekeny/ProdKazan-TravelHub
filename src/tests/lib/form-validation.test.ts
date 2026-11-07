@@ -3,6 +3,7 @@ import {
   authErrors,
   eventErrors,
   legErrors,
+  passwordErrors,
   pointErrors,
   tripErrors,
 } from "@/lib/form-validation";
@@ -29,6 +30,37 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("form validation", () => {
+  it("requires the current password and matching new passwords within limits", () => {
+    const values = {
+      currentPassword: "old",
+      newPassword: "new-pass",
+      confirmPassword: "new-pass",
+    };
+    expect(passwordErrors(values)).toEqual({});
+    expect(
+      passwordErrors({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      }),
+    ).toMatchObject({
+      currentPassword: expect.any(String),
+      newPassword: expect.any(String),
+      confirmPassword: expect.any(String),
+    });
+    expect(
+      passwordErrors({ ...values, confirmPassword: "different" }),
+    ).toHaveProperty("confirmPassword");
+    expect(passwordErrors({ ...values, newPassword: "short" })).toHaveProperty(
+      "newPassword",
+    );
+    expect(
+      passwordErrors({ ...values, newPassword: "a".repeat(65) }),
+    ).toHaveProperty("newPassword");
+    expect(
+      passwordErrors({ ...values, currentPassword: "a".repeat(65) }),
+    ).toHaveProperty("currentPassword");
+  });
   it("checks text and URL boundaries using the same rules for each domain", () => {
     expect(
       tripErrors({ ...trip, name: "я", description: "я".repeat(512) }, false),

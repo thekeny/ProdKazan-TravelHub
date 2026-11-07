@@ -8,6 +8,7 @@ import {
   authErrors,
   eventErrors,
   legErrors,
+  passwordErrors,
   pointErrors,
   tripErrors,
 } from "@/lib/form-validation";
@@ -241,6 +242,28 @@ export function RemoteTravelProvider({
         "Бэкенд пока не поддерживает изменение имени пользователя.",
       );
     },
+    changePassword: (currentPassword, newPassword) =>
+      mutate(async () => {
+        if (!user) throw new Error("Сначала войдите в аккаунт.");
+        assertValidInput(
+          passwordErrors({
+            currentPassword,
+            newPassword,
+            confirmPassword: newPassword,
+          }),
+        );
+        try {
+          await apiResult(
+            sdk.authChangePassword({
+              body: { currentPassword, newPassword },
+            }),
+          );
+        } catch (error) {
+          if (error instanceof ApiError && error.status === 403)
+            throw new ApiError(403, "Неверный текущий пароль.");
+          throw error;
+        }
+      }),
     selectTrip(id) {
       findTrip(id, false);
       persist({ ...data, activeId: id });
