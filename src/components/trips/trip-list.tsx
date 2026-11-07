@@ -29,7 +29,7 @@ export function TripList() {
           trips.map((trip) => (
             <article
               key={trip.id}
-              className="relative flex min-h-64 flex-col overflow-hidden rounded-3xl border border-border/70 bg-card transition-colors duration-150 hover:border-primary/25"
+              className="relative flex min-h-64 flex-col overflow-hidden rounded-3xl border border-border! bg-card transition-colors duration-150 hover:border-primary/60! hover:bg-secondary/20"
             >
               <button
                 type="button"
@@ -58,7 +58,7 @@ export function TripList() {
                       {(trip.points ?? []).length < 2 && (
                         <MapIcon
                           aria-hidden="true"
-                          className="absolute inset-0 m-auto size-8 text-primary/40"
+                          className="absolute inset-0 m-auto size-8 text-primary"
                         />
                       )}
                     </>
@@ -84,7 +84,7 @@ export function TripList() {
                   </span>
                 </span>
               </button>
-              <div className="absolute right-2 top-2 rounded-full bg-surface/85 shadow-sm backdrop-blur">
+              <div className="absolute right-2 top-2 rounded-full bg-surface/85  backdrop-blur">
                 <TripActions
                   trip={trip}
                   onSaved={() => setStatus(`Поездка «${trip.name}» обновлена.`)}

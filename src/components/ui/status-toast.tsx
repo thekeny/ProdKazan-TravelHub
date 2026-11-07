@@ -24,7 +24,7 @@ export function StatusToast({
   return (
     <output
       aria-live="polite"
-      className="fixed top-4 right-4 z-[70] flex max-w-sm items-start gap-2 rounded-lg border bg-surface p-3 text-sm shadow-lg"
+      className="fixed top-4 right-4 z-[70] flex max-w-sm items-start gap-2 rounded-lg bg-surface p-3 text-sm "
     >
       <span className="min-w-0 flex-1 break-words">{message}</span>
       <Button

@@ -105,7 +105,7 @@ export default function TripMap(props: Props) {
   );
   return (
     <section
-      className={`relative isolate overflow-hidden rounded-xl border bg-muted ${
+      className={`relative isolate overflow-hidden rounded-xl bg-muted ${
         props.className ?? "h-[360px] sm:h-[500px] xl:h-[640px]"
       }`}
       style={
@@ -223,13 +223,13 @@ export default function TripMap(props: Props) {
         )}
       </MapContainer>
       {props.onPlace && (
-        <p className="pointer-events-none absolute top-3 right-3 z-[1000] max-w-52 rounded-lg bg-background px-3 py-2 text-sm shadow">
+        <p className="pointer-events-none absolute top-3 right-3 z-[1000] max-w-52 rounded-lg bg-background px-3 py-2 text-sm">
           Нажмите на карту, чтобы выбрать место
         </p>
       )}
       {transports.length > 0 && !failed && (
         <ul
-          className="pointer-events-none absolute left-3 z-[1000] grid gap-1.5 rounded-lg border bg-surface/95 px-3 py-2 text-xs shadow-sm"
+          className="pointer-events-none absolute left-3 z-[1000] grid gap-1.5 rounded-lg bg-surface/95 px-3 py-2 text-xs "
           style={{ bottom: `calc(1.5rem + ${props.overlayInset ?? 0}px)` }}
         >
           {transports.map((transport) => (
@@ -253,7 +253,7 @@ export default function TripMap(props: Props) {
       {failed && (
         <div
           role="alert"
-          className="absolute right-3 left-3 z-[1000] flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background p-3 text-sm"
+          className="absolute right-3 left-3 z-[1000] flex flex-wrap items-center justify-between gap-2 rounded-lg bg-background p-3 text-sm"
           style={{ bottom: `calc(2rem + ${props.overlayInset ?? 0}px)` }}
         >
           <span>

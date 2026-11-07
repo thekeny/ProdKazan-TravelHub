@@ -4,7 +4,7 @@ import { APP } from "@/configs/consts/app.const";
 import { images } from "@/configs/paths/images.path";
 import { pages } from "@/configs/paths/pages.path";
 
-export function Logo() {
+export function Logo({ size = "default" }: { size?: "default" | "lg" }) {
   return (
     <Link
       href={pages.ROOT}
@@ -16,9 +16,13 @@ export function Logo() {
         alt={APP.NAME}
         width={2431}
         height={546}
-        sizes="(min-width: 640px) 160px, 144px"
+        sizes={
+          size === "lg"
+            ? "(min-width: 640px) 176px, 160px"
+            : "(min-width: 640px) 160px, 144px"
+        }
         priority
-        className="h-auto w-36 sm:w-40"
+        className={`h-auto ${size === "lg" ? "w-40 sm:w-44" : "w-36 sm:w-40"}`}
       />
     </Link>
   );

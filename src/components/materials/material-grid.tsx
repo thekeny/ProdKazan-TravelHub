@@ -54,7 +54,7 @@ export function MaterialGrid({
           role="dialog"
           aria-modal="true"
           aria-label={`Просмотр материала «${open.name}»`}
-          className="fixed inset-0 z-[60] grid place-items-center bg-overlay/70 p-4"
+          className="lightbox-backdrop fixed inset-0 z-[60] grid place-items-center bg-overlay/70 p-4"
           onClick={(event) => {
             if (event.target === event.currentTarget) setOpenId(null);
           }}
@@ -62,7 +62,17 @@ export function MaterialGrid({
             if (event.key === "Escape") setOpenId(null);
           }}
         >
-          <div className="max-h-full max-w-4xl overflow-auto rounded-xl border bg-surface p-2 shadow-xl">
+          <div className="lightbox-panel relative max-h-full max-w-4xl overflow-auto rounded-xl bg-surface p-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="absolute right-2 top-2 size-11"
+              aria-label="Закрыть просмотр материала"
+              onClick={() => setOpenId(null)}
+            >
+              <X className="size-4" />
+            </Button>
             {/* biome-ignore lint/performance/noImgElement: blob-URL из IndexedDB не проходит через оптимизатор Next. */}
             <img
               src={openUrl}

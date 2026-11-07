@@ -48,6 +48,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" className={`${lora.variable} ${caveat.variable}`}>
+      <head>
+        <link
+          rel="preload"
+          as="image"
+          href={images.LOADING}
+          type="image/webp"
+          fetchPriority="high"
+        />
+      </head>
       <body className="antialiased">
         <TravelProvider>{children}</TravelProvider>
       </body>

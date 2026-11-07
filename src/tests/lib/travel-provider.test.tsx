@@ -246,3 +246,34 @@ describe("travel session flow", () => {
     ).toThrow();
   });
 });
+
+describe("account settings", () => {
+  it("renames an account without losing its trips and persists the session", async () => {
+    await act(async () => travel.login("alice"));
+    await act(async () => travel.createTrip(values));
+    const id = travel.activeId;
+    await act(async () => travel.renameAccount("  NEW-NAME  "));
+    expect(travel.username).toBe("new-name");
+    expect(travel.activeId).toBe(id);
+    expect(travel.trips).toHaveLength(1);
+    await act(async () => root.unmount());
+    await mount();
+    expect(travel.username).toBe("new-name");
+    expect(travel.activeId).toBe(id);
+    await act(async () => travel.login("alice"));
+    expect(travel.trips).toHaveLength(0);
+  });
+  it("rejects occupied or invalid names and keeps memory intact on write failure", async () => {
+    await act(async () => travel.login("bob"));
+    await act(async () => travel.login("alice"));
+    expect(() => travel.renameAccount(" BOB ")).toThrow();
+    expect(() => travel.renameAccount("ab")).toThrow();
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("quota");
+    });
+    expect(() => travel.renameAccount("charlie")).toThrow(
+      "Не удалось сохранить данные в браузере",
+    );
+    expect(travel.username).toBe("alice");
+  });
+});

@@ -7,6 +7,9 @@ import {
   Route as RouteIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { LoadingState } from "@/components/layout/loading-state";
 import { Logo } from "@/components/layout/logo";
 import { buttonVariants } from "@/components/ui/button";
 import { LANDING } from "@/configs/consts/landing.const";
@@ -17,11 +20,16 @@ const FEATURE_ICONS = [RouteIcon, CalendarDays, Images] as const;
 
 export function LandingPage() {
   const { username, ready } = useTravel();
+  const router = useRouter();
+  useEffect(() => {
+    if (ready && username) router.replace(pages.DASHBOARD);
+  }, [ready, username, router]);
   const signedIn = ready && !!username;
   const actionHref = signedIn ? pages.TRIPS : pages.LOGIN;
   const actionLabel = signedIn ? LANDING.ACTION_USER : LANDING.ACTION_GUEST;
   const navLabel = signedIn ? LANDING.NAV_USER : LANDING.NAV_GUEST;
 
+  if (!ready || username) return <LoadingState />;
   return (
     <main className="min-h-dvh bg-background paper-texture">
       <header className="border-b border-border/60">
@@ -69,6 +77,7 @@ export function LandingPage() {
         <div className="mx-auto grid w-full max-w-5xl gap-8 px-6 py-12 sm:grid-cols-3 sm:gap-10 sm:py-14">
           {LANDING.FEATURES.map((feature, index) => {
             const Icon = FEATURE_ICONS[index];
+            if (!ready || username) return <LoadingState />;
             return (
               <div key={feature.title} className="flex gap-3">
                 <Icon
@@ -88,6 +97,10 @@ export function LandingPage() {
           })}
         </div>
       </section>
+      <footer className="mx-auto flex w-full max-w-5xl justify-between border-t border-border/60 px-6 py-5 text-xs text-muted-foreground">
+        <span>© TravelHub</span>
+        <span>team №5</span>
+      </footer>
     </main>
   );
 }

@@ -99,7 +99,7 @@ export function TripTimeline({
       <div className="bg-gradient-to-t from-background via-background/80 to-transparent px-3 pt-8 pb-2">
         <div
           ref={cardRef}
-          className="pointer-events-auto rounded-lg border border-border/60 bg-surface/95 px-3 pt-1.5 pb-1 shadow-lg backdrop-blur"
+          className="pointer-events-auto rounded-lg bg-surface/95 px-3 pt-1.5 pb-1 backdrop-blur"
         >
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-1.5">
@@ -177,7 +177,7 @@ export function TripTimeline({
                   <button
                     key={`${item.kind}-${item.id}`}
                     type="button"
-                    className="flex min-h-9 max-w-64 shrink-0 items-center gap-1.5 rounded-md border bg-background px-2 py-1 text-left text-[11px] transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    className="flex min-h-9 max-w-64 shrink-0 items-center gap-1.5 rounded-md bg-background px-2 py-1 text-left text-[11px] transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     aria-label={`Открыть ${itemType(item)} «${itemTitle(item)}», ${minutesToTime(itemStartMinutes(item))}${continued ? ", продолжается на следующий день" : ""}`}
                     onClick={() =>
                       item.kind === "event"
@@ -281,12 +281,12 @@ export function TripTimeline({
             />
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute top-[27px] size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-surface bg-primary shadow"
+              className="pointer-events-none absolute top-[27px] size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-surface bg-primary"
               style={{ left: `${percent}%` }}
             />
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute top-0 -translate-x-1/2 rounded bg-primary-strong px-1.5 py-0.5 text-[11px] leading-4 font-semibold tabular-nums text-primary-foreground shadow"
+              className="pointer-events-none absolute top-0 -translate-x-1/2 rounded bg-primary-strong px-1.5 py-0.5 text-[11px] leading-4 font-semibold tabular-nums text-primary-foreground"
               style={{
                 left: `clamp(24px, ${percent}%, calc(100% - 24px))`,
               }}

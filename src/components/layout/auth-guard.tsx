@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { LoadingState } from "@/components/layout/loading-state";
 import { pages } from "@/configs/paths/pages.path";
 import { useTravel } from "@/providers/travel-provider";
 export function AuthGuard({
@@ -18,11 +19,6 @@ export function AuthGuard({
     if (!username) router.replace(pages.LOGIN);
     else if (requireTrip && !hasTrip) router.replace(pages.TRIPS);
   }, [ready, username, requireTrip, hasTrip, router]);
-  if (!ready || !username || (requireTrip && !hasTrip))
-    return (
-      <output className="grid min-h-dvh place-items-center text-sm text-muted-foreground">
-        Загрузка…
-      </output>
-    );
+  if (!ready || !username || (requireTrip && !hasTrip)) return <LoadingState />;
   return children;
 }

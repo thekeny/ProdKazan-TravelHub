@@ -40,6 +40,7 @@ type TravelContextValue = TravelData & {
   dismissStorageWarning: () => void;
   login: (name: string) => void;
   logout: () => void;
+  renameAccount: (name: string) => void;
   createTrip: (values: TripValues) => void;
   saveTrip: (tripId: string, values: TripValues) => void;
   deleteTrip: (tripId: string) => void;
@@ -276,6 +277,18 @@ export function TravelProvider({ children }: { children: React.ReactNode }) {
               [username]: account,
             },
           });
+        },
+        renameAccount(name) {
+          if (!state.username) throw new Error("Сначала войдите в аккаунт.");
+          const username = normalizeUsername(name);
+          if (username.length < 3 || username.length > 32)
+            throw new Error("Имя должно содержать от 3 до 32 символов.");
+          if (username === state.username) return;
+          if (Object.hasOwn(state.accounts, username))
+            throw new Error("Это имя уже занято.");
+          const accounts = { ...state.accounts, [username]: data };
+          delete accounts[state.username];
+          commit({ ...state, username, accounts });
         },
         logout() {
           commit({ ...state, username: null });

@@ -3,8 +3,9 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { EllipsisVertical, ListChecks, Pencil, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
-import { TripForm } from "@/components/trips/trip-form";
+import { TripSettings } from "@/components/trips/trip-settings";
 import { Button } from "@/components/ui/button";
+import { DialogPopup } from "@/components/ui/dialog-popup";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Trip, TripValues } from "@/configs/types/travel.type";
+import type { Trip } from "@/configs/types/travel.type";
 import { useTravel } from "@/providers/travel-provider";
 
 export function TripActions({
@@ -26,19 +27,13 @@ export function TripActions({
   onDeleted?: () => void;
   onCheckSchedule?: () => void;
 }) {
-  const { saveTrip, deleteTrip } = useTravel();
+  const { deleteTrip } = useTravel();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const deletingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
-
-  const save = async (values: TripValues) => {
-    saveTrip(trip.id, values);
-    setEditorOpen(false);
-    onSaved?.();
-  };
 
   const remove = () => {
     if (deletingRef.current) return;
@@ -114,36 +109,18 @@ export function TripActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog.Root
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
-        disablePointerDismissal
-      >
-        <Dialog.Portal>
-          <Dialog.Backdrop className="fixed inset-0 z-[60] bg-overlay/35" />
-          <Dialog.Popup className="fixed inset-3 z-[60] mx-auto max-w-lg overflow-y-auto rounded-xl border bg-background p-5 shadow-xl sm:inset-y-8 sm:p-8">
-            <Dialog.Title className="text-xl font-semibold">
-              Редактировать путешествие
-            </Dialog.Title>
-            <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-              Изменения сразу отразятся на карте и в хронологии.
-            </Dialog.Description>
-            <div className="mt-6">
-              <TripForm
-                initial={trip}
-                submitLabel="Сохранить изменения"
-                onSubmit={save}
-                onCancel={() => setEditorOpen(false)}
-              />
-            </div>
-          </Dialog.Popup>
-        </Dialog.Portal>
-      </Dialog.Root>
+      {editorOpen && (
+        <TripSettings
+          trip={trip}
+          onClose={() => setEditorOpen(false)}
+          onSaved={onSaved}
+        />
+      )}
 
       <Dialog.Root open={deleteOpen} onOpenChange={setDeleteOpen}>
         <Dialog.Portal>
-          <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay/35" />
-          <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background p-6 shadow-xl">
+          <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-50 bg-overlay/35" />
+          <DialogPopup className="dialog-popup fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background p-6 ">
             <Dialog.Title className="text-lg font-semibold">
               Удалить путешествие?
             </Dialog.Title>
@@ -174,7 +151,7 @@ export function TripActions({
                 {deleting ? "Удаляем…" : "Удалить"}
               </Button>
             </div>
-          </Dialog.Popup>
+          </DialogPopup>
         </Dialog.Portal>
       </Dialog.Root>
     </div>

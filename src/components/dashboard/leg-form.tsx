@@ -1,8 +1,8 @@
 "use client";
-
 import { Dialog } from "@base-ui/react/dialog";
 import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field, inputClass } from "@/components/ui/field";
 import {
   TRANSPORT_TYPES,
@@ -14,6 +14,7 @@ import type {
   TripLegValues,
 } from "@/configs/types/route.type";
 import type { TripValues } from "@/configs/types/travel.type";
+import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { validateLeg } from "@/lib/travel-route";
 
 export function LegForm({
@@ -51,17 +52,22 @@ export function LegForm({
   ) {
     setValues((current) => ({ ...current, [key]: value }));
   }
+  const { requestClose, confirmation } = useDiscardConfirmation(
+    values,
+    onClose,
+    pending,
+  );
   return (
     <Dialog.Root
       open
-      disablePointerDismissal
       onOpenChange={(open) => {
-        if (!open && !pending) onClose();
+        if (!open) requestClose();
       }}
     >
+      {confirmation}
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-[60] bg-overlay/35" />
-        <Dialog.Popup className="fixed inset-0 z-[60] m-auto flex h-fit max-h-[calc(100dvh-1.5rem)] w-[calc(100%-1.5rem)] max-w-2xl flex-col overflow-hidden rounded-xl border bg-background shadow-xl outline-none">
+        <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-[60] bg-overlay/35" />
+        <DialogPopup className="dialog-popup fixed inset-0 z-[60] m-auto flex h-fit max-h-[calc(100dvh-1.5rem)] w-[calc(100%-1.5rem)] max-w-2xl flex-col overflow-hidden rounded-xl border bg-background  outline-none">
           <form
             className="flex min-h-0 flex-1 flex-col"
             aria-busy={pending}
@@ -90,7 +96,7 @@ export function LegForm({
             }}
           >
             <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
-              <Dialog.Title className="text-xl font-semibold">
+              <Dialog.Title className="pr-10 text-xl font-semibold">
                 {leg ? "Редактировать перемещение" : "Новое перемещение"}
               </Dialog.Title>
               <Dialog.Description className="mt-1 text-sm text-muted-foreground">
@@ -226,7 +232,7 @@ export function LegForm({
                 className="h-11"
                 type="button"
                 disabled={pending}
-                onClick={onClose}
+                onClick={requestClose}
               >
                 Отмена
               </Button>
@@ -235,7 +241,7 @@ export function LegForm({
               </Button>
             </div>
           </form>
-        </Dialog.Popup>
+        </DialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   );

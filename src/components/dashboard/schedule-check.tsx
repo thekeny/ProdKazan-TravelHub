@@ -4,6 +4,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { AlertTriangle, CheckCircle2, X } from "lucide-react";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { DialogPopup } from "@/components/ui/dialog-popup";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
 import { findScheduleIssues, type ScheduleIssue } from "@/lib/travel-schedule";
@@ -30,8 +31,8 @@ export function ScheduleCheckDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay/35" />
-        <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 flex max-h-[85dvh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border bg-background shadow-xl">
+        <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-50 bg-overlay/35" />
+        <DialogPopup className="dialog-popup fixed top-1/2 left-1/2 z-50 flex max-h-[85dvh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border bg-background ">
           <header className="flex shrink-0 items-center justify-between gap-3 border-b p-4">
             <div>
               <Dialog.Title className="text-lg font-semibold">
@@ -98,7 +99,7 @@ export function ScheduleCheckDialog({
               </p>
             )}
           </div>
-        </Dialog.Popup>
+        </DialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   );

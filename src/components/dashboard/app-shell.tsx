@@ -1,52 +1,23 @@
-"use client";
-import { Dialog } from "@base-ui/react/dialog";
-import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { MobileNavigation } from "@/components/dashboard/mobile-navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { TripSwitcher } from "@/components/dashboard/trip-switcher";
 import { Logo } from "@/components/layout/logo";
-import { Button } from "@/components/ui/button";
+
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
   return (
-    <div className="min-h-dvh bg-muted/40">
-      <aside className="fixed inset-y-0 left-0 hidden w-72 overflow-y-auto border-r border-border/60 bg-surface/60 backdrop-blur lg:block">
+    <div className="flex h-dvh min-h-0 flex-col bg-muted/40">
+      <aside className="fixed inset-y-0 left-0 hidden w-72 overflow-y-auto bg-surface/60 backdrop-blur lg:block">
         <Sidebar />
       </aside>
-      <div className="lg:pl-72">
-        <header className="flex h-16 items-center justify-between border-b border-border/60 bg-background/90 px-5 backdrop-blur lg:hidden">
+      <div className="flex min-h-0 flex-1 flex-col lg:ml-72">
+        <header className="flex shrink-0 items-center gap-3 bg-background px-3 py-2 lg:hidden">
           <Logo />
-          <Dialog.Root open={open} onOpenChange={setOpen}>
-            <Dialog.Trigger
-              render={<Button variant="outline" className="size-11" />}
-              aria-label="Открыть меню"
-            >
-              <Menu />
-            </Dialog.Trigger>
-            <Dialog.Portal>
-              <Dialog.Backdrop className="fixed inset-0 z-40 bg-overlay/30" />
-              <Dialog.Popup className="fixed inset-y-0 left-0 z-50 w-80 max-w-[90vw] overflow-y-auto bg-background outline-none">
-                <Dialog.Title className="sr-only">Навигация</Dialog.Title>
-                <Dialog.Close
-                  render={
-                    <Button
-                      variant="ghost"
-                      className="absolute top-3 right-3 size-11"
-                    />
-                  }
-                  aria-label="Закрыть меню"
-                >
-                  <X />
-                </Dialog.Close>
-                <div className="h-full">
-                  <Sidebar onNavigate={() => setOpen(false)} />
-                </div>
-              </Dialog.Popup>
-            </Dialog.Portal>
-          </Dialog.Root>
+          <div className="ml-auto w-52 min-w-0 max-w-[55%]">
+            <TripSwitcher compact />
+          </div>
         </header>
-        <main className="h-[calc(100dvh-4rem)] overflow-hidden lg:h-dvh">
-          {children}
-        </main>
+        <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
+        <MobileNavigation />
       </div>
     </div>
   );

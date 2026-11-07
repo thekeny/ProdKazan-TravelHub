@@ -12,6 +12,7 @@ import {
 import { EventIcon } from "@/components/dashboard/event-icon";
 import { MaterialGrid } from "@/components/materials/material-grid";
 import { Button } from "@/components/ui/button";
+import { DialogPopup } from "@/components/ui/dialog-popup";
 import { EVENT_COLORS, EVENT_TYPES } from "@/configs/consts/events.const";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { RoutePoint } from "@/configs/types/route.type";
@@ -43,8 +44,8 @@ export function EventDetails({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay/35" />
-        <Dialog.Popup className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l bg-background shadow-xl outline-none">
+        <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-50 bg-overlay/35" />
+        <DialogPopup className="dialog-popup fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l bg-background  outline-none">
           <header className="flex shrink-0 items-start justify-between gap-3 border-b p-4">
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
@@ -138,7 +139,7 @@ export function EventDetails({
               Удалить
             </Button>
           </footer>
-        </Dialog.Popup>
+        </DialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   );

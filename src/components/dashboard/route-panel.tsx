@@ -24,7 +24,7 @@ function PointItem({
 }) {
   return (
     <li
-      className={`rounded-xl border p-3 transition-colors ${selected ? "border-primary/50 bg-muted" : "border-border bg-card"}`}
+      className={`rounded-xl p-3 transition-colors ${selected ? "bg-muted" : "bg-card"}`}
     >
       <div className="flex items-start gap-3">
         <button
@@ -89,7 +89,7 @@ function LegItem({
 }) {
   return (
     <li
-      className={`rounded-xl border p-3 transition-colors ${selected ? "border-primary/50 bg-muted" : "border-border bg-card"}`}
+      className={`rounded-xl p-3 transition-colors ${selected ? "bg-muted" : "bg-card"}`}
     >
       <div className="flex items-start gap-3">
         <button

@@ -1,7 +1,7 @@
 "use client";
 
 import { Upload, X } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, inputClass } from "@/components/ui/field";
 import { COVER_LIMITS, MATERIAL_TYPES } from "@/configs/consts/materials.const";
@@ -14,11 +14,13 @@ export function TripForm({
   submitLabel,
   onSubmit,
   onCancel,
+  onStateChange,
 }: {
   initial?: TripValues;
   submitLabel: string;
   onSubmit: (values: TripValues) => void | Promise<void>;
   onCancel?: () => void;
+  onStateChange?: (values: TripValues, busy: boolean) => void;
 }) {
   const [values, setValues] = useState<TripValues>(() =>
     initial
@@ -43,6 +45,10 @@ export function TripForm({
   const pendingRef = useRef(false);
   const errorId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    onStateChange?.(values, pending || reading);
+  }, [values, pending, reading, onStateChange]);
 
   function update<K extends keyof TripValues>(key: K, value: TripValues[K]) {
     setValues((current) => ({ ...current, [key]: value }));

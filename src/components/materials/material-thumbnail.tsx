@@ -46,15 +46,13 @@ export function MaterialThumbnail({
         type="button"
         onClick={onClick}
         aria-label={`Открыть материал «${material.name}»`}
-        className={`overflow-hidden rounded-md border bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
+        className={`overflow-hidden rounded-md bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
       >
         {content}
       </button>
     );
   return (
-    <span
-      className={`block overflow-hidden rounded-md border bg-muted ${className}`}
-    >
+    <span className={`block overflow-hidden rounded-md bg-muted ${className}`}>
       {content}
     </span>
   );

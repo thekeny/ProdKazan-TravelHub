@@ -1,11 +1,12 @@
 "use client";
-
 import { Dialog } from "@base-ui/react/dialog";
 import dynamic from "next/dynamic";
 import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field, inputClass } from "@/components/ui/field";
 import type { RoutePoint, RoutePointValues } from "@/configs/types/route.type";
+import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { validatePoint } from "@/lib/travel-route";
 
 const TripMap = dynamic(() => import("./trip-map"), {
@@ -46,17 +47,22 @@ export function PointForm({
     Math.abs(Number(lng)) <= 180
       ? { lat: Number(lat), lng: Number(lng) }
       : null;
+  const { requestClose, confirmation } = useDiscardConfirmation(
+    { values, lat, lng },
+    onClose,
+    pending,
+  );
   return (
     <Dialog.Root
       open
-      disablePointerDismissal
       onOpenChange={(open) => {
-        if (!open && !pending) onClose();
+        if (!open) requestClose();
       }}
     >
+      {confirmation}
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-[60] bg-overlay/35" />
-        <Dialog.Popup className="fixed inset-0 z-[60] m-auto flex h-fit max-h-[calc(100dvh-1.5rem)] w-[calc(100%-1.5rem)] max-w-3xl flex-col overflow-hidden rounded-xl border bg-background shadow-xl outline-none">
+        <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-[60] bg-overlay/35" />
+        <DialogPopup className="dialog-popup fixed inset-0 z-[60] m-auto flex h-fit max-h-[calc(100dvh-1.5rem)] w-[calc(100%-1.5rem)] max-w-3xl flex-col overflow-hidden rounded-xl border bg-background  outline-none">
           <form
             className="flex min-h-0 flex-1 flex-col"
             aria-busy={pending}
@@ -90,7 +96,7 @@ export function PointForm({
             }}
           >
             <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
-              <Dialog.Title className="text-xl font-semibold">
+              <Dialog.Title className="pr-10 text-xl font-semibold">
                 {point ? "Редактировать точку" : "Новая точка маршрута"}
               </Dialog.Title>
               <Dialog.Description className="mt-1 text-sm text-muted-foreground">
@@ -202,7 +208,7 @@ export function PointForm({
                 className="h-11"
                 type="button"
                 disabled={pending}
-                onClick={onClose}
+                onClick={requestClose}
               >
                 Отмена
               </Button>
@@ -211,7 +217,7 @@ export function PointForm({
               </Button>
             </div>
           </form>
-        </Dialog.Popup>
+        </DialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   );

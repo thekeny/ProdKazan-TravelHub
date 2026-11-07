@@ -72,7 +72,7 @@ export function MaterialUploader({
               type="button"
               variant="ghost"
               aria-pressed={kind === value}
-              className={`h-10 ${kind === value ? "bg-surface shadow-sm" : ""}`}
+              className={`h-10 ${kind === value ? "bg-surface " : ""}`}
               onClick={() => setKind(value as MaterialKind)}
             >
               {label}

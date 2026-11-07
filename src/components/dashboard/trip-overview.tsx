@@ -16,6 +16,7 @@ import { TripTimeline } from "@/components/dashboard/trip-timeline";
 import { StorageWarning } from "@/components/layout/storage-warning";
 import { TripActions } from "@/components/trips/trip-actions";
 import { Button } from "@/components/ui/button";
+import { DialogPopup } from "@/components/ui/dialog-popup";
 import { StatusToast } from "@/components/ui/status-toast";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
@@ -424,7 +425,7 @@ function Overview({ trip }: { trip: Trip }) {
         />
         {visiblePoints.length === 0 && (
           <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center px-4 pb-40">
-            <div className="pointer-events-auto max-w-sm rounded-xl border bg-surface/95 p-4 text-center shadow-lg">
+            <div className="pointer-events-auto max-w-sm rounded-xl border bg-surface/95 p-4 text-center ">
               <p className="text-sm font-medium">
                 {points.length
                   ? "В этом дне нет привязанных точек"
@@ -462,10 +463,10 @@ function Overview({ trip }: { trip: Trip }) {
         )}
         <Dialog.Root open={routeOpen} onOpenChange={setRouteOpen}>
           <Dialog.Portal>
-            <Dialog.Backdrop className="fixed inset-0 z-40 bg-overlay/20" />
-            <Dialog.Popup
+            <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-40 bg-overlay/20" />
+            <DialogPopup
               id="route-panel"
-              className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l bg-background shadow-xl outline-none"
+              className="dialog-popup fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-background outline-none"
             >
               <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
                 <div>
@@ -508,7 +509,7 @@ function Overview({ trip }: { trip: Trip }) {
                   }}
                 />
               </div>
-            </Dialog.Popup>
+            </DialogPopup>
           </Dialog.Portal>
         </Dialog.Root>
       </section>
@@ -630,8 +631,8 @@ function Overview({ trip }: { trip: Trip }) {
         }}
       >
         <Dialog.Portal>
-          <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay/35" />
-          <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background p-6 shadow-xl">
+          <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-50 bg-overlay/35" />
+          <DialogPopup className="dialog-popup fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background p-6 ">
             <Dialog.Title className="text-lg font-semibold">
               {deletion ? deletionTitle[deletion.kind] : ""}
             </Dialog.Title>
@@ -659,7 +660,7 @@ function Overview({ trip }: { trip: Trip }) {
                 Удалить
               </Button>
             </div>
-          </Dialog.Popup>
+          </DialogPopup>
         </Dialog.Portal>
       </Dialog.Root>
     </div>

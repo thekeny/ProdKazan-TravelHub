@@ -25,38 +25,32 @@ export default function Page() {
   }, [ready, username, router]);
   return (
     <main className="flow-background">
-      <section className="relative grid w-full max-w-4xl overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-2xl shadow-text/10 lg:grid-cols-[0.85fr_1.15fr]">
-        <aside className="relative hidden flex-col overflow-hidden bg-primary-strong p-8 text-primary-foreground lg:flex">
-          <div className="pointer-events-none absolute inset-0 paper-texture opacity-15" />
-          <div className="relative flex items-center gap-3">
+      <section className="flow-card relative grid w-full max-w-4xl overflow-hidden rounded-[2rem] p-0 lg:grid-cols-[0.85fr_1.15fr]">
+        <aside className="relative hidden flex-col overflow-hidden bg-secondary p-8 lg:flex">
+          <div>
+            <Logo size="lg" />
+            <p className="mt-1 font-sans text-sm leading-snug text-foreground">
+              Твоя история на карте
+            </p>
+          </div>
+          <div className="relative mt-8 min-h-64 flex-1">
             <Image
-              src={images.ICON}
+              src={images.LOGIN_SIDEBAR}
               alt=""
-              width={658}
-              height={658}
-              sizes="56px"
-              className="size-14"
+              fill
+              sizes="320px"
+              priority
+              className="object-contain"
             />
-            <span className="font-display text-3xl leading-none">
-              TravelHub
-            </span>
           </div>
-          <div className="relative mt-auto">
-            <p className="font-display text-[2.35rem] leading-[1.04]">
-              Каждая поездка — история, которую хочется сохранить.
-            </p>
-            <p className="mt-4 max-w-xs text-sm leading-6 opacity-75">
-              Маршруты, события, фотографии и билеты — в одном месте.
-            </p>
-          </div>
-          <p className="relative mt-8 text-xs text-primary-foreground/70">
-            маршруты · события · фото · билеты
-          </p>
         </aside>
 
         <div className="p-6 sm:p-10">
-          <div className="flex items-center justify-between gap-3 lg:hidden">
+          <div className="lg:hidden">
             <Logo />
+            <p className="mt-1 font-sans text-sm leading-snug text-foreground">
+              Твоя история на карте
+            </p>
           </div>
           <h1 className="mt-8 text-4xl leading-tight lg:mt-0">
             {mode === "login" ? "Вход" : "Регистрация"}
@@ -72,7 +66,7 @@ export default function Page() {
                 key={value}
                 variant="ghost"
                 aria-pressed={mode === value}
-                className={`h-10 rounded-lg ${mode === value ? "bg-surface shadow-sm hover:bg-surface" : ""}`}
+                className={`h-10 rounded-lg ${mode === value ? "bg-surface  hover:bg-surface" : ""}`}
                 onClick={() => {
                   setMode(value);
                   setError(null);

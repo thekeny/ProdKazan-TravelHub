@@ -1,3 +1,5 @@
+import { images } from "@/configs/paths/images.path";
+
 export function LoadingState() {
   return (
     <main className="grid min-h-dvh place-items-center bg-background px-4 py-10">
@@ -13,10 +15,11 @@ export function LoadingState() {
           className="h-auto w-52"
           height={464}
           loading="eager"
-          src="/load.webp"
+          fetchPriority="high"
+          src={images.LOADING}
           width={716}
         />
-        <span className="mt-5 flex items-baseline text-lg text-foreground">
+        <span className="mt-5 flex items-baseline font-display text-2xl text-foreground">
           Загрузка
           <span aria-hidden="true" className="inline-flex w-6 justify-start">
             {[0, 1, 2].map((dot) => (
