@@ -5,6 +5,7 @@ import { FormProvider } from "react-hook-form";
 import { EventTypeField } from "@/components/dashboard/event-type-field";
 import { EventMaterials } from "@/components/materials/event-materials";
 import { Button } from "@/components/ui/button";
+import { DateRangeFields } from "@/components/ui/date-range-fields";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field } from "@/components/ui/field";
 import { Input, inputClass } from "@/components/ui/input";
@@ -18,7 +19,6 @@ import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { eventErrors } from "@/lib/form-validation";
-import { dateInputBounds } from "@/lib/input-validation";
 import { deleteMaterialFiles } from "@/lib/material-storage";
 
 export function EventForm({
@@ -57,8 +57,6 @@ export function EventForm({
     (values) =>
       eventErrors(values, trip, trip.points ?? [], { initial: event }),
   );
-  const startBounds = dateInputBounds(event?.start, new Date(), trip);
-  const endBounds = dateInputBounds(event?.end, new Date(), trip);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -217,43 +215,21 @@ export function EventForm({
                       onBusyChange={setTypeBusy}
                       disabled={pending || uploading || addingType}
                     />
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field name="start" label="Начало">
-                        {(id) => (
-                          <Input
-                            data-field-control
-                            id={id}
-                            required
-                            type="datetime-local"
-                            min={`${startBounds.min}T00:00`}
-                            max={`${startBounds.max}T23:59`}
-                            className={inputClass}
-                            aria-describedby={describedBy}
-                            value={values.start}
-                            onChange={(e) => update("start", e.target.value)}
-                          />
-                        )}
-                      </Field>
-                      <Field name="end" label="Окончание (необязательно)">
-                        {(id) => (
-                          <Input
-                            data-field-control
-                            id={id}
-                            type="datetime-local"
-                            min={
-                              values.start > `${endBounds.min}T00:00`
-                                ? values.start
-                                : `${endBounds.min}T00:00`
-                            }
-                            max={`${endBounds.max}T23:59`}
-                            className={inputClass}
-                            aria-describedby={describedBy}
-                            value={values.end}
-                            onChange={(e) => update("end", e.target.value)}
-                          />
-                        )}
-                      </Field>
-                    </div>
+                    <DateRangeFields
+                      start={values.start}
+                      end={values.end}
+                      startName="start"
+                      endName="end"
+                      initialStart={event?.start}
+                      initialEnd={event?.end}
+                      trip={trip}
+                      withTime
+                      optionalEnd
+                      disabled={pending || uploading || addingType}
+                      onChange={(start, end) =>
+                        setValues((current) => ({ ...current, start, end }))
+                      }
+                    />
                     <Field name="description" label="Описание (необязательно)">
                       {(id) => (
                         <Textarea

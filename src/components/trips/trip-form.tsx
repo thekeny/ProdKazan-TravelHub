@@ -7,6 +7,7 @@ import { FormProvider } from "react-hook-form";
 import { EventTypeChips } from "@/components/trips/event-type-chips";
 import { Button } from "@/components/ui/button";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
+import { DateRangeFields } from "@/components/ui/date-range-fields";
 import { Field } from "@/components/ui/field";
 import { Input, inputClass } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +18,6 @@ import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { tripErrors } from "@/lib/form-validation";
 import { compressCover } from "@/lib/image";
-import { dateInputBounds } from "@/lib/input-validation";
 
 export function TripForm({
   initial,
@@ -59,8 +59,6 @@ export function TripForm({
           },
     (values) => tripErrors(values, remote, { initial }),
   );
-  const startBounds = dateInputBounds(initial?.startDate);
-  const endBounds = dateInputBounds(initial?.endDate);
   const [removeCover, setRemoveCover] = useState(false);
   const [typeDraft, setTypeDraft] = useState("");
   const [removingTypes, setRemovingTypes] = useState<string[] | null>(null);
@@ -215,42 +213,20 @@ export function TripForm({
               {form.formState.errors.eventTypes.message}
             </p>
           )}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field name="startDate" label="Дата начала">
-              {(id) => (
-                <Input
-                  data-field-control
-                  id={id}
-                  required
-                  type="date"
-                  min={startBounds.min}
-                  max={startBounds.max}
-                  className={inputClass}
-                  value={values.startDate}
-                  onChange={(event) => update("startDate", event.target.value)}
-                />
-              )}
-            </Field>
-            <Field name="endDate" label="Дата окончания">
-              {(id) => (
-                <Input
-                  data-field-control
-                  id={id}
-                  required
-                  type="date"
-                  min={
-                    values.startDate > endBounds.min
-                      ? values.startDate
-                      : endBounds.min
-                  }
-                  max={endBounds.max}
-                  className={inputClass}
-                  value={values.endDate}
-                  onChange={(event) => update("endDate", event.target.value)}
-                />
-              )}
-            </Field>
-          </div>
+          <DateRangeFields
+            start={values.startDate}
+            end={values.endDate}
+            startName="startDate"
+            endName="endDate"
+            startLabel="Дата начала"
+            endLabel="Дата окончания"
+            initialStart={initial?.startDate}
+            initialEnd={initial?.endDate}
+            disabled={pending || reading}
+            onChange={(startDate, endDate) =>
+              setValues((current) => ({ ...current, startDate, endDate }))
+            }
+          />
           <Field
             name="cover"
             label="Обложка (необязательно)"

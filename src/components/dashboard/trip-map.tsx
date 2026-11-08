@@ -44,6 +44,7 @@ type Props = {
   onSelectPoint?: (id: string) => void;
   onSelectLeg?: (id: string) => void;
   onPlace?: (place: { lat: number; lng: number }) => void;
+  focusPlace?: { lat: number; lng: number } | null;
   draftPlace?: { lat: number; lng: number } | null;
   currentPosition?: { lat: number; lng: number } | null;
   className?: string;
@@ -56,6 +57,7 @@ function MapBehavior({
   selectedPointId,
   selectedLegId,
   onPlace,
+  focusPlace,
 }: Props) {
   const map = useMap();
   useMapEvents({
@@ -66,6 +68,12 @@ function MapBehavior({
       });
     },
   });
+  useEffect(() => {
+    if (focusPlace)
+      map.setView([focusPlace.lat, focusPlace.lng], MAP.pointZoom, {
+        animate: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      });
+  }, [map, focusPlace]);
   useEffect(() => {
     const observer = new ResizeObserver(() => map.invalidateSize());
     observer.observe(map.getContainer());

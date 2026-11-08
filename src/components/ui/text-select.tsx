@@ -59,7 +59,7 @@ export function TextSelect({
           alignItemWithTrigger={false}
           className="z-[65] max-w-[calc(100vw-2rem)]"
         >
-          <Select.Popup className="max-h-(--available-height) w-(--anchor-width) overflow-y-auto rounded-xl border bg-surface p-1 text-sm outline-none">
+          <Select.Popup className="popup-motion max-h-(--available-height) w-(--anchor-width) overflow-y-auto rounded-xl border bg-surface p-1 text-sm outline-none">
             <Select.List>
               {options.map((option) => (
                 <Select.Item
