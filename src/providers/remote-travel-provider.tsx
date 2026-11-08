@@ -7,6 +7,7 @@ import {
   COLLABORATION,
   inviteCodeError,
 } from "@/configs/consts/collaboration.const";
+import { MATERIAL_LIMITS } from "@/configs/consts/materials.const";
 import type { TravelData, Trip } from "@/configs/types/travel.type";
 import { isConnected, setConnected } from "@/lib/connectivity";
 import { appendEventType } from "@/lib/event-types";
@@ -21,6 +22,7 @@ import {
 import { disconnectDriveBeforeDeletion } from "@/lib/google-drive";
 import { assertValidInput } from "@/lib/input-validation";
 import { deleteMaterialFiles } from "@/lib/material-storage";
+import { validateMaterial } from "@/lib/materials";
 import {
   clearOfflineSnapshot,
   readOfflineSnapshot,
@@ -92,6 +94,9 @@ export function RemoteTravelProvider({
       try {
         writeRemotePreferences(user.id ?? user.username, {
           activeId: next.activeId,
+          tripMaterials: Object.fromEntries(
+            next.trips.map((trip) => [trip.id, trip.materials ?? []]),
+          ),
           eventTypes: Object.fromEntries(
             next.trips.flatMap((trip) =>
               (trip.events ?? []).flatMap((event) =>
@@ -116,7 +121,7 @@ export function RemoteTravelProvider({
       } catch {
         if (requireLocalWrite)
           throw new Error(
-            "Не удалось сохранить типы событий в браузере. Проверьте доступ к хранилищу.",
+            "Не удалось сохранить материалы или типы событий в браузере. Проверьте доступ к хранилищу.",
           );
         setWarning(
           "Изменения сохранены на сервере, но локальные материалы, типы событий и выбор поездки сохранить не удалось.",
@@ -167,6 +172,7 @@ export function RemoteTravelProvider({
         trips: trips.map((trip) => ({
           ...trip,
           eventTypes: local.tripEventTypes?.[trip.id] ?? [],
+          materials: local.tripMaterials?.[trip.id] ?? [],
           cover: trip.cover ?? covers.get(trip.id) ?? null,
           events: trip.events?.map((event) => ({
             ...event,
@@ -334,6 +340,38 @@ export function RemoteTravelProvider({
     );
   }
   const value: TravelContextValue = {
+    addTripMaterials: (id, materials) =>
+      mutate(async () => {
+        const trip = findTrip(id);
+        const next = [...(trip.materials ?? []), ...materials];
+        if (next.length > MATERIAL_LIMITS.MAX_PER_TRIP)
+          throw new Error(
+            `К поездке можно прикрепить не более ${MATERIAL_LIMITS.MAX_PER_TRIP} материалов.`,
+          );
+        const ids = new Set<string>();
+        for (const material of next) {
+          const error = validateMaterial(material);
+          if (error) throw new Error(error);
+          if (ids.has(material.id))
+            throw new Error("Материалы не должны повторяться.");
+          ids.add(material.id);
+        }
+        replace({ ...trip, materials: next }, true);
+      }),
+    deleteTripMaterial: (id, materialId) =>
+      mutate(async () => {
+        const trip = findTrip(id);
+        replace(
+          {
+            ...trip,
+            materials: (trip.materials ?? []).filter(
+              (material) => material.id !== materialId,
+            ),
+          },
+          true,
+        );
+        await deleteMaterialFiles([materialId]);
+      }),
     importArchive: (file) =>
       mutate(async () => {
         const trip = await apiResult(
@@ -464,6 +502,7 @@ export function RemoteTravelProvider({
         void deleteMaterialFiles(
           data.trips.flatMap((trip) => [
             remoteCoverKey(accountId, trip.id),
+            ...(trip.materials ?? []).map((material) => material.id),
             ...(trip.events ?? []).flatMap((event) =>
               event.materials.map((material) => material.id),
             ),
@@ -560,6 +599,7 @@ export function RemoteTravelProvider({
         reconcile.current = true;
         replace({
           ...(await applyCover(saved, values.cover)),
+          materials: trip.materials,
           eventTypes: values.eventTypes ?? trip.eventTypes ?? [],
           events: trip.events,
           points: trip.points,
@@ -597,6 +637,7 @@ export function RemoteTravelProvider({
         });
         void deleteMaterialFiles([
           remoteCoverKey(user?.id ?? user?.username ?? "", id),
+          ...(trip.materials ?? []).map((material) => material.id),
           ...(trip.events ?? []).flatMap((event) =>
             event.materials.map((material) => material.id),
           ),

@@ -27,11 +27,11 @@ import { mapPointColor } from "@/lib/map-point-color";
 
 const travelerIcon = divIcon({
   className: "",
-  html: `<div class="flex h-10 w-9 items-center justify-center rounded-xl bg-surface shadow-md">
-    <img src="${images.POINT}" width="28" height="28" class="object-contain" alt="" aria-hidden="true" />
+  html: `<div class="flex h-6 w-6 items-center justify-center rounded-full overflow-hidden bg-surface shadow-md">
+    <img src="${images.POINT}" width="20" height="20" style="width:20px;height:20px" class="object-contain" alt="" aria-hidden="true" />
   </div>`,
-  iconSize: [36, 40],
-  iconAnchor: [18, 36],
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
 });
 
 type Props = {

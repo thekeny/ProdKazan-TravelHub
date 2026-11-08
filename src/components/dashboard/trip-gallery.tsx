@@ -2,15 +2,18 @@
 
 import { ExternalLink, FileText, Images, MapPin } from "lucide-react";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { StorageWarning } from "@/components/layout/storage-warning";
 import { DocumentVisibilityToggle } from "@/components/materials/document-visibility-toggle";
 import { MaterialGrid } from "@/components/materials/material-grid";
+import { TripMaterialUpload } from "@/components/materials/trip-material-upload";
 import { TicketImportButton } from "@/components/trips/ticket-import-button";
 import { buttonVariants } from "@/components/ui/button";
 import { pages } from "@/configs/paths/pages.path";
 import type { Material, MaterialKind } from "@/configs/types/material.type";
 import { useDocumentVisibility } from "@/hooks/use-document-visibility";
+import { actionToast } from "@/lib/action-toast";
+import { useOnline } from "@/lib/connectivity";
 import { formatDayLabel } from "@/lib/travel-format";
 import { useTravel } from "@/providers/travel-provider";
 
@@ -26,25 +29,22 @@ function EmptyState({ kind }: { kind: MaterialKind }) {
       </p>
       <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
         {kind === "photo"
-          ? "Откройте событие и прикрепите фотографии."
-          : "Откройте событие и прикрепите изображение билета или брони."}
+          ? "Загрузите фотографии с помощью кнопки вверху страницы."
+          : "Загрузите билеты и документы в формате PDF с помощью кнопки вверху страницы."}
       </p>
-      <Link
-        href={pages.DASHBOARD}
-        className={buttonVariants({ className: "mt-4 h-11" })}
-      >
-        Открыть обзор
-      </Link>
     </div>
   );
 }
 
 export function TripGallery({ kind }: { kind: MaterialKind }) {
-  const { trips, activeId } = useTravel();
+  const { trips, activeId, deleteTripMaterial } = useTravel();
+  const online = useOnline();
+  const [removalError, setRemovalError] = useState<string | null>(null);
   const trip = trips.find((item) => item.id === activeId);
-  const documentVisibility = useDocumentVisibility(
-    (trip?.events ?? []).flatMap((event) => event.materials),
-  );
+  const documentVisibility = useDocumentVisibility([
+    ...(trip?.materials ?? []),
+    ...(trip?.events ?? []).flatMap((event) => event.materials),
+  ]);
   const groups = useMemo(() => {
     if (!trip) return [];
     const byDay = new Map<
@@ -98,6 +98,9 @@ export function TripGallery({ kind }: { kind: MaterialKind }) {
 
   if (!trip) return null;
   const title = kind === "photo" ? "Галерея поездки" : "Билеты и документы";
+  const tripMaterials = (trip.materials ?? []).filter(
+    (material) => material.kind === kind,
+  );
 
   return (
     <div className="h-full overflow-y-auto bg-background">
@@ -109,10 +112,57 @@ export function TripGallery({ kind }: { kind: MaterialKind }) {
           )}
         </header>
         <StorageWarning className="mb-6" />
-        {kind === "document" && trip && (
-          <div className="mb-5">
-            <TicketImportButton trip={trip} />
-          </div>
+        <div className="mb-5 flex flex-wrap items-start gap-3">
+          <TripMaterialUpload
+            key={`${trip.id}-${kind}`}
+            trip={trip}
+            kind={kind}
+            actions={
+              kind === "document" ? (
+                <TicketImportButton
+                  trip={trip}
+                  className="h-12 w-full whitespace-normal px-3 leading-snug"
+                />
+              ) : undefined
+            }
+          />
+        </div>
+        {removalError && (
+          <p className="mb-4 user-text text-sm text-destructive">
+            {removalError}
+          </p>
+        )}
+        {tripMaterials.length > 0 && (
+          <section className="mb-8 rounded-xl border bg-card p-4">
+            <h2 className="mb-3 text-lg font-semibold">Материалы поездки</h2>
+            <MaterialGrid
+              materials={tripMaterials}
+              documentVisibility={
+                kind === "document" ? documentVisibility : undefined
+              }
+              removalDescription="Материал будет удалён из поездки."
+              onRemove={
+                online
+                  ? async (material) => {
+                      setRemovalError(null);
+                      try {
+                        await actionToast(
+                          () => deleteTripMaterial(trip.id, material.id),
+                          "Удаляем материал…",
+                          "Материал удалён.",
+                        );
+                      } catch (error) {
+                        setRemovalError(
+                          error instanceof Error
+                            ? error.message
+                            : "Не удалось удалить материал.",
+                        );
+                      }
+                    }
+                  : undefined
+              }
+            />
+          </section>
         )}
         {bookingLinks.length > 0 && (
           <section className="mb-8">
@@ -196,7 +246,8 @@ export function TripGallery({ kind }: { kind: MaterialKind }) {
             ))}
           </div>
         ) : (
-          bookingLinks.length === 0 && (
+          bookingLinks.length === 0 &&
+          tripMaterials.length === 0 && (
             <div className="grid min-h-[55dvh] place-items-center">
               <EmptyState kind={kind} />
             </div>

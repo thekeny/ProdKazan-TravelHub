@@ -19,7 +19,7 @@ export const test = base.extend<{ backend: Backend }>({
         value: { permission: "denied" },
       });
     });
-    await page.route("**/gateway/backend/**", async (route) => {
+    await page.route("**/api/v1/**", async (route) => {
       if (!initialized) {
         const seed: Seed | null = await page.evaluate(() =>
           JSON.parse(localStorage.getItem("travelhub-e2e-fixture") ?? "null"),
@@ -59,7 +59,7 @@ export const test = base.extend<{ backend: Backend }>({
       }
       const request = route.request();
       const path = new URL(request.url()).pathname
-        .replace("/gateway/backend", "")
+        .replace("/api/v1", "")
         .replace(/\/$/, "");
       const method = request.method();
       const user = { id: "123", username: backend.username ?? "traveler" };
@@ -67,8 +67,14 @@ export const test = base.extend<{ backend: Backend }>({
         backend.username =
           new URLSearchParams(request.postData() ?? "").get("username") ??
           "traveler";
-        return route.fulfill({ json: {} });
+        return route.fulfill({ json: { access_token: "fixture-token" } });
       }
+      if (path === "/auth/refresh")
+        return route.fulfill(
+          backend.username
+            ? { json: { access_token: "fixture-token" } }
+            : { status: 401, json: {} },
+        );
       if (path === "/auth/register") return route.fulfill({ json: {} });
       if (
         path === "/auth/logout" ||

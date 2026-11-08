@@ -10,6 +10,7 @@ import { images } from "@/configs/paths/images.path";
 import { pages } from "@/configs/paths/pages.path";
 import { useTravel } from "@/providers/travel-provider";
 import { ArchiveImport } from "./archive-import";
+import { JoinTripButton } from "./join-trip";
 import { TripCard } from "./trip-card";
 
 export function TripList() {
@@ -56,7 +57,6 @@ export function TripList() {
           </div>
         )}
       </div>
-      <ArchiveImport />
       {error && (
         <p role="alert" className="mt-4 text-sm text-destructive">
           {error}
@@ -71,6 +71,10 @@ export function TripList() {
         <Plus />
         Создать путешествие
       </Link>
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <ArchiveImport />
+        <JoinTripButton />
+      </div>
     </>
   );
 }

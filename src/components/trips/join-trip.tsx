@@ -17,11 +17,11 @@ export function JoinTripButton() {
     <>
       <Button
         variant="outline"
-        className="mt-3 h-12 w-full text-base"
+        className="h-auto min-h-12 min-w-0 whitespace-normal py-2"
         onClick={() => setOpen(true)}
       >
         <KeyRound />
-        Присоединиться по коду
+        <span className="min-w-0">Присоединиться по коду</span>
       </Button>
       {open && <JoinTripDialog onClose={() => setOpen(false)} />}
     </>
@@ -77,9 +77,6 @@ function JoinTripDialog({ onClose }: { onClose: () => void }) {
             <Dialog.Title className="text-xl">
               Присоединиться к поездке
             </Dialog.Title>
-            <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-              Введите код, который отправил владелец поездки.
-            </Dialog.Description>
           </header>
           <form
             noValidate

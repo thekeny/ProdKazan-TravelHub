@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 
-// Run against a running Next server. Only records created by this test are removed.
-const origin = process.env.TEST_APP_URL ?? "http://localhost:3001";
+// Run only against an explicitly selected backend origin; the script creates data.
+const origin = process.env.TEST_APP_URL;
+assert.ok(
+  origin,
+  "Set TEST_APP_URL to an explicitly authorized backend origin",
+);
 const username = `test_${Date.now()}`;
 const password = `Th_${randomBytes(12).toString("hex")}`;
 const cookies = new Map();
+let accessToken;
 let registered = false;
 let tripId;
 async function request(
@@ -15,10 +20,13 @@ async function request(
   expected = 200,
   anonymous = false,
 ) {
-  const response = await fetch(`${origin}/gateway/backend${path}`, {
+  const response = await fetch(`${origin}/api/v1${path}`, {
     method,
     headers: {
       Origin: origin,
+      ...(!anonymous && accessToken
+        ? { Authorization: `Bearer ${accessToken}` }
+        : {}),
       ...(!anonymous
         ? {
             Cookie: [...cookies]
@@ -59,6 +67,8 @@ async function request(
     expected,
     `${method} ${path}: ${response.status} ${JSON.stringify(data)}`,
   );
+  if (response.ok && data?.access_token) accessToken = data.access_token;
+  if (response.ok && path === "/auth/logout") accessToken = undefined;
   console.log(`${method} ${path.replace(/\d+/g, ":id")} ${response.status}`);
   return data;
 }
@@ -71,13 +81,8 @@ try {
   registered = true;
   await request("/auth/login", "POST", credentials("incorrect"), 401);
   const login = await request("/auth/login", "POST", credentials());
-  assert.equal(
-    login.access_token,
-    undefined,
-    "Access token must stay in HttpOnly cookie",
-  );
-  assert.ok(cookies.has("travelhub_access"));
-  assert.ok(cookies.has("travelhub_refresh"));
+  assert.ok(login.access_token);
+  assert.ok(cookies.has("refresh_token"));
   assert.equal((await request("/auth/me")).username, username);
   const values = {
     name: "Integration test",
@@ -172,9 +177,10 @@ try {
   );
   for (const kind of ["points", "events", "transfers"])
     assert.ok((await request(`${base}/${kind}`)).length);
-  cookies.delete("travelhub_access");
+  accessToken = undefined;
+  await request("/auth/refresh", "POST");
   assert.equal((await request("/auth/me")).username, username);
-  assert.ok(cookies.has("travelhub_access"), "Expired access must be renewed");
+  assert.ok(accessToken, "Refresh must return an access token");
   await request(`${base}/transfers/${leg.id}`, "DELETE", undefined, 204);
   await request(`${base}/events/${event.id}`, "PATCH", { waypointId: null });
   await request(`${base}/points/${point.id}`, "DELETE", undefined, 204);

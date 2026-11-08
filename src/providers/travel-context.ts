@@ -4,12 +4,15 @@ import type {
   TripInviteLink,
 } from "@/api/generated/types.gen";
 import type { EventValues } from "@/configs/types/event.type";
+import type { Material } from "@/configs/types/material.type";
 import type {
   RoutePointValues,
   TripLegValues,
 } from "@/configs/types/route.type";
 import type { TravelData, TripValues } from "@/configs/types/travel.type";
 export type TravelContextValue = TravelData & {
+  addTripMaterials: (tripId: string, materials: Material[]) => Promise<void>;
+  deleteTripMaterial: (tripId: string, materialId: string) => Promise<void>;
   importArchive: (file: File) => Promise<string>;
   exportArchive: (tripId: string) => Promise<void>;
   previewTicket: (

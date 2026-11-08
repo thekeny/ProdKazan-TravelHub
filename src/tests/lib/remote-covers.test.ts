@@ -6,17 +6,15 @@ it.each([
   "/api/v1/trips/123/cover/photo.webp",
   "/api/backend/trips/123/cover/photo.webp",
   "/gateway/backend/trips/123/cover/photo.webp",
-])("loads server covers through the frontend gateway: %s", (path) => {
+])("normalizes current and legacy covers to the direct backend: %s", (path) => {
   const cover = serverCoverUrl(path);
-  expect(cover).toBe("/gateway/backend/trips/123/cover/photo.webp");
+  expect(cover).toBe("/api/v1/trips/123/cover/photo.webp");
   expect(isServerCover(cover)).toBe(true);
 });
 
 it("does not treat unrelated gateway paths or external images as server uploads", () => {
-  expect(isServerCover("/gateway/backend/auth/me")).toBe(false);
-  expect(
-    isServerCover("/gateway/backend-other/trips/123/cover/photo.webp"),
-  ).toBe(false);
+  expect(isServerCover("/api/v1/auth/me")).toBe(false);
+  expect(isServerCover("/api/v1-other/trips/123/cover/photo.webp")).toBe(false);
   expect(isServerCover("https://images.example/photo.webp")).toBe(false);
   expect(serverCoverUrl("https://images.example/photo.webp")).toBe(
     "https://images.example/photo.webp",

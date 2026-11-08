@@ -152,11 +152,6 @@ export function DateRangeFields({
             <Popover.Title className="mb-3 text-sm font-medium">
               {active === "start" ? "Выберите начало" : "Выберите окончание"}
             </Popover.Title>
-            {active === "end" && (
-              <p className="mb-3 text-xs text-muted-foreground">
-                Чтобы начать период заново, выберите дату раньше начала.
-              </p>
-            )}
             <DayPicker
               locale={ru}
               mode="range"

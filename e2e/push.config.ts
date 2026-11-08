@@ -15,7 +15,7 @@ export default defineConfig({
     command: "node node_modules/next/dist/bin/next dev --port 3100",
     url: "http://localhost:3100",
     env: {
-      NEXT_PUBLIC_API_URL: "https://backend.invalid/api/v1",
+      NEXT_PUBLIC_API_URL: "",
       NEXT_TELEMETRY_DISABLED: "1",
     },
   },

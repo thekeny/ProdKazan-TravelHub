@@ -5,13 +5,20 @@ import { Button } from "@/components/ui/button";
 import type { Trip } from "@/configs/types/travel.type";
 import { useOnline } from "@/lib/connectivity";
 import { TicketImport } from "./ticket-import";
-export function TicketImportButton({ trip }: { trip: Trip }) {
+export function TicketImportButton({
+  trip,
+  className,
+}: {
+  trip: Trip;
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   const online = useOnline();
   return (
     <>
       <Button
         variant="outline"
+        className={className}
         disabled={!online}
         onClick={() => setOpen(true)}
       >

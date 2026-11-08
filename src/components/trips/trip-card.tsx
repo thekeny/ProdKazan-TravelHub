@@ -6,6 +6,7 @@ import { TripActions } from "@/components/trips/trip-actions";
 import { TripRouteSketch } from "@/components/trips/trip-route-sketch";
 import { Button } from "@/components/ui/button";
 import type { Trip } from "@/configs/types/travel.type";
+import { useCoverPreview } from "@/hooks/use-cover-preview";
 import { formatTripDates } from "@/lib/travel-format";
 export function TripCard({
   trip,
@@ -14,6 +15,7 @@ export function TripCard({
   trip: Trip;
   onSelect: () => void;
 }) {
+  const coverPreview = useCoverPreview(trip.cover);
   return (
     <article className="relative flex min-h-64 flex-col overflow-hidden rounded-3xl border border-border! bg-card transition-colors duration-150 hover:border-border! hover:bg-surface-hover">
       <Button
@@ -23,9 +25,9 @@ export function TripCard({
         onClick={onSelect}
       >
         <span className="relative block h-32 shrink-0 overflow-hidden bg-secondary/40 paper-texture">
-          {trip.cover ? (
+          {coverPreview ? (
             <Image
-              src={trip.cover}
+              src={coverPreview}
               alt=""
               fill
               unoptimized

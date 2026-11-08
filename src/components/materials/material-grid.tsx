@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff, ImageOff, X } from "lucide-react";
+import { Eye, EyeOff, ImageOff, Trash2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { MaterialThumbnail } from "@/components/materials/material-thumbnail";
 import { Button } from "@/components/ui/button";
@@ -19,9 +19,11 @@ export function MaterialGrid({
   onRemove,
   emptyLabel = "Материалов пока нет",
   documentVisibility,
+  removalDescription,
 }: {
   materials: readonly Material[];
-  onRemove?: (material: Material) => void;
+  onRemove?: (material: Material) => void | Promise<void>;
+  removalDescription?: string;
   emptyLabel?: string;
   documentVisibility?: DocumentVisibility;
 }) {
@@ -40,13 +42,13 @@ export function MaterialGrid({
         open={!!removing}
         title="Удалить материал?"
         onClose={() => setRemoving(null)}
-        onConfirm={() => {
-          if (removing) onRemove?.(removing);
+        onConfirm={async () => {
+          if (removing) await onRemove?.(removing);
           setRemoving(null);
         }}
       >
-        Материал «{removing?.name}» будет удалён из события после сохранения
-        изменений.
+        {removalDescription ??
+          `Материал «${removing?.name}» будет удалён из события после сохранения изменений.`}
       </ConfirmDelete>
       {!documentVisibility && visibility.hasDocuments && (
         <div className="mb-3 flex justify-end">
@@ -100,7 +102,7 @@ export function MaterialGrid({
                   aria-label={`Удалить материал «${material.name}»`}
                   onClick={() => setRemoving(material)}
                 >
-                  <X />
+                  <Trash2 aria-hidden="true" />
                 </Button>
               )}
             </div>

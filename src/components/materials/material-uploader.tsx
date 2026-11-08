@@ -3,9 +3,13 @@
 import { LoaderCircle, Upload } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { MATERIAL_ACCEPT } from "@/configs/consts/materials.const";
+import {
+  DOCUMENT_ACCEPT,
+  MATERIAL_ACCEPT,
+} from "@/configs/consts/materials.const";
 import type { Material, MaterialKind } from "@/configs/types/material.type";
 import { actionToast } from "@/lib/action-toast";
+import { deleteMaterialFiles } from "@/lib/material-storage";
 import { uploadMaterial } from "@/lib/material-upload";
 import { validateMaterialInput } from "@/lib/materials";
 
@@ -16,11 +20,17 @@ export function MaterialUploader({
   onUploaded,
   onError,
   onBusyChange,
+  onBatchUploaded,
+  compact = false,
+  actions,
 }: {
   remaining: number;
   kind: MaterialKind;
   disabled?: boolean;
-  onUploaded: (material: Material) => void;
+  onUploaded?: (material: Material) => void;
+  onBatchUploaded?: (materials: Material[]) => Promise<void>;
+  compact?: boolean;
+  actions?: React.ReactNode;
   onError: (message: string | null) => void;
   onBusyChange?: (busy: boolean) => void;
 }) {
@@ -56,16 +66,27 @@ export function MaterialUploader({
         async () => {
           const errors: string[] = [];
           let added = 0;
+          const batch: Material[] = [];
           for (const file of selected) {
             try {
-              const inputError = validateMaterialInput(file);
+              const inputError = validateMaterialInput(file, kind);
               if (inputError) throw new Error(inputError);
-              onUploaded(await uploadMaterial(file, kind));
+              const material = await uploadMaterial(file, kind);
+              batch.push(material);
+              onUploaded?.(material);
               added++;
             } catch (error) {
               errors.push(
-                `${file.name}: ${error instanceof Error ? error.message : "Не удалось загрузить изображение."}`,
+                `${file.name}: ${error instanceof Error ? error.message : "Не удалось загрузить файл."}`,
               );
+            }
+          }
+          if (batch.length && onBatchUploaded) {
+            try {
+              await onBatchUploaded(batch);
+            } catch (error) {
+              await deleteMaterialFiles(batch.map((material) => material.id));
+              throw error;
             }
           }
           if (errors.length) {
@@ -74,14 +95,12 @@ export function MaterialUploader({
             onError(message);
           }
         },
-        "Загружаем изображения…",
+        "Загружаем файлы…",
         "Загрузка завершена.",
       );
     } catch (error) {
       onError(
-        error instanceof Error
-          ? error.message
-          : "Не удалось загрузить изображения.",
+        error instanceof Error ? error.message : "Не удалось загрузить файлы.",
       );
     } finally {
       locked.current = false;
@@ -95,16 +114,30 @@ export function MaterialUploader({
   }
 
   return (
-    <div className="grid gap-3">
+    <div
+      className={
+        compact && actions
+          ? "grid grid-cols-2 gap-3 sm:grid-cols-[16rem_16rem]"
+          : "grid gap-3"
+      }
+    >
       <Button
         ref={buttonRef}
         type="button"
-        variant="plain"
-        className={`flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted p-4 text-center text-sm transition-colors outline-none hover:bg-muted-hover focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
-          disabled ? "pointer-events-none opacity-50" : ""
-        }`}
+        variant={compact ? "default" : "plain"}
+        className={
+          compact
+            ? "h-12 w-full whitespace-normal px-3 leading-snug"
+            : `flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted p-4 text-center text-sm transition-colors outline-none hover:bg-muted-hover focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
+                disabled ? "pointer-events-none opacity-50" : ""
+              }`
+        }
         disabled={disabled}
-        aria-describedby={`${inputId}-hint`}
+        aria-label={
+          kind === "document"
+            ? "Загрузить билеты/документы в формате PDF"
+            : undefined
+        }
         onClick={() => inputRef.current?.click()}
       >
         {uploading ? (
@@ -113,28 +146,31 @@ export function MaterialUploader({
           <Upload aria-hidden="true" className="size-5" />
         )}
         {uploading
-          ? "Сжимаем и сохраняем…"
+          ? "Сохраняем файлы…"
           : remaining > 0
-            ? "Добавить изображение"
+            ? kind === "document"
+              ? compact
+                ? "Загрузить PDF"
+                : "Добавить PDF"
+              : compact
+                ? "Загрузить фотографии"
+                : "Добавить изображение"
             : "Достигнут лимит материалов"}
       </Button>
+      {actions}
       <input
         ref={inputRef}
         id={inputId}
         type="file"
-        accept={MATERIAL_ACCEPT}
+        accept={kind === "document" ? DOCUMENT_ACCEPT : MATERIAL_ACCEPT}
         multiple
         disabled={disabled}
         hidden
-        aria-describedby={`${inputId}-hint`}
         onChange={(event) => {
           buttonRef.current?.focus({ preventScroll: true });
           void handleFiles(event.target.files);
         }}
       />
-      <p id={`${inputId}-hint`} className="text-xs text-muted-foreground">
-        JPEG, PNG, WebP до 12 МБ · осталось {remaining}
-      </p>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { validateMaterial } from "@/lib/materials";
 type Preferences = {
   activeId: string | null;
   materials: Record<string, Material[]>;
+  tripMaterials?: Record<string, Material[]>;
   coverIds?: string[];
   // TODO API: custom event types are local until the backend supports them.
   eventTypes?: Record<string, string | null>;
@@ -51,14 +52,21 @@ export function readRemotePreferences(userId: string): Preferences {
     result.coverIds = raw.coverIds.filter(
       (id): id is string => typeof id === "string",
     );
-  if (
-    "materials" in raw &&
-    raw.materials &&
-    typeof raw.materials === "object"
-  ) {
-    for (const [id, values] of Object.entries(raw.materials)) {
+  for (const field of ["materials", "tripMaterials"] as const) {
+    const stored =
+      field === "materials"
+        ? "materials" in raw
+          ? raw.materials
+          : undefined
+        : "tripMaterials" in raw
+          ? raw.tripMaterials
+          : undefined;
+    if (!stored || typeof stored !== "object") continue;
+    const materials: Record<string, Material[]> = {};
+    result[field] = materials;
+    for (const [id, values] of Object.entries(stored)) {
       if (!Array.isArray(values)) continue;
-      result.materials[id] = values.filter((value): value is Material => {
+      materials[id] = values.filter((value): value is Material => {
         if (!value || typeof value !== "object") return false;
         return (
           typeof value.id === "string" &&
