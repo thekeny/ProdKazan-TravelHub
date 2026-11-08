@@ -9,6 +9,7 @@ const account = vi.hoisted(() => ({
   remote: true,
   changePassword: vi.fn(),
   renameAccount: vi.fn(),
+  deleteAccount: vi.fn(),
 }));
 vi.mock("@/providers/travel-provider", () => ({ useTravel: () => account }));
 vi.mock("@/lib/action-toast", () => ({
@@ -56,6 +57,43 @@ async function submit() {
       ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
   });
 }
+
+it("requires a password in the deletion confirmation and keeps it open on failure", async () => {
+  await act(async () => {
+    Array.from(document.querySelectorAll("button"))
+      .find((button) => button.textContent === "Удалить аккаунт")
+      ?.click();
+  });
+  const confirm = () =>
+    Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent === "Удалить",
+    );
+  await act(async () => confirm()?.click());
+  expect(account.deleteAccount).not.toHaveBeenCalled();
+  expect(document.body.textContent).toContain("Введите текущий пароль.");
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value",
+  )?.set;
+  await act(async () => {
+    const input = document.querySelector('input[name="password"]');
+    setter?.call(input, "wrong-password");
+    input?.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  account.deleteAccount.mockRejectedValueOnce(
+    new ApiError(403, "Неверный текущий пароль."),
+  );
+  await act(async () => confirm()?.click());
+  expect(account.deleteAccount).toHaveBeenCalledExactlyOnceWith(
+    "wrong-password",
+  );
+  expect(
+    document
+      .querySelector('input[name="password"]')
+      ?.getAttribute("aria-invalid"),
+  ).toBe("true");
+  expect(onClose).not.toHaveBeenCalled();
+});
 
 it("requires matching new passwords before sending the request", async () => {
   await fill("different-pass");

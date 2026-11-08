@@ -109,7 +109,7 @@ export function DayFeed({
                           if (event) onSelectEvent(event);
                           else if (leg) onSelectLeg(leg);
                         }}
-                        className="flex w-full gap-3 rounded-xl bg-card p-3 text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        className="flex w-full gap-3 rounded-xl bg-card p-3 text-left transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                       >
                         <span
                           aria-hidden="true"

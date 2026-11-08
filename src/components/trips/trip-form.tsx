@@ -7,6 +7,7 @@ import { FormProvider } from "react-hook-form";
 import { EventTypeChips } from "@/components/trips/event-type-chips";
 import { Button } from "@/components/ui/button";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
+import { DateRangeFields } from "@/components/ui/date-range-fields";
 import { Field } from "@/components/ui/field";
 import { Input, inputClass } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,8 +18,6 @@ import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { tripErrors } from "@/lib/form-validation";
 import { compressCover } from "@/lib/image";
-import { dateInputBounds } from "@/lib/input-validation";
-import { isServerCover, isUploadedCover } from "@/lib/remote-covers";
 
 export function TripForm({
   initial,
@@ -60,8 +59,6 @@ export function TripForm({
           },
     (values) => tripErrors(values, remote, { initial }),
   );
-  const startBounds = dateInputBounds(initial?.startDate);
-  const endBounds = dateInputBounds(initial?.endDate);
   const [removeCover, setRemoveCover] = useState(false);
   const [typeDraft, setTypeDraft] = useState("");
   const [removingTypes, setRemovingTypes] = useState<string[] | null>(null);
@@ -186,7 +183,7 @@ export function TripForm({
               />
             )}
           </Field>
-          <Field name="description" label="Описание · необязательно">
+          <Field name="description" label="Описание (необязательно)">
             {(id) => (
               <Textarea
                 data-field-control
@@ -216,81 +213,27 @@ export function TripForm({
               {form.formState.errors.eventTypes.message}
             </p>
           )}
-          <p className="text-xs text-muted-foreground">
-            При создании события можно выбрать один из этих типов.
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field name="startDate" label="Дата начала">
-              {(id) => (
-                <Input
-                  data-field-control
-                  id={id}
-                  required
-                  type="date"
-                  min={startBounds.min}
-                  max={startBounds.max}
-                  className={inputClass}
-                  value={values.startDate}
-                  onChange={(event) => update("startDate", event.target.value)}
-                />
-              )}
-            </Field>
-            <Field name="endDate" label="Дата окончания">
-              {(id) => (
-                <Input
-                  data-field-control
-                  id={id}
-                  required
-                  type="date"
-                  min={
-                    values.startDate > endBounds.min
-                      ? values.startDate
-                      : endBounds.min
-                  }
-                  max={endBounds.max}
-                  className={inputClass}
-                  value={values.endDate}
-                  onChange={(event) => update("endDate", event.target.value)}
-                />
-              )}
-            </Field>
-          </div>
-          {remote && (
-            <Field
-              name="cover"
-              label="Ссылка на обложку · необязательно"
-              hint="Можно указать ссылку или выбрать файл ниже."
-            >
-              {(id, describedBy) => (
-                <Input
-                  data-field-control
-                  id={id}
-                  className={inputClass}
-                  type="url"
-                  minLength={TEXT_LIMITS.MIN}
-                  maxLength={TEXT_LIMITS.URL}
-                  pattern="https?://.*"
-                  value={
-                    isUploadedCover(values.cover) || isServerCover(values.cover)
-                      ? ""
-                      : (values.cover ?? "")
-                  }
-                  aria-describedby={describedBy}
-                  onChange={(event) =>
-                    update("cover", event.target.value || null)
-                  }
-                  placeholder="https://…"
-                />
-              )}
-            </Field>
-          )}
+          <DateRangeFields
+            start={values.startDate}
+            end={values.endDate}
+            startName="startDate"
+            endName="endDate"
+            startLabel="Дата начала"
+            endLabel="Дата окончания"
+            initialStart={initial?.startDate}
+            initialEnd={initial?.endDate}
+            disabled={pending || reading}
+            onChange={(startDate, endDate) =>
+              setValues((current) => ({ ...current, startDate, endDate }))
+            }
+          />
           <Field
             name="cover"
-            label="Обложка · необязательно"
+            label="Обложка (необязательно)"
             hint={
               remote
-                ? "JPEG, PNG или WebP до 12 МБ. Обложка сжимается и загружается на сервер."
-                : "JPEG, PNG или WebP до 12 МБ. Обложка сжимается автоматически."
+                ? "JPEG, PNG или WebP до 12 МБ"
+                : "JPEG, PNG или WebP до 12 МБ"
             }
           >
             {(id, describedBy) => (
@@ -306,11 +249,21 @@ export function TripForm({
                         sizes="100vw"
                         className="object-cover"
                       />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="absolute right-2 top-2 z-10 size-11 bg-surface text-foreground"
+                        type="button"
+                        aria-label="Убрать обложку"
+                        onClick={() => setRemoveCover(true)}
+                      >
+                        <X aria-hidden="true" />
+                      </Button>
                     </div>
                   )}
                   <label
                     htmlFor={id}
-                    className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 p-4 text-sm outline-none hover:bg-accent focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+                    className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 p-4 text-sm outline-none hover:bg-muted-hover focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
                   >
                     <Upload className="size-5" />
                     {reading
@@ -334,17 +287,6 @@ export function TripForm({
                     />
                   </label>
                 </div>
-                {values.cover && (
-                  <Button
-                    variant="ghost"
-                    className="mt-2 h-11"
-                    type="button"
-                    onClick={() => setRemoveCover(true)}
-                  >
-                    <X />
-                    Убрать обложку
-                  </Button>
-                )}
               </div>
             )}
           </Field>

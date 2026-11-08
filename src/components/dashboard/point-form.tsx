@@ -15,6 +15,8 @@ import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { pointErrors } from "@/lib/form-validation";
 
+import { PlaceSearch } from "./place-search";
+
 const TripMap = dynamic(() => import("./trip-map"), {
   ssr: false,
   loading: () => (
@@ -39,6 +41,10 @@ export function PointForm({
     point ?? { name: "", description: "", lat: Number.NaN, lng: Number.NaN },
     (values) => pointErrors(values),
   );
+  const [focusPlace, setFocusPlace] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [lat, setLat] = useState(point ? String(point.lat) : "");
   const [lng, setLng] = useState(point ? String(point.lng) : "");
   const [error, setError] = useState<string | null>(null);
@@ -111,30 +117,35 @@ export function PointForm({
                     {point ? "Редактировать точку" : "Новая точка маршрута"}
                   </Dialog.Title>
                   <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-                    Нажмите на карту или введите координаты вручную.
+                    Найдите место по названию, нажмите на карту или введите
+                    координаты.
                   </Dialog.Description>
                   <div className="mt-6 grid gap-4">
                     <Field name="name" label="Название точки">
                       {(id) => (
-                        <Input
+                        <PlaceSearch
                           data-field-control
                           id={id}
-                          required
-                          minLength={TEXT_LIMITS.MIN}
-                          maxLength={TEXT_LIMITS.NAME}
-                          className={inputClass}
                           value={values.name}
-                          placeholder="Аэропорт Казани"
-                          onChange={(event) =>
+                          placeholder="Название места или адрес"
+                          onChange={(name) =>
+                            setValues((current) => ({ ...current, name }))
+                          }
+                          onSelect={(place) => {
                             setValues((current) => ({
                               ...current,
-                              name: event.target.value,
-                            }))
-                          }
+                              name: place.name,
+                              lat: place.lat,
+                              lng: place.lng,
+                            }));
+                            setLat(String(place.lat));
+                            setLng(String(place.lng));
+                            setFocusPlace({ lat: place.lat, lng: place.lng });
+                          }}
                         />
                       )}
                     </Field>
-                    <Field name="description" label="Описание · необязательно">
+                    <Field name="description" label="Описание (необязательно)">
                       {(id) => (
                         <Textarea
                           data-field-control
@@ -167,6 +178,7 @@ export function PointForm({
                         setLng(String(place.lng));
                       }}
                       draftPlace={coordinates}
+                      focusPlace={focusPlace}
                     />
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field name="lat" label="Широта">

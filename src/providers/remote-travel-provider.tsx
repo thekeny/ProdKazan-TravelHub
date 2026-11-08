@@ -9,6 +9,7 @@ import {
 } from "@/configs/consts/collaboration.const";
 import type { TravelData, Trip } from "@/configs/types/travel.type";
 import { isConnected, setConnected } from "@/lib/connectivity";
+import { appendEventType } from "@/lib/event-types";
 import {
   authErrors,
   eventErrors,
@@ -17,6 +18,7 @@ import {
   pointErrors,
   tripErrors,
 } from "@/lib/form-validation";
+import { disconnectDriveBeforeDeletion } from "@/lib/google-drive";
 import { assertValidInput } from "@/lib/input-validation";
 import { deleteMaterialFiles } from "@/lib/material-storage";
 import {
@@ -24,6 +26,7 @@ import {
   readOfflineSnapshot,
   saveOfflineSnapshot,
 } from "@/lib/offline-cache";
+import { disablePush, resumePush } from "@/lib/push";
 import {
   coverBlob,
   isUploadedCover,
@@ -32,6 +35,7 @@ import {
 } from "@/lib/remote-covers";
 import {
   readRemotePreferences,
+  removeRemotePreferences,
   writeRemotePreferences,
 } from "@/lib/remote-preferences";
 import {
@@ -48,6 +52,9 @@ import {
   pointBody,
   tripBody,
 } from "@/lib/travel-api";
+import { downloadTripArchive, readTripArchive } from "@/lib/trip-archive";
+import { DriveProvider } from "./drive-provider";
+import { PushProvider } from "./push-provider";
 import { TravelContext, type TravelContextValue } from "./travel-context";
 
 const empty: TravelData = { trips: [], activeId: null };
@@ -135,6 +142,7 @@ export function RemoteTravelProvider({
         return snapshot.data;
       }
       const account = await apiResult(sdk.authGetSelf());
+      resumePush(account.id ?? account.username);
       restoredAccount.current = account.id ?? account.username;
       const trips = await loadTrips();
       const local = preferences(account);
@@ -190,6 +198,9 @@ export function RemoteTravelProvider({
       } catch (error) {
         if (generation.current !== current) return;
         if (error instanceof ApiError && error.status === 401) {
+          void disablePush(restoredAccount.current, true).catch(
+            () => undefined,
+          );
           void clearOfflineSnapshot();
         } else if (
           error instanceof TypeError ||
@@ -250,6 +261,10 @@ export function RemoteTravelProvider({
         setErrorStatus(error.status);
       }
       if (error instanceof ApiError && error.status === 401) {
+        if (user)
+          void disablePush(user.id ?? user.username, true).catch(
+            () => undefined,
+          );
         void clearOfflineSnapshot();
         setUser(undefined);
         setData(empty);
@@ -282,6 +297,10 @@ export function RemoteTravelProvider({
       )
         setConnected(false);
       if (error instanceof ApiError && error.status === 401) {
+        if (user)
+          void disablePush(user.id ?? user.username, true).catch(
+            () => undefined,
+          );
         void clearOfflineSnapshot();
         setUser(undefined);
         setData(empty);
@@ -319,6 +338,52 @@ export function RemoteTravelProvider({
   }
 
   const value: TravelContextValue = {
+    importArchive: (file) =>
+      mutate(async () => {
+        const trip = await apiResult(
+          sdk.tripsPostTripImport({ body: await readTripArchive(file) }),
+        );
+        const next = await initialize();
+        if (!trip.id || !next)
+          throw new Error("Не удалось обновить список поездок.");
+        persist({ ...next, activeId: trip.id });
+        return trip.id;
+      }),
+    exportArchive: (tripId) => read(() => downloadTripArchive(tripId)),
+    previewTicket: (tripId, body) =>
+      read(() =>
+        apiResult(
+          sdk.ticketsPostTicketPreview({
+            path: { tripId: apiId(tripId) },
+            body,
+          }),
+        ),
+      ),
+    applyTicket: (tripId, body) =>
+      mutate(async () => {
+        await apiResult(
+          sdk.ticketsPostTicketApply({ path: { tripId: apiId(tripId) }, body }),
+        );
+        await initialize();
+      }),
+    setPointVisited: (tripId, pointId, visited) =>
+      mutate(async () => {
+        const trip = findTrip(tripId);
+        const point = mapPoint(
+          await apiResult(
+            sdk.pointsPatchPoint({
+              path: { tripId: apiId(tripId), pointId: apiId(pointId) },
+              body: { visited },
+            }),
+          ),
+        );
+        replace({
+          ...trip,
+          points: (trip.points ?? []).map((item) =>
+            item.id === pointId ? point : item,
+          ),
+        });
+      }),
     ...data,
     user,
     remote: true,
@@ -349,7 +414,16 @@ export function RemoteTravelProvider({
       }),
     logout: () =>
       mutate(async () => {
-        await apiResult(sdk.authLogout());
+        if (user)
+          await disablePush(user.id ?? user.username, true).catch(
+            () => undefined,
+          );
+        try {
+          await apiResult(sdk.authLogout());
+        } catch (error) {
+          if (user) resumePush(user.id ?? user.username);
+          throw error;
+        }
         await clearOfflineSnapshot();
         setUser(undefined);
         setData(empty);
@@ -359,6 +433,57 @@ export function RemoteTravelProvider({
         "Бэкенд пока не поддерживает изменение имени пользователя.",
       );
     },
+    deleteAccount: (password) =>
+      mutate(async () => {
+        if (!user) throw new Error("Сначала войдите в аккаунт.");
+        if (!password) throw new ApiError(403, "Введите текущий пароль.");
+        // DELETE /auth/me has no password field; verify it through login first.
+        try {
+          await apiResult(
+            sdk.authLogin({
+              body: {
+                grant_type: "password",
+                username: user.username,
+                password,
+              },
+            }),
+          );
+        } catch (error) {
+          if (
+            error instanceof ApiError &&
+            (error.status === 401 || error.status === 403)
+          )
+            throw new ApiError(403, "Неверный текущий пароль.");
+          throw error;
+        }
+        const accountId = user.id ?? user.username;
+        await disconnectDriveBeforeDeletion();
+        await disablePush(accountId, true).catch(() => undefined);
+        try {
+          await apiResult(sdk.authDeleteSelf());
+        } catch (error) {
+          resumePush(accountId);
+          throw error;
+        }
+        setUser(undefined);
+        setData(empty);
+        await clearOfflineSnapshot().catch(() => undefined);
+        try {
+          removeRemotePreferences(accountId);
+        } catch {
+          setWarning(
+            "Аккаунт удалён, но очистить локальные настройки не удалось.",
+          );
+        }
+        void deleteMaterialFiles(
+          data.trips.flatMap((trip) => [
+            remoteCoverKey(accountId, trip.id),
+            ...(trip.events ?? []).flatMap((event) =>
+              event.materials.map((material) => material.id),
+            ),
+          ]),
+        );
+      }),
     changePassword: (currentPassword, newPassword) =>
       mutate(async () => {
         if (!user) throw new Error("Сначала войдите в аккаунт.");
@@ -403,6 +528,14 @@ export function RemoteTravelProvider({
           ],
           activeId: trip.id,
         });
+      }),
+    addEventType: (id, name) =>
+      mutate(async () => {
+        const trip = findTrip(id, false);
+        replace(
+          { ...trip, eventTypes: appendEventType(trip.eventTypes ?? [], name) },
+          true,
+        );
       }),
     saveTrip: (id, values) =>
       mutate(async () => {
@@ -722,9 +855,42 @@ export function RemoteTravelProvider({
         return joined?.id ?? null;
       }),
   };
+  const handleIntegrationError = (error: unknown, foreground: boolean) => {
+    if (error instanceof ApiError && error.status === 401) {
+      if (user)
+        void disablePush(user.id ?? user.username, true).catch(() => undefined);
+      void clearOfflineSnapshot();
+      setUser(undefined);
+      setData(empty);
+    } else if (
+      foreground &&
+      error instanceof ApiError &&
+      error.status >= 500 &&
+      error.status < 600
+    ) {
+      setErrorStatus(error.status);
+    }
+  };
   return (
     <TravelContext.Provider value={value}>
-      {errorStatus !== null ? <ServerError status={errorStatus} /> : children}
+      <PushProvider onRequestError={handleIntegrationError}>
+        {user && ready ? (
+          <DriveProvider
+            key={user.id ?? user.username}
+            onRequestError={handleIntegrationError}
+          >
+            {errorStatus !== null ? (
+              <ServerError status={errorStatus} />
+            ) : (
+              children
+            )}
+          </DriveProvider>
+        ) : errorStatus !== null ? (
+          <ServerError status={errorStatus} />
+        ) : (
+          children
+        )}
+      </PushProvider>
     </TravelContext.Provider>
   );
 }

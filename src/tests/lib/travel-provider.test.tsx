@@ -82,6 +82,49 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 describe("travel session flow", () => {
+  it("removes only the current local account and preserves it if storage fails", async () => {
+    await act(async () => travel.login("bob"));
+    await act(async () => travel.createTrip(values));
+    await act(async () => travel.login("alice"));
+    await act(async () => travel.createTrip(values));
+    const writer = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("blocked");
+      });
+    expect(() => travel.deleteAccount("")).toThrow();
+    expect(travel.username).toBe("alice");
+    expect(travel.trips).toHaveLength(1);
+    writer.mockRestore();
+    await act(async () => travel.deleteAccount(""));
+    expect(travel.username).toBeNull();
+    await act(async () => travel.login("alice"));
+    expect(travel.trips).toEqual([]);
+    await act(async () => travel.login("bob"));
+    expect(travel.trips).toHaveLength(1);
+  });
+  it("adds types immediately without changing the rest of a trip and preserves them after reload", async () => {
+    await act(async () => travel.login("alice"));
+    await act(async () => travel.createTrip(values));
+    const id = travel.activeId as string;
+    const before = getTrip(id);
+    await act(async () => travel.addEventType(id, "  Утренний кофе  "));
+    expect(getTrip(id)).toEqual({ ...before, eventTypes: ["Утренний кофе"] });
+    expect(() => travel.addEventType(id, "утренний кофе")).toThrow(
+      "уже добавлен",
+    );
+    await act(async () => root.unmount());
+    await mount();
+    expect(getTrip(id).eventTypes).toEqual(["Утренний кофе"]);
+    const writer = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("quota");
+      });
+    expect(() => travel.addEventType(id, "Музей")).toThrow();
+    expect(getTrip(id).eventTypes).toEqual(["Утренний кофе"]);
+    writer.mockRestore();
+  });
   it("rejects invalid input before writing and preserves historical dates after reload", async () => {
     await act(async () => travel.login("alice"));
     await clearTrips();

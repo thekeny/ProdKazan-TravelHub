@@ -3,9 +3,10 @@ import { Dialog } from "@base-ui/react/dialog";
 import { useId, useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
+import { DateRangeFields } from "@/components/ui/date-range-fields";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field } from "@/components/ui/field";
-import { Input, inputClass } from "@/components/ui/input";
+import { inputClass } from "@/components/ui/input";
 import { TextSelect } from "@/components/ui/text-select";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -23,7 +24,6 @@ import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { legErrors } from "@/lib/form-validation";
-import { dateInputBounds } from "@/lib/input-validation";
 import { useTravel } from "@/providers/travel-provider";
 
 export function LegForm({
@@ -53,8 +53,6 @@ export function LegForm({
     },
     (values) => legErrors(values, trip, points, { initial: leg }),
   );
-  const startBounds = dateInputBounds(leg?.start, new Date(), trip);
-  const endBounds = dateInputBounds(leg?.end, new Date(), trip);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
@@ -173,49 +171,25 @@ export function LegForm({
                         />
                       )}
                     </Field>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field name="start" label="Отправление">
-                        {(id) => (
-                          <Input
-                            data-field-control
-                            id={id}
-                            required
-                            type="datetime-local"
-                            min={`${startBounds.min}T00:00`}
-                            max={`${startBounds.max}T23:59`}
-                            className={inputClass}
-                            value={values.start}
-                            onChange={(event) =>
-                              update("start", event.target.value)
-                            }
-                          />
-                        )}
-                      </Field>
-                      <Field name="end" label="Прибытие">
-                        {(id) => (
-                          <Input
-                            data-field-control
-                            id={id}
-                            required
-                            type="datetime-local"
-                            min={
-                              values.start > `${endBounds.min}T00:00`
-                                ? values.start
-                                : `${endBounds.min}T00:00`
-                            }
-                            max={`${endBounds.max}T23:59`}
-                            className={inputClass}
-                            value={values.end}
-                            onChange={(event) =>
-                              update("end", event.target.value)
-                            }
-                          />
-                        )}
-                      </Field>
-                    </div>
+                    <DateRangeFields
+                      start={values.start}
+                      end={values.end}
+                      startName="start"
+                      endName="end"
+                      initialStart={leg?.start}
+                      initialEnd={leg?.end}
+                      trip={trip}
+                      withTime
+                      startLabel="Отправление"
+                      endLabel="Прибытие"
+                      disabled={pending}
+                      onChange={(start, end) =>
+                        setValues((current) => ({ ...current, start, end }))
+                      }
+                    />
                     <Field
                       name="description"
-                      label="Описание · необязательно"
+                      label="Описание (необязательно)"
                       hint={
                         remote && leg
                           ? "API пока не поддерживает изменение описания перемещения."

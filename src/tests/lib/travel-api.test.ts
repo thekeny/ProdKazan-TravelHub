@@ -18,7 +18,7 @@ describe("backend adapters", () => {
     expect(() => apiId("../auth/me")).toThrow();
     expect(() => apiId("9223372036854775808")).toThrow();
   });
-  it("keeps event times naive and transfer clock digits independent of the browser timezone", () => {
+  it("sends timezone-aware event and transfer times while preserving local clock digits", () => {
     const values = {
       title: "Museum",
       type: "tour" as const,
@@ -30,10 +30,15 @@ describe("backend adapters", () => {
       bookingUrl: "",
     };
     const event = eventBody(values);
-    expect(event.startedAt).toBe(values.start);
+    expect(event.startedAt).toBe("2026-11-07T23:30:00Z");
+    expect(event.endedAt).toBe("2026-11-08T00:30:00Z");
+    expect(eventBody({ ...values, end: "" }).endedAt).toBeNull();
     expect(
       mapEvent({ ...event, id: "1", waypointId: values.pointId }).start,
     ).toBe(values.start);
+    expect(
+      mapEvent({ ...event, id: "1", waypointId: values.pointId }).end,
+    ).toBe(values.end);
     const leg = legBody({
       ...values,
       fromPointId: values.pointId,
@@ -117,4 +122,50 @@ describe("backend adapters", () => {
       ),
     ).rejects.toThrow("Срок действия кода приглашения истёк.");
   });
+  it("explains an ambiguous ticket kind and preserves its validation code", async () => {
+    await expect(
+      apiResult(
+        Promise.resolve({
+          response: new Response(null, { status: 422 }),
+          error: {
+            detail: {},
+            errorCode: "ValidationFailed",
+            errors: ["ticket_kind_ambiguous"],
+          },
+        }),
+      ),
+    ).rejects.toMatchObject({
+      status: 422,
+      message:
+        "Не удалось определить вид билета. Выберите его вручную и повторите распознавание.",
+      validationCodes: ["ticket_kind_ambiguous"],
+    });
+  });
+  it.each([
+    { errors: ["PDF не содержит текста"], message: "PDF не содержит текста" },
+    { errors: [{ msg: "Проверьте ссылку" }], message: "Проверьте ссылку" },
+    {
+      errors: [
+        null,
+        42,
+        {},
+        "Неподдерживаемый билет",
+        { msg: "Выберите другой PDF" },
+      ],
+      message: "Неподдерживаемый билет; Выберите другой PDF",
+    },
+    { errors: [], message: "Сервер отклонил данные. Проверьте поля формы." },
+  ])(
+    "preserves validation messages for $errors",
+    async ({ errors, message }) => {
+      await expect(
+        apiResult(
+          Promise.resolve({
+            response: new Response(null, { status: 422 }),
+            error: { errors },
+          }),
+        ),
+      ).rejects.toMatchObject({ status: 422, message });
+    },
+  );
 });

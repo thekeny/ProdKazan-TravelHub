@@ -31,3 +31,10 @@ export function eventTypeLabel(event: Pick<TripEvent, "type" | "customType">) {
     ? EVENT_TYPES[event.type]
     : event.customType || "Без типа";
 }
+
+export function appendEventType(catalog: readonly string[], name: string) {
+  const next = [...catalog, name.trim()];
+  const error = eventTypesError(next);
+  if (error) throw new Error(error);
+  return next;
+}

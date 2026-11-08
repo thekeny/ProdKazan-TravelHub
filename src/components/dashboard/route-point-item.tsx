@@ -56,7 +56,7 @@ export function PointItem({
           <Button
             variant="ghost"
             size="icon"
-            className="size-9 text-muted-foreground hover:text-destructive focus-visible:text-destructive"
+            className="size-9 text-muted-foreground"
             aria-label={`Удалить точку «${point.name}»`}
             onClick={onDelete}
           >

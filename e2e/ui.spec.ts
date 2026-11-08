@@ -108,14 +108,14 @@ for (const [name, viewport] of Object.entries({
     await page.getByRole("button", { name: "Войти", exact: true }).click();
     await expect(page).toHaveURL(/\/trips$/);
     await page.evaluate(() => document.fonts.ready);
-    await expect(page).toHaveScreenshot(`${name}-trips.png`, {
+    await expect.soft(page).toHaveScreenshot(`${name}-trips.png`, {
       animations: "disabled",
       maxDiffPixelRatio: 0.01,
     });
     await page.getByRole("link", { name: "Создать путешествие" }).click();
     await expect(page).toHaveURL(/\/trips\/new$/);
     await page.locator("input").first().waitFor();
-    await expect(page).toHaveScreenshot(`${name}-trip-form.png`, {
+    await expect.soft(page).toHaveScreenshot(`${name}-trip-form.png`, {
       animations: "disabled",
       maxDiffPixelRatio: 0.01,
     });

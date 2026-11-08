@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { EventForm } from "@/components/dashboard/event-form";
@@ -72,7 +72,7 @@ it("edits chips in the trip form and saves them with the trip", async () => {
     expect.objectContaining({ eventTypes: ["Музей", "Утренний кофе"] }),
   );
 });
-it("offers one dropdown type from the trip catalog and no type creation in the event form", async () => {
+it("offers one dropdown type from the trip catalog", async () => {
   const save = vi.fn();
   await act(async () =>
     root.render(
@@ -81,6 +81,7 @@ it("offers one dropdown type from the trip catalog and no type creation in the e
         day={trip.startDate}
         onClose={vi.fn()}
         onSave={save}
+        onAddEventType={vi.fn()}
       />,
     ),
   );
@@ -113,4 +114,132 @@ it("offers one dropdown type from the trip catalog and no type creation in the e
   expect(save).toHaveBeenCalledWith(
     expect.objectContaining({ customType: "Музей" }),
   );
+});
+
+it("adds a type with Enter, selects it and never submits the event while adding", async () => {
+  const save = vi.fn();
+  const add = vi.fn();
+  function Harness() {
+    const [catalog, setCatalog] = useState(trip.eventTypes);
+    return (
+      <EventForm
+        trip={{ ...trip, eventTypes: catalog }}
+        day={trip.startDate}
+        onClose={vi.fn()}
+        onSave={save}
+        onAddEventType={async (name) => {
+          add(name);
+          setCatalog([...(catalog ?? []), name]);
+        }}
+      />
+    );
+  }
+  await act(async () => root.render(<Harness />));
+  await act(async () =>
+    Array.from(document.querySelectorAll("button"))
+      .find((button) => button.textContent === "Добавить тип")
+      ?.click(),
+  );
+  const input = document.querySelector<HTMLInputElement>(
+    'input:not([name]):not([type="file"])',
+  );
+  await fill(input, "Утренний кофе");
+  await act(async () =>
+    input?.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Enter",
+        bubbles: true,
+        cancelable: true,
+      }),
+    ),
+  );
+  expect(add).toHaveBeenCalledWith("Утренний кофе");
+  expect(save).not.toHaveBeenCalled();
+  expect(
+    document.querySelector('button[name="customType"]')?.textContent,
+  ).toContain("Утренний кофе");
+  await fill(
+    document.querySelector('input[name="title"]'),
+    "Кофе перед музеем",
+  );
+  await act(async () =>
+    document
+      .querySelector("form")
+      ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })),
+  );
+  expect(save).toHaveBeenCalledWith(
+    expect.objectContaining({ customType: "Утренний кофе" }),
+  );
+});
+
+it("keeps the new type draft after a failed write and prevents closing while it is pending", async () => {
+  let rejectAdd: (error: Error) => void = () => {};
+  const add = vi.fn(
+    () =>
+      new Promise<void>((_, reject) => {
+        rejectAdd = reject;
+      }),
+  );
+  const close = vi.fn();
+  await act(async () =>
+    root.render(
+      <EventForm
+        trip={trip}
+        day={trip.startDate}
+        onClose={close}
+        onSave={vi.fn()}
+        onAddEventType={add}
+      />,
+    ),
+  );
+  await act(async () =>
+    Array.from(document.querySelectorAll("button"))
+      .find((button) => button.textContent === "Добавить тип")
+      ?.click(),
+  );
+  const input = document.querySelector<HTMLInputElement>(
+    'input:not([name]):not([type="file"])',
+  );
+  await fill(input, "Музей");
+  await act(async () =>
+    input?.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Enter",
+        bubbles: true,
+        cancelable: true,
+      }),
+    ),
+  );
+  expect(add).not.toHaveBeenCalled();
+  expect(
+    Array.from(document.querySelectorAll('[role="alert"]')).some((alert) =>
+      alert.textContent?.includes("уже добавлен"),
+    ),
+  ).toBe(true);
+  await fill(input, "Кофе");
+  await act(async () =>
+    input?.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Enter",
+        bubbles: true,
+        cancelable: true,
+      }),
+    ),
+  );
+  await act(async () =>
+    document
+      .querySelector<HTMLButtonElement>('[aria-label="Закрыть окно"]')
+      ?.click(),
+  );
+  expect(close).not.toHaveBeenCalled();
+  await act(async () => rejectAdd(new Error("Хранилище недоступно")));
+  expect(input?.value).toBe("Кофе");
+  expect(
+    Array.from(document.querySelectorAll('[role="alert"]')).some((alert) =>
+      alert.textContent?.includes("Хранилище недоступно"),
+    ),
+  ).toBe(true);
+  expect(
+    document.querySelector('button[name="customType"]')?.textContent,
+  ).toContain("Выберите тип события");
 });

@@ -10,6 +10,7 @@ import type {
   Trip,
 } from "@/configs/types/travel.type";
 import { isConnected } from "@/lib/connectivity";
+import { appendEventType } from "@/lib/event-types";
 import {
   authErrors,
   eventErrors,
@@ -129,12 +130,33 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
   return (
     <TravelContext.Provider
       value={{
+        importArchive: async () => {
+          throw new Error("Импорт доступен для серверного аккаунта.");
+        },
+        exportArchive: async () => {
+          throw new Error("Экспорт доступен для серверного аккаунта.");
+        },
+        previewTicket: async () => {
+          throw new Error("Распознавание доступно для серверного аккаунта.");
+        },
+        applyTicket: async () => {
+          throw new Error("Импорт доступен для серверного аккаунта.");
+        },
+        setPointVisited: async () => {
+          throw new Error("Отметка доступна для серверного аккаунта.");
+        },
         ...data,
         ready,
         username: state.username,
         storageWarning,
         dismissStorageWarning() {
           setStorageWarning(null);
+        },
+        addEventType(tripId, name) {
+          updateTripById(tripId, (trip) => ({
+            ...trip,
+            eventTypes: appendEventType(trip.eventTypes ?? [], name),
+          }));
         },
         saveEvent(tripId, values, eventId) {
           const trip = activeTrip(tripId);
@@ -312,6 +334,13 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
         },
         logout() {
           commit({ ...state, username: null });
+        },
+        deleteAccount() {
+          if (!state.username) throw new Error("Сначала войдите в аккаунт.");
+          const accounts = { ...state.accounts };
+          delete accounts[state.username];
+          commit({ ...state, username: null, accounts });
+          void deleteMaterialFiles(data.trips.flatMap(materialIdsOf));
         },
         createTrip(values) {
           assertValidInput(tripErrors(values, false));

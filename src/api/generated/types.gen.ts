@@ -47,6 +47,23 @@ export type AuthorizationError = {
 };
 
 /**
+ * BadRequestError
+ */
+export type BadRequestError = {
+    /**
+     * Detail
+     */
+    detail?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Occuredat
+     */
+    occuredAt?: string;
+    errorCode?: ErrorCode;
+};
+
+/**
  * Body_auth-login
  */
 export type BodyAuthLogin = {
@@ -74,6 +91,31 @@ export type BodyAuthLogin = {
      * Client Secret
      */
     client_secret?: string | null;
+};
+
+/**
+ * Body_google-drive-export_photo
+ */
+export type BodyGoogleDriveExportPhoto = {
+    /**
+     * File
+     */
+    file: Blob | File;
+};
+
+/**
+ * Body_tickets-post_ticket_preview
+ */
+export type BodyTicketsPostTicketPreview = {
+    /**
+     * File
+     */
+    file?: Blob | File | null;
+    /**
+     * Url
+     */
+    url?: string | null;
+    kind?: TicketKind | null;
 };
 
 /**
@@ -169,6 +211,17 @@ export type CreateMovementRequest = {
 };
 
 /**
+ * CreatePushSubscriptionRequest
+ */
+export type CreatePushSubscriptionRequest = {
+    /**
+     * Endpoint
+     */
+    endpoint: string;
+    keys: PushSubscriptionKeys;
+};
+
+/**
  * CreateTripRequest
  */
 export type CreateTripRequest = {
@@ -215,6 +268,16 @@ export type CreateWaypointRequest = {
      */
     description?: string | null;
 };
+
+/**
+ * DriveConnectionStatus
+ */
+export type DriveConnectionStatus = 'disconnected' | 'connected' | 'reconnect_required' | 'disabled';
+
+/**
+ * DriveExportStatus
+ */
+export type DriveExportStatus = 'pending' | 'succeeded' | 'uncertain' | 'failed';
 
 /**
  * ErrorCode
@@ -279,6 +342,74 @@ export type ForbiddenError = {
 };
 
 /**
+ * GoogleDriveConnect
+ */
+export type GoogleDriveConnect = {
+    /**
+     * Authorizationurl
+     */
+    authorizationUrl: string;
+};
+
+/**
+ * GoogleDriveConnection
+ */
+export type GoogleDriveConnection = {
+    status?: DriveConnectionStatus;
+    /**
+     * Email
+     */
+    email?: string | null;
+    /**
+     * Revocationpending
+     */
+    revocationPending?: boolean;
+    /**
+     * Enabled
+     */
+    enabled: boolean;
+};
+
+/**
+ * GoogleDriveExport
+ */
+export type GoogleDriveExport = {
+    /**
+     * Id
+     */
+    id?: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Mimetype
+     */
+    mimeType: string;
+    /**
+     * Size
+     */
+    size: number;
+    status?: DriveExportStatus;
+    /**
+     * Drivefileid
+     */
+    driveFileId: string;
+    /**
+     * Webviewlink
+     */
+    webViewLink?: string | null;
+    /**
+     * Errorreason
+     */
+    errorReason?: string | null;
+    /**
+     * Createdat
+     */
+    createdAt?: string;
+};
+
+/**
  * InternalServerError
  */
 export type InternalServerError = {
@@ -295,11 +426,13 @@ export type InternalServerError = {
     errorCode?: ErrorCode;
 };
 
+export type MaybeMissingAnnotatedAwareDatetimeAfterValidator = string;
+
 export type MaybeMissingAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGeGe0LeLe9223372036854775807FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedBigIntegerSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedPlainSerializer = number;
 
-export type MaybeMissingAwareDatetime = string;
-
 export type MaybeMissingEventType = EventType;
+
+export type MaybeMissingUnionAnnotatedAwareDatetimeAfterValidatorNoneType = string | null;
 
 export type MaybeMissingUnionAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGeGe0LeLe9223372036854775807FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedBigIntegerSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedPlainSerializerNoneType = number | null;
 
@@ -307,13 +440,9 @@ export type MaybeMissingUnionAnnotatedStrAfterValidatorNoneType = string | null;
 
 export type MaybeMissingUnionAnnotatedStrStringConstraintsNoneType = string | null;
 
-export type MaybeMissingUnionAwareDatetimeNoneType = string | null;
-
 export type MaybeMissingUnionDateNoneType = string | null;
 
 export type MaybeMissingUnionStrNoneType = string | null;
-
-export type MaybeMissingUnionStrNoneTypeMinLenMinLength1 = string | null;
 
 export type MaybeMissingBool = boolean;
 
@@ -394,6 +523,57 @@ export type PayloadTooLargeError = {
 };
 
 /**
+ * PhotoTooLargeError
+ */
+export type PhotoTooLargeError = {
+    /**
+     * Detail
+     */
+    detail?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Occuredat
+     */
+    occuredAt?: string;
+    errorCode?: ErrorCode;
+};
+
+/**
+ * PushPublicKey
+ */
+export type PushPublicKey = {
+    /**
+     * Publickey
+     */
+    publicKey: string;
+};
+
+/**
+ * PushSubscription
+ */
+export type PushSubscription = {
+    /**
+     * Id
+     */
+    id?: string;
+};
+
+/**
+ * PushSubscriptionKeys
+ */
+export type PushSubscriptionKeys = {
+    /**
+     * P256Dh
+     */
+    p256Dh: string;
+    /**
+     * Auth
+     */
+    auth: string;
+};
+
+/**
  * RateLimitError
  */
 export type RateLimitError = {
@@ -448,6 +628,185 @@ export type Status = {
 };
 
 /**
+ * StayTicketRequest
+ */
+export type StayTicketRequest = {
+    /**
+     * Startedat
+     */
+    startedAt: string;
+    /**
+     * Endedat
+     */
+    endedAt?: string | null;
+    /**
+     * Kind
+     */
+    kind: 'stay';
+    stay: TicketPoint;
+};
+
+/**
+ * TestPushRequest
+ */
+export type TestPushRequest = {
+    /**
+     * Subscriptionid
+     */
+    subscriptionId: number;
+};
+
+/**
+ * TicketApplyResult
+ */
+export type TicketApplyResult = {
+    /**
+     * Points
+     */
+    points: Array<Waypoint>;
+    transfer?: Movement | null;
+    event?: Event | null;
+};
+
+/**
+ * TicketIssue
+ */
+export type TicketIssue = {
+    /**
+     * Field
+     */
+    field: 'departure' | 'arrival' | 'stay' | 'startedAt' | 'endedAt';
+    /**
+     * Code
+     */
+    code: 'point_required' | 'start_required' | 'date_required' | 'timezone_required' | 'outside_trip' | 'ended_before_start';
+    /**
+     * Msg
+     */
+    msg: string;
+};
+
+/**
+ * TicketKind
+ */
+export type TicketKind = 'plane' | 'train' | 'ship' | 'stay';
+
+/**
+ * TicketPlaceMatch
+ */
+export type TicketPlaceMatch = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Address
+     */
+    address?: string | null;
+    /**
+     * Iata
+     */
+    iata?: string | null;
+    point?: TicketPoint | null;
+};
+
+/**
+ * TicketPoint
+ */
+export type TicketPoint = {
+    /**
+     * Latitude
+     */
+    latitude: number;
+    /**
+     * Longitude
+     */
+    longitude: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Address
+     */
+    address: string;
+};
+
+/**
+ * TicketPreview
+ */
+export type TicketPreview = {
+    kind: TicketKind;
+    departure?: TicketPlaceMatch | null;
+    arrival?: TicketPlaceMatch | null;
+    stay?: TicketPlaceMatch | null;
+    /**
+     * Startedat
+     */
+    startedAt?: string | null;
+    /**
+     * Endedat
+     */
+    endedAt?: string | null;
+    startedAtHint?: TicketTimeHint | null;
+    endedAtHint?: TicketTimeHint | null;
+    /**
+     * Issues
+     */
+    issues?: Array<TicketIssue>;
+    /**
+     * Readytoapply
+     */
+    readonly readyToApply: boolean;
+};
+
+/**
+ * TicketTimeHint
+ */
+export type TicketTimeHint = {
+    /**
+     * Month
+     */
+    month: number;
+    /**
+     * Day
+     */
+    day: number;
+    /**
+     * Localtime
+     */
+    localTime: string;
+    /**
+     * Localdate
+     */
+    localDate?: string | null;
+    /**
+     * Timezone
+     */
+    timeZone?: string | null;
+};
+
+/**
+ * TransferTicketRequest
+ */
+export type TransferTicketRequest = {
+    /**
+     * Startedat
+     */
+    startedAt: string;
+    /**
+     * Endedat
+     */
+    endedAt?: string | null;
+    /**
+     * Kind
+     */
+    kind: 'plane' | 'train' | 'ship';
+    departure: TicketPoint;
+    arrival: TicketPoint;
+};
+
+/**
  * Trip
  */
 export type Trip = {
@@ -483,6 +842,256 @@ export type Trip = {
      * Updatedat
      */
     updatedAt?: string;
+};
+
+/**
+ * TripArchive
+ */
+export type TripArchiveInput = {
+    /**
+     * Version
+     */
+    version: 1;
+    trip: TripArchiveDetails;
+    /**
+     * Points
+     */
+    points: Array<TripArchivePointInput>;
+    /**
+     * Events
+     */
+    events: Array<TripArchiveEventInput>;
+    /**
+     * Transfers
+     */
+    transfers: Array<TripArchiveTransferInput>;
+};
+
+/**
+ * TripArchive
+ */
+export type TripArchiveOutput = {
+    /**
+     * Version
+     */
+    version: 1;
+    trip: TripArchiveDetails;
+    /**
+     * Points
+     */
+    points: Array<TripArchivePointOutput>;
+    /**
+     * Events
+     */
+    events: Array<TripArchiveEventOutput>;
+    /**
+     * Transfers
+     */
+    transfers: Array<TripArchiveTransferOutput>;
+};
+
+/**
+ * TripArchiveDetails
+ */
+export type TripArchiveDetails = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Startedon
+     */
+    startedOn: string;
+    /**
+     * Endedon
+     */
+    endedOn?: string | null;
+};
+
+/**
+ * TripArchiveEvent
+ */
+export type TripArchiveEventInput = {
+    /**
+     * Title
+     */
+    title: string;
+    type: EventType;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Startedat
+     */
+    startedAt: string;
+    /**
+     * Endedat
+     */
+    endedAt?: string | null;
+    /**
+     * Bookingurl
+     */
+    bookingUrl?: string | null;
+    /**
+     * Waypointid
+     */
+    waypointId?: number | null;
+};
+
+/**
+ * TripArchiveEvent
+ */
+export type TripArchiveEventOutput = {
+    /**
+     * Title
+     */
+    title: string;
+    type: EventType;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Startedat
+     */
+    startedAt: string;
+    /**
+     * Endedat
+     */
+    endedAt?: string | null;
+    /**
+     * Bookingurl
+     */
+    bookingUrl?: string | null;
+    /**
+     * Waypointid
+     */
+    waypointId?: string | null;
+};
+
+/**
+ * TripArchivePoint
+ */
+export type TripArchivePointInput = {
+    /**
+     * Latitude
+     */
+    latitude: number;
+    /**
+     * Longitude
+     */
+    longitude: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Visited
+     */
+    visited?: boolean;
+};
+
+/**
+ * TripArchivePoint
+ */
+export type TripArchivePointOutput = {
+    /**
+     * Latitude
+     */
+    latitude: number;
+    /**
+     * Longitude
+     */
+    longitude: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Visited
+     */
+    visited?: boolean;
+};
+
+/**
+ * TripArchiveTransfer
+ */
+export type TripArchiveTransferInput = {
+    /**
+     * Transporttype
+     */
+    transportType: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Startedat
+     */
+    startedAt: string;
+    /**
+     * Endedat
+     */
+    endedAt?: string | null;
+    /**
+     * Startsatwaypointid
+     */
+    startsAtWaypointId: number;
+    /**
+     * Endsatwaypointid
+     */
+    endsAtWaypointId: number;
+};
+
+/**
+ * TripArchiveTransfer
+ */
+export type TripArchiveTransferOutput = {
+    /**
+     * Transporttype
+     */
+    transportType: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Startedat
+     */
+    startedAt: string;
+    /**
+     * Endedat
+     */
+    endedAt?: string | null;
+    /**
+     * Startsatwaypointid
+     */
+    startsAtWaypointId: string;
+    /**
+     * Endsatwaypointid
+     */
+    endsAtWaypointId: string;
 };
 
 /**
@@ -528,14 +1137,31 @@ export type UnsupportedMediaTypeError = {
 };
 
 /**
+ * UnsupportedPhotoError
+ */
+export type UnsupportedPhotoError = {
+    /**
+     * Detail
+     */
+    detail?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Occuredat
+     */
+    occuredAt?: string;
+    errorCode?: ErrorCode;
+};
+
+/**
  * UpdateEventRequest
  */
 export type UpdateEventRequest = {
     title?: MaybeMissingStr;
     type?: EventType;
     description?: MaybeMissingUnionStrNoneType;
-    startedAt?: MaybeMissingAwareDatetime;
-    endedAt?: MaybeMissingUnionAwareDatetimeNoneType;
+    startedAt?: MaybeMissingAnnotatedAwareDatetimeAfterValidator;
+    endedAt?: MaybeMissingUnionAnnotatedAwareDatetimeAfterValidatorNoneType;
     bookingUrl?: MaybeMissingUnionAnnotatedStrAfterValidatorNoneType;
     waypointId?: MaybeMissingUnionAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGeGe0LeLe9223372036854775807FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedBigIntegerSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedPlainSerializerNoneType;
 };
@@ -545,8 +1171,9 @@ export type UpdateEventRequest = {
  */
 export type UpdateMovementRequest = {
     transportType?: MaybeMissingStrMinLenMinLength1;
-    startedAt?: MaybeMissingAwareDatetime;
-    endedAt?: MaybeMissingUnionAwareDatetimeNoneType;
+    description?: MaybeMissingUnionAnnotatedStrStringConstraintsNoneType;
+    startedAt?: MaybeMissingAnnotatedAwareDatetimeAfterValidator;
+    endedAt?: MaybeMissingUnionAnnotatedAwareDatetimeAfterValidatorNoneType;
     startsAtWaypointId?: MaybeMissingAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGeGe0LeLe9223372036854775807FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedBigIntegerSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedPlainSerializer;
     endsAtWaypointId?: MaybeMissingAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGeGe0LeLe9223372036854775807FieldInfoMetadataPrimaryKeyPydanticUndefinedNullablePydanticUndefinedForeignKeyPydanticUndefinedOndeletePydanticUndefinedUniquePydanticUndefinedIndexPydanticUndefinedBigIntegerSaColumnPydanticUndefinedSaColumnArgsPydanticUndefinedSaColumnKwargsPydanticUndefinedPlainSerializer;
 };
@@ -556,7 +1183,7 @@ export type UpdateMovementRequest = {
  */
 export type UpdateTripRequest = {
     name?: MaybeMissingStrMinLenMinLength1;
-    description?: MaybeMissingUnionStrNoneTypeMinLenMinLength1;
+    description?: MaybeMissingUnionAnnotatedStrStringConstraintsNoneType;
     startedOn?: MaybeMissingDate;
     endedOn?: MaybeMissingUnionDateNoneType;
     cover?: MaybeMissingUnionAnnotatedStrAfterValidatorNoneType;
@@ -707,6 +1334,30 @@ export type RegisterUserRequestWritable = {
      * Password
      */
     password: string;
+};
+
+/**
+ * TicketPreview
+ */
+export type TicketPreviewWritable = {
+    kind: TicketKind;
+    departure?: TicketPlaceMatch | null;
+    arrival?: TicketPlaceMatch | null;
+    stay?: TicketPlaceMatch | null;
+    /**
+     * Startedat
+     */
+    startedAt?: string | null;
+    /**
+     * Endedat
+     */
+    endedAt?: string | null;
+    startedAtHint?: TicketTimeHint | null;
+    endedAtHint?: TicketTimeHint | null;
+    /**
+     * Issues
+     */
+    issues?: Array<TicketIssue>;
 };
 
 export type AuthRegisterData = {
@@ -1139,6 +1790,101 @@ export type TripsPostTripResponses = {
 
 export type TripsPostTripResponse = TripsPostTripResponses[keyof TripsPostTripResponses];
 
+export type TripsPostTripImportData = {
+    body: TripArchiveInput;
+    path?: never;
+    query?: never;
+    url: '/trips/import';
+};
+
+export type TripsPostTripImportErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Content Too Large
+     */
+    413: PayloadTooLargeError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+};
+
+export type TripsPostTripImportError = TripsPostTripImportErrors[keyof TripsPostTripImportErrors];
+
+export type TripsPostTripImportResponses = {
+    /**
+     * Successful Response
+     */
+    201: Trip;
+};
+
+export type TripsPostTripImportResponse = TripsPostTripImportResponses[keyof TripsPostTripImportResponses];
+
+export type TripsGetTripExportData = {
+    body?: never;
+    path: {
+        /**
+         * Trip Id
+         */
+        trip_id: number;
+    };
+    query?: never;
+    url: '/trips/{trip_id}/export';
+};
+
+export type TripsGetTripExportErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Not Found
+     */
+    404: NotFoundError;
+    /**
+     * Conflict
+     */
+    409: ConflictError;
+    /**
+     * Content Too Large
+     */
+    413: PayloadTooLargeError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+};
+
+export type TripsGetTripExportError = TripsGetTripExportErrors[keyof TripsGetTripExportErrors];
+
+export type TripsGetTripExportResponses = {
+    /**
+     * Successful Response
+     */
+    200: TripArchiveOutput;
+};
+
+export type TripsGetTripExportResponse = TripsGetTripExportResponses[keyof TripsGetTripExportResponses];
+
 export type TripsRemoveTripData = {
     body?: never;
     path: {
@@ -1156,6 +1902,10 @@ export type TripsRemoveTripErrors = {
      * Unauthorized
      */
     401: AuthorizationError;
+    /**
+     * Forbidden
+     */
+    403: ForbiddenError;
     /**
      * Not Found
      */
@@ -2273,6 +3023,541 @@ export type EventsPatchEventResponses = {
 };
 
 export type EventsPatchEventResponse = EventsPatchEventResponses[keyof EventsPatchEventResponses];
+
+export type TicketsPostTicketPreviewData = {
+    body?: BodyTicketsPostTicketPreview;
+    path: {
+        /**
+         * Tripid
+         */
+        tripId: number;
+    };
+    query?: never;
+    url: '/trips/{tripId}/tickets/preview';
+};
+
+export type TicketsPostTicketPreviewErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Not Found
+     */
+    404: NotFoundError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+};
+
+export type TicketsPostTicketPreviewError = TicketsPostTicketPreviewErrors[keyof TicketsPostTicketPreviewErrors];
+
+export type TicketsPostTicketPreviewResponses = {
+    /**
+     * Successful Response
+     */
+    200: TicketPreview;
+};
+
+export type TicketsPostTicketPreviewResponse = TicketsPostTicketPreviewResponses[keyof TicketsPostTicketPreviewResponses];
+
+export type TicketsPostTicketApplyData = {
+    /**
+     * Request
+     */
+    body: ({
+        kind: 'plane' | 'train' | 'ship';
+    } & TransferTicketRequest) | ({
+        kind: 'stay';
+    } & StayTicketRequest);
+    path: {
+        /**
+         * Tripid
+         */
+        tripId: number;
+    };
+    query?: never;
+    url: '/trips/{tripId}/tickets/apply';
+};
+
+export type TicketsPostTicketApplyErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Not Found
+     */
+    404: NotFoundError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+};
+
+export type TicketsPostTicketApplyError = TicketsPostTicketApplyErrors[keyof TicketsPostTicketApplyErrors];
+
+export type TicketsPostTicketApplyResponses = {
+    /**
+     * Successful Response
+     */
+    201: TicketApplyResult;
+};
+
+export type TicketsPostTicketApplyResponse = TicketsPostTicketApplyResponses[keyof TicketsPostTicketApplyResponses];
+
+export type PushGetPublicKeyData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/push/vapid-public-key';
+};
+
+export type PushGetPublicKeyErrors = {
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+    /**
+     * Service Unavailable
+     */
+    503: ServiceUnavailableError;
+};
+
+export type PushGetPublicKeyError = PushGetPublicKeyErrors[keyof PushGetPublicKeyErrors];
+
+export type PushGetPublicKeyResponses = {
+    /**
+     * Successful Response
+     */
+    200: PushPublicKey;
+};
+
+export type PushGetPublicKeyResponse = PushGetPublicKeyResponses[keyof PushGetPublicKeyResponses];
+
+export type PushPostSubscriptionData = {
+    body: CreatePushSubscriptionRequest;
+    path?: never;
+    query?: never;
+    url: '/push/subscriptions';
+};
+
+export type PushPostSubscriptionErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Conflict
+     */
+    409: ConflictError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+};
+
+export type PushPostSubscriptionError = PushPostSubscriptionErrors[keyof PushPostSubscriptionErrors];
+
+export type PushPostSubscriptionResponses = {
+    /**
+     * Successful Response
+     */
+    200: PushSubscription;
+};
+
+export type PushPostSubscriptionResponse = PushPostSubscriptionResponses[keyof PushPostSubscriptionResponses];
+
+export type PushRemoveSubscriptionData = {
+    body?: never;
+    path: {
+        /**
+         * Subscriptionid
+         */
+        subscriptionId: number;
+    };
+    query?: never;
+    url: '/push/subscriptions/{subscriptionId}';
+};
+
+export type PushRemoveSubscriptionErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Not Found
+     */
+    404: NotFoundError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+};
+
+export type PushRemoveSubscriptionError = PushRemoveSubscriptionErrors[keyof PushRemoveSubscriptionErrors];
+
+export type PushRemoveSubscriptionResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type PushRemoveSubscriptionResponse = PushRemoveSubscriptionResponses[keyof PushRemoveSubscriptionResponses];
+
+export type PushPostTestNotificationData = {
+    body: TestPushRequest;
+    path?: never;
+    query?: never;
+    url: '/push/test';
+};
+
+export type PushPostTestNotificationErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Not Found
+     */
+    404: NotFoundError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+    /**
+     * Service Unavailable
+     */
+    503: ServiceUnavailableError;
+};
+
+export type PushPostTestNotificationError = PushPostTestNotificationErrors[keyof PushPostTestNotificationErrors];
+
+export type PushPostTestNotificationResponses = {
+    /**
+     * Successful Response
+     */
+    202: unknown;
+};
+
+export type GoogleDriveCallbackData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * State
+         */
+        state: string;
+        /**
+         * Code
+         */
+        code?: string | null;
+        /**
+         * Error
+         */
+        error?: string | null;
+    };
+    url: '/integrations/google-drive/callback';
+};
+
+export type GoogleDriveCallbackErrors = {
+    /**
+     * Bad Request
+     */
+    400: BadRequestError;
+    /**
+     * Conflict
+     */
+    409: ConflictError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+    /**
+     * Service Unavailable
+     */
+    503: ServiceUnavailableError;
+};
+
+export type GoogleDriveCallbackError = GoogleDriveCallbackErrors[keyof GoogleDriveCallbackErrors];
+
+export type GoogleDriveConnectData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/integrations/google-drive/connect';
+};
+
+export type GoogleDriveConnectErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Conflict
+     */
+    409: ConflictError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+    /**
+     * Service Unavailable
+     */
+    503: ServiceUnavailableError;
+};
+
+export type GoogleDriveConnectError = GoogleDriveConnectErrors[keyof GoogleDriveConnectErrors];
+
+export type GoogleDriveConnectResponses = {
+    /**
+     * Successful Response
+     */
+    200: GoogleDriveConnect;
+};
+
+export type GoogleDriveConnectResponse = GoogleDriveConnectResponses[keyof GoogleDriveConnectResponses];
+
+export type GoogleDriveDisconnectData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/integrations/google-drive';
+};
+
+export type GoogleDriveDisconnectErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Conflict
+     */
+    409: ConflictError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+    /**
+     * Service Unavailable
+     */
+    503: ServiceUnavailableError;
+};
+
+export type GoogleDriveDisconnectError = GoogleDriveDisconnectErrors[keyof GoogleDriveDisconnectErrors];
+
+export type GoogleDriveDisconnectResponses = {
+    /**
+     * Successful Response
+     */
+    200: GoogleDriveConnection;
+};
+
+export type GoogleDriveDisconnectResponse = GoogleDriveDisconnectResponses[keyof GoogleDriveDisconnectResponses];
+
+export type GoogleDriveStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/integrations/google-drive';
+};
+
+export type GoogleDriveStatusErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+};
+
+export type GoogleDriveStatusError = GoogleDriveStatusErrors[keyof GoogleDriveStatusErrors];
+
+export type GoogleDriveStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: GoogleDriveConnection;
+};
+
+export type GoogleDriveStatusResponse = GoogleDriveStatusResponses[keyof GoogleDriveStatusResponses];
+
+export type GoogleDriveExportPhotoData = {
+    body: BodyGoogleDriveExportPhoto;
+    headers: {
+        /**
+         * Idempotency-Key
+         */
+        'idempotency-key': string;
+    };
+    path?: never;
+    query?: never;
+    url: '/integrations/google-drive/photo-exports';
+};
+
+export type GoogleDriveExportPhotoErrors = {
+    /**
+     * Bad Request
+     */
+    400: BadRequestError;
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Conflict
+     */
+    409: ConflictError;
+    /**
+     * Content Too Large
+     */
+    413: PhotoTooLargeError;
+    /**
+     * Unsupported Media Type
+     */
+    415: UnsupportedPhotoError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+    /**
+     * Service Unavailable
+     */
+    503: ServiceUnavailableError;
+};
+
+export type GoogleDriveExportPhotoError = GoogleDriveExportPhotoErrors[keyof GoogleDriveExportPhotoErrors];
+
+export type GoogleDriveExportPhotoResponses = {
+    /**
+     * Successful Response
+     */
+    201: GoogleDriveExport;
+};
+
+export type GoogleDriveExportPhotoResponse = GoogleDriveExportPhotoResponses[keyof GoogleDriveExportPhotoResponses];
+
+export type GoogleDriveExportStatusData = {
+    body?: never;
+    path: {
+        /**
+         * Export Id
+         */
+        export_id: number;
+    };
+    query?: never;
+    url: '/integrations/google-drive/photo-exports/{export_id}';
+};
+
+export type GoogleDriveExportStatusErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AuthorizationError;
+    /**
+     * Not Found
+     */
+    404: NotFoundError;
+    /**
+     * Unprocessable Content
+     */
+    422: ValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: RateLimitError;
+    /**
+     * Internal Server Error
+     */
+    500: InternalServerError;
+};
+
+export type GoogleDriveExportStatusError = GoogleDriveExportStatusErrors[keyof GoogleDriveExportStatusErrors];
+
+export type GoogleDriveExportStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: GoogleDriveExport;
+};
+
+export type GoogleDriveExportStatusResponse = GoogleDriveExportStatusResponses[keyof GoogleDriveExportStatusResponses];
 
 export type RootHealthData = {
     body?: never;

@@ -88,7 +88,7 @@ describe("trip form", () => {
       );
     });
     expect(onSubmit).not.toHaveBeenCalled();
-    const invalid = container.querySelectorAll('input[aria-invalid="true"]');
+    const invalid = container.querySelectorAll('[aria-invalid="true"]');
     expect(invalid).toHaveLength(2);
     for (const input of invalid) {
       const description = document.getElementById(

@@ -59,13 +59,13 @@ export function TextSelect({
           alignItemWithTrigger={false}
           className="z-[65] max-w-[calc(100vw-2rem)]"
         >
-          <Select.Popup className="max-h-(--available-height) w-(--anchor-width) overflow-y-auto rounded-xl border bg-surface p-1 text-sm outline-none">
+          <Select.Popup className="popup-motion max-h-(--available-height) w-(--anchor-width) overflow-y-auto rounded-xl border bg-surface p-1 text-sm outline-none">
             <Select.List>
               {options.map((option) => (
                 <Select.Item
                   key={option.value}
                   value={option.value}
-                  className="flex min-h-11 cursor-default items-center gap-2 rounded-lg px-3 py-2 outline-none data-highlighted:bg-accent"
+                  className="flex min-h-11 cursor-default items-center gap-2 rounded-lg px-3 py-2 outline-none data-highlighted:bg-surface-hover"
                 >
                   <Select.ItemText className="min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere]">
                     {option.label}

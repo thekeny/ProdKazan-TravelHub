@@ -10,6 +10,10 @@
   --color-offline-foreground: var(--offline-foreground);
   --color-water: var(--water);
   --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-muted-hover: var(--muted-hover);
+  --color-background-hover: var(--background-hover);
+  --color-secondary-hover: var(--secondary-hover);
   --color-road: var(--road);
   --color-text: var(--text);
   --color-overlay: var(--text);
@@ -94,6 +98,14 @@
   --event-other: color-mix(in srgb, var(--text) 45%, var(--background));
 
   --foreground: var(--text);
+  --surface-hover: color-mix(in srgb, var(--surface) 95%, var(--foreground));
+  --muted-hover: color-mix(in srgb, var(--muted) 95%, var(--foreground));
+  --background-hover: color-mix(
+    in srgb,
+    var(--background) 95%,
+    var(--foreground)
+  );
+  --secondary-hover: color-mix(in srgb, var(--secondary) 95%, var(--foreground));
   --card: var(--surface);
   --card-foreground: var(--text);
   --popover: var(--surface);
@@ -125,6 +137,14 @@
 }
 
 .dark {
+  --surface-hover: color-mix(in srgb, var(--surface) 95%, var(--foreground));
+  --muted-hover: color-mix(in srgb, var(--muted) 95%, var(--foreground));
+  --background-hover: color-mix(
+    in srgb,
+    var(--background) 95%,
+    var(--foreground)
+  );
+  --secondary-hover: color-mix(in srgb, var(--secondary) 95%, var(--foreground));
   --background: color-mix(in srgb, var(--text) 85%, black);
   --surface: var(--text);
   --foreground: #f7f5ef;
@@ -340,5 +360,39 @@
   *::after {
     transition-duration: 0.01ms;
     animation-duration: 0.01ms;
+  }
+}
+
+.popup-motion {
+  transform-origin: var(--transform-origin);
+  transition:
+    opacity 180ms ease-out,
+    transform 180ms ease-out;
+}
+.popup-motion[data-starting-style],
+.popup-motion[data-ending-style] {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.985);
+}
+.popup-motion[data-ending-style] {
+  transition-duration: 120ms;
+}
+.calendar-range .rdp-root {
+  --rdp-accent-color: var(--primary-strong);
+  --rdp-accent-background-color: var(--secondary);
+  --rdp-range_middle-background-color: var(--secondary);
+  --rdp-day_button-width: 36px;
+  --rdp-day_button-height: 40px;
+  --rdp-day-width: 38px;
+  --rdp-day-height: 42px;
+  font-family: inherit;
+}
+@media (prefers-reduced-motion: reduce) {
+  .popup-motion {
+    transition: none;
+  }
+  .popup-motion[data-starting-style],
+  .popup-motion[data-ending-style] {
+    transform: none;
   }
 }

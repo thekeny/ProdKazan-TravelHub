@@ -10,6 +10,21 @@ import type {
 } from "@/configs/types/route.type";
 import type { TravelData, TripValues } from "@/configs/types/travel.type";
 export type TravelContextValue = TravelData & {
+  importArchive: (file: File) => Promise<string>;
+  exportArchive: (tripId: string) => Promise<void>;
+  previewTicket: (
+    tripId: string,
+    body: import("@/api/generated/types.gen").BodyTicketsPostTicketPreview,
+  ) => Promise<import("@/api/generated/types.gen").TicketPreview>;
+  applyTicket: (
+    tripId: string,
+    body: import("@/api/generated/types.gen").TicketsPostTicketApplyData["body"],
+  ) => Promise<void>;
+  setPointVisited: (
+    tripId: string,
+    pointId: string,
+    visited: boolean,
+  ) => Promise<void>;
   ready: boolean;
   username: string | null;
   storageWarning: string | null;
@@ -22,6 +37,7 @@ export type TravelContextValue = TravelData & {
     register?: boolean,
   ) => void | Promise<void>;
   logout: () => void | Promise<void>;
+  deleteAccount: (password: string) => void | Promise<void>;
   renameAccount: (name: string) => void | Promise<void>;
   changePassword: (
     currentPassword: string,
@@ -29,6 +45,7 @@ export type TravelContextValue = TravelData & {
   ) => Promise<void>;
   createTrip: (values: TripValues) => void | Promise<void>;
   saveTrip: (tripId: string, values: TripValues) => void | Promise<void>;
+  addEventType: (tripId: string, name: string) => void | Promise<void>;
   deleteTrip: (tripId: string) => void | Promise<void>;
   selectTrip: (id: string) => void;
   saveEvent: (

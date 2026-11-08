@@ -132,7 +132,7 @@ export function eventErrors(
   if (value.customType === null)
     errors.customType = trip.eventTypes?.length
       ? "Выберите тип события."
-      : "Сначала добавьте типы в настройках путешествия.";
+      : "Добавьте тип события.";
   else if (value.customType !== undefined) {
     const typeError = eventTypesError([value.customType]);
     if (typeError) errors.customType = typeError;

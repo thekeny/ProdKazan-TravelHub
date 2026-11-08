@@ -7,7 +7,7 @@ export type RoutePointValues = {
   lng: number;
 };
 
-export type RoutePoint = RoutePointValues & { id: string };
+export type RoutePoint = RoutePointValues & { id: string; visited?: boolean };
 
 export type TripLegValues = {
   fromPointId: string;

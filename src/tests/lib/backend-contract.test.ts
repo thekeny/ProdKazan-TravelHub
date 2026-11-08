@@ -32,6 +32,8 @@ function samplePath(path: string) {
     .replaceAll("{eventId}", "456")
     .replaceAll("{cover_id}", "photo.webp")
     .replaceAll("{code}", "Invite-1")
+    .replaceAll("{subscriptionId}", "9223372036854775806")
+    .replaceAll("{export_id}", "9223372036854775806")
     .replace(/^\//, "")
     .replace(/\/+$/, "");
 }
@@ -45,7 +47,7 @@ describe("SDK and backend proxy contract", () => {
     expect(entries.map((entry) => entry.name)).toContain("tripsJoinTrip");
   });
 
-  it("allows every non-admin SDK endpoint through the proxy", () => {
+  it("allows integrated non-admin SDK endpoints through the proxy", () => {
     const rejected = entries
       .filter((entry) => !entry.name.startsWith("admin"))
       .filter((entry) => !isAllowedBackendPath(samplePath(entry.url)))

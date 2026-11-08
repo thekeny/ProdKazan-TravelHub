@@ -11,6 +11,7 @@ export function ConfirmDelete({
   onClose,
   onConfirm,
   busy = false,
+  content,
 }: {
   open: boolean;
   title: string;
@@ -18,6 +19,7 @@ export function ConfirmDelete({
   onClose: () => void;
   onConfirm: () => void | Promise<void>;
   busy?: boolean;
+  content?: ReactNode;
 }) {
   const [pending, setPending] = useState(false);
   const locked = useRef(false);
@@ -46,6 +48,9 @@ export function ConfirmDelete({
           <Dialog.Description className="mt-2 user-text text-sm text-muted-foreground">
             {children}
           </Dialog.Description>
+          <fieldset disabled={disabled} className="contents">
+            {content}
+          </fieldset>
           <div className="mt-6 flex justify-end gap-3">
             <Button
               ref={cancel}

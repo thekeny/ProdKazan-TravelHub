@@ -1,7 +1,10 @@
 "use client";
 import { Dialog } from "@base-ui/react/dialog";
+import { Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
+import { AccountDeleteConfirmation } from "@/components/dashboard/account-delete-confirmation";
+import { PushSettings } from "@/components/dashboard/push-settings";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field } from "@/components/ui/field";
@@ -12,7 +15,9 @@ import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { authErrors, passwordErrors } from "@/lib/form-validation";
 import { ApiError } from "@/lib/travel-api";
+import { usePush } from "@/providers/push-provider";
 import { useTravel } from "@/providers/travel-provider";
+import { DriveSettings } from "./drive-settings";
 export function UserSettings({
   onClose,
   onSaved,
@@ -21,6 +26,8 @@ export function UserSettings({
   onSaved?: () => void;
 }) {
   const { username, renameAccount, changePassword, remote, user } = useTravel();
+  const push = usePush();
+  const [driveBusy, setDriveBusy] = useState(false);
   const [values, setValues, form] = useFormValues(
     {
       username: username ?? "",
@@ -43,10 +50,11 @@ export function UserSettings({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
+  const [deleting, setDeleting] = useState(false);
   const { requestClose, confirmation } = useDiscardConfirmation(
     values,
     onClose,
-    pending,
+    pending || deleting || driveBusy || Boolean(push?.pending),
   );
   return (
     <Dialog.Root
@@ -56,17 +64,15 @@ export function UserSettings({
       }}
     >
       {confirmation}
+      {deleting && (
+        <AccountDeleteConfirmation onClose={() => setDeleting(false)} />
+      )}
       <Dialog.Portal>
         <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-[60] bg-overlay/35" />
         <DialogPopup className="dialog-popup fixed inset-0 z-[60] m-auto h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-xl border bg-background p-6">
           <Dialog.Title className="pr-10 text-xl">
             Настройки пользователя
           </Dialog.Title>
-          <Dialog.Description className="mt-2 text-sm text-muted-foreground">
-            {remote
-              ? "Здесь можно изменить пароль. Имя пользователя изменить пока нельзя."
-              : "Данные вашего аккаунта."}
-          </Dialog.Description>
           <FormProvider {...form}>
             <form
               noValidate
@@ -117,7 +123,11 @@ export function UserSettings({
                 }
               }}
             >
-              <Field name="username" label="Имя пользователя">
+              <Field
+                name="username"
+                label="Имя пользователя"
+                hint={remote ? "Изменение имени пока недоступно." : undefined}
+              >
                 {(id) => (
                   <Input
                     data-field-control
@@ -250,6 +260,20 @@ export function UserSettings({
               </div>
             </form>
           </FormProvider>
+          {remote && <DriveSettings onBusy={setDriveBusy} />}
+          {remote && <PushSettings />}
+          <div className="mt-6 border-t pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              disabled={pending || driveBusy || Boolean(push?.pending)}
+              onClick={() => setDeleting(true)}
+            >
+              <Trash2 aria-hidden="true" />
+              Удалить аккаунт
+            </Button>
+          </div>
         </DialogPopup>
       </Dialog.Portal>
     </Dialog.Root>

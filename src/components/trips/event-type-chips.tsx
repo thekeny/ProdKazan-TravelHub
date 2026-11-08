@@ -102,7 +102,7 @@ export function EventTypeChips({
         }}
       />
       <p id={`${id}-hint`} className="text-xs text-muted-foreground">
-        Enter добавляет тип. Пробелы остаются в названии.
+        Enter — добавить тип.
       </p>
       {error && (
         <p id={`${id}-error`} role="alert" className="text-xs text-destructive">

@@ -17,7 +17,7 @@ export const TRIP_NAVIGATION = [
   {
     href: pages.DOCUMENTS,
     label: "Билеты и документы",
-    mobileLabel: "Документы",
+    mobileLabel: "Билеты и документы",
     icon: FileText,
   },
 ] as const;

@@ -167,7 +167,7 @@ export function TripTimeline({
                     variant="plain"
                     key={`${item.kind}-${item.id}`}
                     type="button"
-                    className="flex min-h-9 max-w-64 shrink-0 items-center gap-1.5 rounded-md bg-background px-2 py-1 text-left text-[11px] transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    className="flex min-h-9 max-w-64 shrink-0 items-center gap-1.5 rounded-md bg-background px-2 py-1 text-left text-[11px] transition-colors hover:bg-background-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     aria-label={`Открыть ${itemType(item)} «${itemTitle(item)}», ${minutesToTime(itemStartMinutes(item))}${continued ? ", продолжается на следующий день" : ""}`}
                     onClick={() =>
                       item.kind === "event"
