@@ -121,24 +121,21 @@ self.addEventListener("fetch", (event) => {
     url.pathname.startsWith("/gateway/")
   )
     return;
-  if (
-    request.headers.has("RSC") ||
-    request.headers.has("Next-Router-State-Tree") ||
-    url.searchParams.has("_rsc")
-  )
-    return;
-  if (request.mode === "navigate" && routes.includes(url.pathname)) {
+  // Next normally redirects trailing slashes over the network. Resolve the
+  // same shell locally when that redirect is unavailable offline.
+  const pathname = url.pathname.replace(/\/+$/, "") || "/";
+  if (request.mode === "navigate" && routes.includes(pathname)) {
     event.respondWith(
       (async () => {
         const cache = await caches.open(VERSION);
         try {
           const response = await fetch(request);
           if (response.ok && !response.redirected)
-            await save(cache, url.pathname, response);
+            await save(cache, pathname, response);
           return response;
         } catch {
           return (
-            (await cache.match(url.pathname, { ignoreVary: true })) ||
+            (await cache.match(pathname, { ignoreVary: true })) ||
             new Response(
               "Откройте эту страницу при подключении к интернету, чтобы сохранить её для офлайн-просмотра.",
               {
@@ -152,6 +149,12 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
+  if (
+    request.headers.has("RSC") ||
+    request.headers.has("Next-Router-State-Tree") ||
+    url.searchParams.has("_rsc")
+  )
+    return;
   const isStatic =
     url.pathname.startsWith("/_next/static/") || assets.includes(url.pathname);
   if (!isStatic) return;
