@@ -115,7 +115,11 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(tileResponse(request));
     return;
   }
-  if (url.origin !== self.location.origin || url.pathname.startsWith("/api/"))
+  if (
+    url.origin !== self.location.origin ||
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/gateway/")
+  )
     return;
   if (
     request.headers.has("RSC") ||

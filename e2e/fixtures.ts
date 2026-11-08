@@ -19,7 +19,7 @@ export const test = base.extend<{ backend: Backend }>({
         value: { permission: "denied" },
       });
     });
-    await page.route("**/api/backend/**", async (route) => {
+    await page.route("**/gateway/backend/**", async (route) => {
       if (!initialized) {
         const seed: Seed | null = await page.evaluate(() =>
           JSON.parse(localStorage.getItem("travelhub-e2e-fixture") ?? "null"),
@@ -59,7 +59,7 @@ export const test = base.extend<{ backend: Backend }>({
       }
       const request = route.request();
       const path = new URL(request.url()).pathname
-        .replace("/api/backend", "")
+        .replace("/gateway/backend", "")
         .replace(/\/$/, "");
       const method = request.method();
       const user = { id: "123", username: backend.username ?? "traveler" };

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, expect, it, vi } from "vitest";
-import { GET } from "@/app/api/places/search/route";
+import { GET } from "@/app/gateway/places/search/route";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -28,7 +28,7 @@ it("searches Cyrillic names using a language supported by public Photon", async 
   vi.stubGlobal("fetch", fetchMock);
   const response = await GET(
     new Request(
-      `http://localhost/api/places/search?q=${encodeURIComponent("зингер")}`,
+      `http://localhost/gateway/places/search?q=${encodeURIComponent("зингер")}`,
     ),
   );
   expect(response.status).toBe(200);

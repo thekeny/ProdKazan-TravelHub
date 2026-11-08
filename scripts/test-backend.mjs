@@ -15,7 +15,7 @@ async function request(
   expected = 200,
   anonymous = false,
 ) {
-  const response = await fetch(`${origin}/api/backend${path}`, {
+  const response = await fetch(`${origin}/gateway/backend${path}`, {
     method,
     headers: {
       Origin: origin,

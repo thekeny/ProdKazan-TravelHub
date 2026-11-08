@@ -1,7 +1,9 @@
+import { GATEWAY } from "@/configs/paths/gateway.path";
+
 export const PLACE_SEARCH = {
   provider: "https://photon.komoot.io/api/",
   attribution: "https://www.openstreetmap.org/copyright",
-  path: "/api/places/search",
+  path: GATEWAY.placeSearch,
   minLength: 3,
   maxLength: 100,
   delay: 400,

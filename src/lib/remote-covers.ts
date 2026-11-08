@@ -1,4 +1,5 @@
 import { COVER_LIMITS, MATERIAL_TYPES } from "@/configs/consts/materials.const";
+import { GATEWAY } from "@/configs/paths/gateway.path";
 import { readBlobAsDataUrl } from "@/lib/image";
 import { getMaterialFile, putMaterialFile } from "@/lib/material-storage";
 
@@ -31,14 +32,20 @@ export async function loadRemoteCover(userId: string, tripId: string) {
 // Browser image requests use the cookie-authenticated proxy with session refresh.
 export function serverCoverUrl(cover: string | null): string | null {
   if (!cover) return null;
-  const path = cover.replace(/^\/api\/v1/, "");
+  const path = cover.replace(
+    /^\/(?:api\/v1|api\/backend|gateway\/backend)(?=\/)/,
+    "",
+  );
   return /^\/trips\/\d+\/cover\/[a-zA-Z0-9._-]+$/.test(path)
-    ? `/api/backend${path}`
+    ? `${GATEWAY.backend}${path}`
     : cover;
 }
 export function isServerCover(cover: string | null): cover is string {
   return Boolean(
-    cover && /^\/api\/backend\/trips\/\d+\/cover\/[a-zA-Z0-9._-]+$/.test(cover),
+    cover?.startsWith(GATEWAY.backend) &&
+      /^\/trips\/\d+\/cover\/[a-zA-Z0-9._-]+$/.test(
+        cover.slice(GATEWAY.backend.length),
+      ),
   );
 }
 export function coverBlob(cover: string): Blob {

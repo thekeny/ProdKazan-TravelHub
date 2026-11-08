@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("blocked permission shows instructions without prompting again", async ({
   page,
 }) => {
-  await page.route("**/api/backend/**", (route) =>
+  await page.route("**/gateway/backend/**", (route) =>
     route.fulfill({
       json: route.request().url().endsWith("/auth/me")
         ? { id: "123", username: "traveler" }
@@ -46,9 +46,12 @@ for (const [device, viewport] of Object.entries({
     await page.setViewportSize(viewport);
     const registrations: unknown[] = [];
     const subscriptionId = "9223372036854775806";
-    await page.route("**/api/backend/**", async (route) => {
+    await page.route("**/gateway/backend/**", async (route) => {
       const request = route.request();
-      const path = new URL(request.url()).pathname.replace("/api/backend", "");
+      const path = new URL(request.url()).pathname.replace(
+        "/gateway/backend",
+        "",
+      );
       if (path === "/auth/me")
         return route.fulfill({ json: { id: "123", username: "traveler" } });
       if (path.replace(/\/$/, "") === "/trips")

@@ -112,12 +112,12 @@ deploy:
       docker compose pull web
       docker compose up -d --wait web
       for i in 1 2 3 4 5 6 7 8 9 10; do
-        if curl -fsS -o /dev/null http://127.0.0.1:${FRONTEND_PORT}/ && curl -fsS -o /dev/null http://127.0.0.1:${FRONTEND_PORT}/api/backend/health; then
+        if curl -fsS -o /dev/null http://127.0.0.1:${FRONTEND_PORT}/ && curl -fsS -o /dev/null http://127.0.0.1:${FRONTEND_PORT}/gateway/backend/health; then
           echo "deployed ${IMAGE_TAG}"
           exit 0
         fi
         sleep 3
       done
-      echo "smoke test failed: http://127.0.0.1:${FRONTEND_PORT}/ or /api/backend/health is not responding"
+      echo "smoke test failed: http://127.0.0.1:${FRONTEND_PORT}/ or /gateway/backend/health is not responding"
       exit 1
       EOF

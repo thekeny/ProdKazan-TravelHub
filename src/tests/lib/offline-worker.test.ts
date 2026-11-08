@@ -5,7 +5,10 @@ import { describe, expect, it, vi } from "vitest";
 const source = readFileSync("public/sw.js", "utf8");
 const origin = "https://travel.test";
 
-function worker(tiles = "https://maps.test/{z}/{x}/{y}.png") {
+function worker(
+  tiles = "https://maps.test/{z}/{x}/{y}.png",
+  assets: string[] = [],
+) {
   const handlers = new Map<string, (event: unknown) => void>();
   const entries = new Map<string, Response>();
   const key = (request: string | Request | URL) =>
@@ -32,7 +35,7 @@ function worker(tiles = "https://maps.test/{z}/{x}/{y}.png") {
   });
   const params = new URLSearchParams({
     routes: JSON.stringify(["/dashboard", "/trips"]),
-    assets: "[]",
+    assets: JSON.stringify(assets),
     tiles,
   });
   runInNewContext(source, {
@@ -76,8 +79,18 @@ describe("offline PWA worker", () => {
     expect(
       app.fetch(`${origin}/dashboard?_rsc=123`, "cors", { RSC: "1" }),
     ).toBeUndefined();
-    expect(app.fetch(`${origin}/api/backend/auth/me`)).toBeUndefined();
+    expect(app.fetch(`${origin}/gateway/backend/auth/me`)).toBeUndefined();
     expect(app.network).not.toHaveBeenCalled();
+  });
+
+  it("never caches gateway responses even if listed among shell assets", () => {
+    const app = worker(undefined, ["/gateway/backend/auth/me"]);
+    expect(app.fetch(`${origin}/gateway/backend/auth/me`)).toBeUndefined();
+    expect(
+      app.fetch(`${origin}/gateway/places/search?q=Kazan`),
+    ).toBeUndefined();
+    expect(app.network).not.toHaveBeenCalled();
+    expect(app.cache.put).not.toHaveBeenCalled();
   });
 
   it("stores viewed tiles from an opted-in provider and serves them offline", async () => {

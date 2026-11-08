@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import * as backendRoute from "@/app/api/backend/[...path]/route";
+import * as backendRoute from "@/app/gateway/backend/[...path]/route";
 import { COLLABORATION } from "@/configs/consts/collaboration.const";
 import { isAllowedBackendPath, proxyBackend } from "@/lib/backend-proxy";
 
 const fetchMock = vi.fn<typeof fetch>();
 function request(path: string, method = "GET", cookie = "", origin?: string) {
-  return new NextRequest(`http://localhost:3000/api/backend/${path}`, {
+  return new NextRequest(`http://localhost:3000/gateway/backend/${path}`, {
     method,
     headers: { Cookie: cookie, ...(origin ? { Origin: origin } : {}) },
   });
@@ -98,7 +98,7 @@ describe("backend proxy", () => {
     fetchMock.mockResolvedValueOnce(new Response("{}", { status: 201 }));
     await proxyBackend(
       new NextRequest(
-        "http://localhost:3000/api/backend/integrations/google-drive/photo-exports",
+        "http://localhost:3000/gateway/backend/integrations/google-drive/photo-exports",
         {
           method: "POST",
           body: bytes,
@@ -186,7 +186,7 @@ describe("backend proxy", () => {
     );
     const body = JSON.stringify({ name: "Trip" });
     const response = await proxyBackend(
-      new NextRequest("http://localhost:3000/api/backend/trips?page=1", {
+      new NextRequest("http://localhost:3000/gateway/backend/trips?page=1", {
         method: "POST",
         body,
         headers: { "Content-Type": "application/json" },
@@ -210,15 +210,18 @@ describe("backend proxy", () => {
     });
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
     const response = await backendRoute.PUT(
-      new NextRequest("http://localhost:3000/api/backend/auth/me/password", {
-        method: "PUT",
-        body,
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: "travelhub_access=test-access",
-          Origin: "http://localhost:3000",
+      new NextRequest(
+        "http://localhost:3000/gateway/backend/auth/me/password",
+        {
+          method: "PUT",
+          body,
+          headers: {
+            "Content-Type": "application/json",
+            Cookie: "travelhub_access=test-access",
+            Origin: "http://localhost:3000",
+          },
         },
-      }),
+      ),
       { params: Promise.resolve({ path: ["auth", "me", "password"] }) },
     );
     expect(response.status).toBe(204);
@@ -260,6 +263,12 @@ describe("backend proxy", () => {
       "secret-refresh",
     );
     expect(response.headers.get("Set-Cookie")).toContain("HttpOnly");
+    expect(response.cookies.get("travelhub_access")?.path).toBe(
+      "/gateway/backend",
+    );
+    expect(response.cookies.get("travelhub_refresh")?.path).toBe(
+      "/gateway/backend",
+    );
     expect(fetchMock.mock.calls[0][0]).toBe(
       "https://backend.example/api/v1/auth/login",
     );
@@ -408,7 +417,7 @@ it("preserves binary image bytes on upload and authenticated download", async ()
   const bytes = new Uint8Array([0, 255, 128, 13, 10]);
   fetchMock.mockResolvedValueOnce(new Response("{}"));
   await backendRoute.PUT(
-    new NextRequest("http://localhost:3000/api/backend/trips/123/cover", {
+    new NextRequest("http://localhost:3000/gateway/backend/trips/123/cover", {
       method: "PUT",
       body: bytes,
       headers: {

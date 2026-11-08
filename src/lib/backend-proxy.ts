@@ -1,11 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { GATEWAY } from "@/configs/paths/gateway.path";
 
 const ACCESS_COOKIE = "travelhub_access";
 const REFRESH_COOKIE = "travelhub_refresh";
 const COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: "lax" as const,
-  path: "/api/backend",
+  path: GATEWAY.backend,
   secure: process.env.NODE_ENV === "production",
 };
 // Keep the proxy allowlist in sync with the SDK calls used by the app. The
