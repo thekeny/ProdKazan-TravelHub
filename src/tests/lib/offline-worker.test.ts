@@ -64,6 +64,16 @@ function worker(
 }
 
 describe("offline PWA worker", () => {
+  it.each(["/trips/", "/trips/?day=2026-11-07", "/trips?_rsc=123"])(
+    "opens the saved HTML for a full navigation to %s",
+    async (path) => {
+      const app = worker();
+      app.entries.set(`${origin}/trips`, new Response("trips shell"));
+      const response = await app.fetch(`${origin}${path}`, "navigate");
+      expect(await response?.text()).toBe("trips shell");
+    },
+  );
+
   it("opens a cached page with day and event deep links without internet", async () => {
     const app = worker();
     app.entries.set(`${origin}/dashboard`, new Response("dashboard shell"));

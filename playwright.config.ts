@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test";
 const port = 3100;
 export default defineConfig({
   testDir: "./e2e",
-  testIgnore: ["push.spec.ts", "integrations.spec.ts"],
+  testIgnore: ["push.spec.ts", "integrations.spec.ts", "offline.spec.ts"],
   fullyParallel: false,
   workers: 1,
   timeout: 60000,
