@@ -51,19 +51,24 @@ export function DateRangeFields({
   const [active, setActive] = useState<"start" | "end">("start");
   const [month, setMonth] = useState(parseDay(start) ?? new Date());
   const range = dateRange();
-  const initial = active === "start" ? initialStart : initialEnd;
+  function selectionSide(day: string) {
+    return active === "start" || !start || day < start.slice(0, 10)
+      ? "start"
+      : "end";
+  }
   function select(date: Date) {
     const day = dayString(date);
+    const side = selectionSide(day);
     const time =
-      active === "start"
+      side === "start"
         ? start.slice(11) || "09:00"
         : end.slice(11) || start.slice(11) || "09:00";
     const next = withTime ? `${day}T${time}` : day;
-    if (active === "start") {
-      onChange(next, end && end < next ? "" : end);
+    if (side === "start") {
+      onChange(next, "");
       setActive("end");
     } else {
-      onChange(start, next);
+      onChange(start, next < start ? start : next);
       setOpen(false);
     }
   }
@@ -85,7 +90,7 @@ export function DateRangeFields({
                     disabled={disabled}
                     className={`${inputClass} text-left`}
                     onClick={() => {
-                      setActive(side);
+                      setActive(side === "end" && !start ? "start" : side);
                       setMonth(parseDay(value || start) ?? new Date());
                     }}
                   >
@@ -147,6 +152,11 @@ export function DateRangeFields({
             <Popover.Title className="mb-3 text-sm font-medium">
               {active === "start" ? "Выберите начало" : "Выберите окончание"}
             </Popover.Title>
+            {active === "end" && (
+              <p className="mb-3 text-xs text-muted-foreground">
+                Чтобы начать период заново, выберите дату раньше начала.
+              </p>
+            )}
             <DayPicker
               locale={ru}
               mode="range"
@@ -178,14 +188,12 @@ export function DateRangeFields({
               )}
               disabled={(date) => {
                 const day = dayString(date);
+                const initial =
+                  selectionSide(day) === "start" ? initialStart : initialEnd;
                 return (
+                  disabled ||
                   Boolean(dateRangeError(day, initial?.slice(0, 10))) ||
-                  Boolean(
-                    trip && (day < trip.startDate || day > trip.endDate),
-                  ) ||
-                  (active === "end" &&
-                    Boolean(start) &&
-                    day < start.slice(0, 10))
+                  Boolean(trip && (day < trip.startDate || day > trip.endDate))
                 );
               }}
             />
