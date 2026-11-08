@@ -1,9 +1,11 @@
 "use client";
 
 import {
+  Download,
   EllipsisVertical,
   ListChecks,
   Pencil,
+  TicketPlus,
   Trash2,
   Users,
 } from "lucide-react";
@@ -21,7 +23,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Trip } from "@/configs/types/travel.type";
 import { useTripDeletion } from "@/hooks/use-trip-deletion";
+import { useTripOwner } from "@/hooks/use-trip-owner";
+import { actionToast } from "@/lib/action-toast";
+import { useOnline } from "@/lib/connectivity";
 import { useTravel } from "@/providers/travel-provider";
+import { TicketImport } from "./ticket-import";
 
 export function TripActions({
   trip,
@@ -34,7 +40,11 @@ export function TripActions({
   onDeleted?: () => void;
   onCheckSchedule?: () => void;
 }) {
-  const { remote } = useTravel();
+  const { remote, exportArchive } = useTravel();
+  const isOwner = useTripOwner(trip.id);
+  const online = useOnline();
+  const [ticketOpen, setTicketOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [sharingOpen, setSharingOpen] = useState(false);
@@ -91,17 +101,51 @@ export function TripActions({
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            className="min-h-10 cursor-pointer px-3"
-            onClick={() => {
-              setMenuOpen(false);
-              deletion.request();
-            }}
-          >
-            <Trash2 />
-            Удалить поездку
-          </DropdownMenuItem>
+          {remote && (
+            <>
+              <DropdownMenuItem
+                disabled={!online}
+                onClick={() => {
+                  setMenuOpen(false);
+                  setTicketOpen(true);
+                }}
+              >
+                <TicketPlus aria-hidden="true" />
+                Импортировать билет
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={exporting || !online}
+                onClick={() => {
+                  if (exporting) return;
+                  setExporting(true);
+                  void actionToast(
+                    () => exportArchive(trip.id),
+                    "Готовим JSON…",
+                    "JSON скачан.",
+                  )
+                    .catch(() => undefined)
+                    .finally(() => setExporting(false));
+                }}
+              >
+                <Download aria-hidden="true" />
+                Скачать JSON
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+          {isOwner && (
+            <DropdownMenuItem
+              variant="destructive"
+              className="min-h-10 cursor-pointer px-3"
+              onClick={() => {
+                setMenuOpen(false);
+                deletion.request();
+              }}
+            >
+              <Trash2 />
+              Удалить поездку
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -119,6 +163,9 @@ export function TripActions({
       )}
 
       <TripDeleteConfirmation trip={trip} deletion={deletion} />
+      {ticketOpen && (
+        <TicketImport trip={trip} onClose={() => setTicketOpen(false)} />
+      )}
     </div>
   );
 }

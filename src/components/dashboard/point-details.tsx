@@ -2,7 +2,7 @@
 
 import { Dialog } from "@base-ui/react/dialog";
 import { ChevronRight, MapPin, Pencil, Plus, Trash2, X } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { EventIcon } from "@/components/dashboard/event-icon";
 import { MaterialThumbnail } from "@/components/materials/material-thumbnail";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,11 @@ import { DialogPopup } from "@/components/ui/dialog-popup";
 import { EVENT_COLORS } from "@/configs/consts/events.const";
 import type { TripEvent } from "@/configs/types/event.type";
 import type { RoutePoint } from "@/configs/types/route.type";
+import { actionToast } from "@/lib/action-toast";
+import { useOnline } from "@/lib/connectivity";
 import { eventTypeLabel } from "@/lib/event-types";
 import { formatEventDate } from "@/lib/travel-events";
+import { useTravel } from "@/providers/travel-provider";
 
 export function PointDetails({
   point,
@@ -30,6 +33,10 @@ export function PointDetails({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { remote, activeId, setPointVisited } = useTravel();
+  const [pending, setPending] = useState(false);
+  const busy = useRef(false);
+  const online = useOnline();
   const pointEvents = useMemo(
     () =>
       events
@@ -133,6 +140,32 @@ export function PointDetails({
             )}
           </div>
           <footer className="grid shrink-0 gap-2 border-t p-4">
+            {remote && activeId && (
+              <Button
+                variant="outline"
+                disabled={pending || !online}
+                aria-pressed={point.visited ?? false}
+                onClick={async () => {
+                  if (busy.current) return;
+                  busy.current = true;
+                  setPending(true);
+                  try {
+                    await actionToast(
+                      () => setPointVisited(activeId, point.id, !point.visited),
+                      "Сохраняем…",
+                      "Отметка обновлена.",
+                    );
+                  } catch {
+                    /* actionToast displays the failure. */
+                  } finally {
+                    busy.current = false;
+                    setPending(false);
+                  }
+                }}
+              >
+                {point.visited ? "Посещено" : "Отметить как посещённое"}
+              </Button>
+            )}
             <Button className="h-11 w-full" onClick={onAddEvent}>
               <Plus />
               Добавить событие в этой точке

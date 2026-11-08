@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { images } from "@/configs/paths/images.path";
 import { pages } from "@/configs/paths/pages.path";
 import { useTravel } from "@/providers/travel-provider";
+import { ArchiveImport } from "./archive-import";
 import { TripCard } from "./trip-card";
 
 export function TripList() {
@@ -55,6 +56,7 @@ export function TripList() {
           </div>
         )}
       </div>
+      <ArchiveImport />
       {error && (
         <p role="alert" className="mt-4 text-sm text-destructive">
           {error}

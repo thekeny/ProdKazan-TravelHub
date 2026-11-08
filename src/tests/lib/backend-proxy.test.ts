@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as backendRoute from "@/app/api/backend/[...path]/route";
 import { COLLABORATION } from "@/configs/consts/collaboration.const";
-import { proxyBackend } from "@/lib/backend-proxy";
+import { isAllowedBackendPath, proxyBackend } from "@/lib/backend-proxy";
 
 const fetchMock = vi.fn<typeof fetch>();
 function request(path: string, method = "GET", cookie = "", origin?: string) {
@@ -23,6 +23,102 @@ afterEach(() => {
 });
 
 describe("backend proxy", () => {
+  it("allows only the specified integration and archive endpoints", () => {
+    for (const path of [
+      "integrations/google-drive",
+      "integrations/google-drive/connect",
+      "integrations/google-drive/callback",
+      "integrations/google-drive/photo-exports/9223372036854775806",
+      "trips/import",
+      "trips/123/export",
+      "trips/123/tickets/preview",
+      "trips/123/tickets/apply",
+    ])
+      expect(isAllowedBackendPath(path)).toBe(true);
+    for (const path of [
+      "integrations/other",
+      "integrations/google-drive/secrets",
+      "trips/import/123",
+      "trips/123/tickets/delete",
+    ])
+      expect(isAllowedBackendPath(path)).toBe(false);
+  });
+  it("preserves OAuth cookie and forwards callback without exposing session tokens", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response("{}", {
+        headers: {
+          "Set-Cookie":
+            "travelhub_drive_oauth=state; Path=/; HttpOnly; Secure; SameSite=lax; Max-Age=600",
+        },
+      }),
+    );
+    const connect = await proxyBackend(
+      request(
+        "integrations/google-drive/connect",
+        "POST",
+        "travelhub_access=secret",
+      ),
+      ["integrations", "google-drive", "connect"],
+    );
+    expect(connect.headers.get("Set-Cookie")).toContain(
+      "travelhub_drive_oauth=state",
+    );
+    expect(connect.headers.get("Set-Cookie")).toContain("HttpOnly");
+    fetchMock.mockResolvedValueOnce(
+      new Response(null, {
+        status: 303,
+        headers: {
+          Location: "/dashboard?googleDrive=connected",
+          "Set-Cookie": "travelhub_drive_oauth=; Path=/; Max-Age=0; HttpOnly",
+        },
+      }),
+    );
+    const callback = await proxyBackend(
+      new NextRequest(
+        "http://localhost:3000/api/v1/integrations/google-drive/callback?state=value&code=code",
+        {
+          headers: {
+            Cookie:
+              "travelhub_refresh=refresh; travelhub_drive_oauth=state; unrelated=private",
+          },
+        },
+      ),
+      ["integrations", "google-drive", "callback"],
+    );
+    expect(callback.status).toBe(303);
+    expect(callback.headers.get("Location")).toBe(
+      "http://localhost:3000/dashboard?googleDrive=connected",
+    );
+    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get("Cookie")).toBe(
+      "refresh_token=refresh; travelhub_drive_oauth=state",
+    );
+  });
+  it("preserves multipart bytes and idempotency key", async () => {
+    const bytes = new Uint8Array([0, 255, 13, 10, 1]);
+    fetchMock.mockResolvedValueOnce(new Response("{}", { status: 201 }));
+    await proxyBackend(
+      new NextRequest(
+        "http://localhost:3000/api/backend/integrations/google-drive/photo-exports",
+        {
+          method: "POST",
+          body: bytes,
+          headers: {
+            "Content-Type": "multipart/form-data; boundary=fixture",
+            "Idempotency-Key": "operation-123",
+          },
+        },
+      ),
+      ["integrations", "google-drive", "photo-exports"],
+    );
+    expect(
+      new Uint8Array(fetchMock.mock.calls[0][1]?.body as ArrayBuffer),
+    ).toEqual(bytes);
+    const headers = new Headers(fetchMock.mock.calls[0][1]?.headers);
+    expect(headers.get("Content-Type")).toBe(
+      "multipart/form-data; boundary=fixture",
+    );
+    expect(headers.get("Idempotency-Key")).toBe("operation-123");
+  });
   it("preserves session cookies when password verification through login fails", async () => {
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 401 }));
     const response = await proxyBackend(

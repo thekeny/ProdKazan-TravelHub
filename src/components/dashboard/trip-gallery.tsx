@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { StorageWarning } from "@/components/layout/storage-warning";
 import { DocumentVisibilityToggle } from "@/components/materials/document-visibility-toggle";
 import { MaterialGrid } from "@/components/materials/material-grid";
+import { TicketImportButton } from "@/components/trips/ticket-import-button";
 import { buttonVariants } from "@/components/ui/button";
 import { pages } from "@/configs/paths/pages.path";
 import type { Material, MaterialKind } from "@/configs/types/material.type";
@@ -108,6 +109,11 @@ export function TripGallery({ kind }: { kind: MaterialKind }) {
           )}
         </header>
         <StorageWarning className="mb-6" />
+        {kind === "document" && trip && (
+          <div className="mb-5">
+            <TicketImportButton trip={trip} />
+          </div>
+        )}
         {bookingLinks.length > 0 && (
           <section className="mb-8">
             <h2 className="text-lg font-semibold">Ссылки на билеты и брони</h2>

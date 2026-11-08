@@ -15,7 +15,12 @@ const ALLOWED_PATH =
   /^(?:auth\/(?:login|register|refresh|logout|me(?:\/password)?)|health|push\/(?:vapid-public-key|subscriptions(?:\/[1-9]\d*)?|test)|trips(?:\/(?:\d+(?:\/(?:(?:points|events|transfers)(?:\/\d+)?|cover(?:\/[a-zA-Z0-9._-]+)?|code\/generate|collaborat(?:ors|rs)))?|code\/redeem\/[A-Za-z0-9_~-][A-Za-z0-9._~-]{0,127}))?)$/;
 
 export function isAllowedBackendPath(path: string) {
-  return ALLOWED_PATH.test(path);
+  return (
+    ALLOWED_PATH.test(path) ||
+    /^(?:integrations\/google-drive(?:\/(?:connect|callback|photo-exports(?:\/[1-9]\d*)?))?|trips\/(?:import|[1-9]\d*\/(?:export|tickets\/(?:preview|apply))))$/.test(
+      path,
+    )
+  );
 }
 // Several SDK reads can encounter expiration together. Share the rotation so
 // single-use refresh cookies are not consumed by competing requests.
@@ -83,6 +88,21 @@ export async function proxyBackend(request: NextRequest, path: string[]) {
       if (access) headers.set("Authorization", `Bearer ${access}`);
       if (refresh)
         headers.set("Cookie", `refresh_token=${encodeURIComponent(refresh)}`);
+      if (route === "integrations/google-drive/callback") {
+        const oauth = request.cookies.get("travelhub_drive_oauth")?.value;
+        if (oauth)
+          headers.set(
+            "Cookie",
+            [
+              headers.get("Cookie"),
+              `travelhub_drive_oauth=${encodeURIComponent(oauth)}`,
+            ]
+              .filter(Boolean)
+              .join("; "),
+          );
+      }
+      const operationKey = request.headers.get("Idempotency-Key");
+      if (operationKey) headers.set("Idempotency-Key", operationKey);
       const contentType = request.headers.get("content-type");
       if (contentType) headers.set("Content-Type", contentType);
       const url = new URL(`${base}/${target}`);
@@ -180,6 +200,27 @@ export async function proxyBackend(request: NextRequest, path: string[]) {
     if (rotated && access) {
       result.cookies.set(ACCESS_COOKIE, access, COOKIE_OPTIONS);
       if (refresh) result.cookies.set(REFRESH_COOKIE, refresh, COOKIE_OPTIONS);
+    }
+    if (
+      route === "integrations/google-drive/connect" ||
+      route === "integrations/google-drive/callback"
+    ) {
+      for (const cookie of response.headers.getSetCookie()) {
+        if (cookie.startsWith("travelhub_drive_oauth="))
+          result.headers.append(
+            "Set-Cookie",
+            cookie.replace(/;\s*Domain=[^;]+/gi, ""),
+          );
+      }
+      const location = response.headers.get("Location");
+      if (route.endsWith("/callback") && location) {
+        const destination = new URL(location, request.nextUrl.origin);
+        if (
+          destination.origin === request.nextUrl.origin &&
+          destination.pathname === "/dashboard"
+        )
+          result.headers.set("Location", destination.href);
+      }
     }
     if (
       ((route === "auth/logout" ||

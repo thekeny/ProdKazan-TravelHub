@@ -71,7 +71,7 @@ export function PushSettings() {
               void actionToast(
                 push.test,
                 "Отправляем…",
-                "Тестовое уведомление отправлено.",
+                "Тестовая отправка принята. Проверьте уведомление на устройстве.",
               ).catch(() => undefined);
             }}
           >

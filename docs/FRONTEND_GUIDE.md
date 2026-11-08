@@ -220,7 +220,7 @@ Object URL. Прямая ссылка без Bearer не заменяет авт
 {
   "endpoint": "https://fcm.googleapis.com/example-browser-generated-endpoint",
   "keys": {
-    "p256dh": "<реальный ключ из subscription.toJSON()>",
+    "p256Dh": "<значение keys.p256dh из subscription.toJSON()>",
     "auth": "<реальный ключ из subscription.toJSON()>"
   }
 }
@@ -228,6 +228,13 @@ Object URL. Прямая ссылка без Bearer не заменяет авт
 
 Это форма запроса, а не рабочие значения: endpoint и ключи берите из браузерной
 подписки. Сохраните возвращённый `id` вместе с текущим аккаунтом и подпиской.
+
+Поле браузера называется `p256dh`, но JSON API использует `p256Dh` согласно
+развёрнутой OpenAPI. Преобразование выполняется перед отправкой SDK.
+Если получение публичного ключа отвечает `503` с `push_key_unavailable`,
+проверьте подготовку постоянного VAPID-ключа на бэкенде: без него подписка
+не подключится. Сервис Compose `push-init` создаёт отсутствующий ключ перед
+API и Celery и сохраняет существующий при обновлениях.
 
 Service Worker должен обрабатывать событие `push` и вызывать
 `self.registration.showNotification(title, { body })`; backend присылает JSON с

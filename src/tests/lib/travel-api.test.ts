@@ -122,4 +122,50 @@ describe("backend adapters", () => {
       ),
     ).rejects.toThrow("Срок действия кода приглашения истёк.");
   });
+  it("explains an ambiguous ticket kind and preserves its validation code", async () => {
+    await expect(
+      apiResult(
+        Promise.resolve({
+          response: new Response(null, { status: 422 }),
+          error: {
+            detail: {},
+            errorCode: "ValidationFailed",
+            errors: ["ticket_kind_ambiguous"],
+          },
+        }),
+      ),
+    ).rejects.toMatchObject({
+      status: 422,
+      message:
+        "Не удалось определить вид билета. Выберите его вручную и повторите распознавание.",
+      validationCodes: ["ticket_kind_ambiguous"],
+    });
+  });
+  it.each([
+    { errors: ["PDF не содержит текста"], message: "PDF не содержит текста" },
+    { errors: [{ msg: "Проверьте ссылку" }], message: "Проверьте ссылку" },
+    {
+      errors: [
+        null,
+        42,
+        {},
+        "Неподдерживаемый билет",
+        { msg: "Выберите другой PDF" },
+      ],
+      message: "Неподдерживаемый билет; Выберите другой PDF",
+    },
+    { errors: [], message: "Сервер отклонил данные. Проверьте поля формы." },
+  ])(
+    "preserves validation messages for $errors",
+    async ({ errors, message }) => {
+      await expect(
+        apiResult(
+          Promise.resolve({
+            response: new Response(null, { status: 422 }),
+            error: { errors },
+          }),
+        ),
+      ).rejects.toMatchObject({ status: 422, message });
+    },
+  );
 });

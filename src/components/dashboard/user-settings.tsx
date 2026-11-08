@@ -17,6 +17,7 @@ import { authErrors, passwordErrors } from "@/lib/form-validation";
 import { ApiError } from "@/lib/travel-api";
 import { usePush } from "@/providers/push-provider";
 import { useTravel } from "@/providers/travel-provider";
+import { DriveSettings } from "./drive-settings";
 export function UserSettings({
   onClose,
   onSaved,
@@ -26,6 +27,7 @@ export function UserSettings({
 }) {
   const { username, renameAccount, changePassword, remote, user } = useTravel();
   const push = usePush();
+  const [driveBusy, setDriveBusy] = useState(false);
   const [values, setValues, form] = useFormValues(
     {
       username: username ?? "",
@@ -52,7 +54,7 @@ export function UserSettings({
   const { requestClose, confirmation } = useDiscardConfirmation(
     values,
     onClose,
-    pending || deleting || Boolean(push?.pending),
+    pending || deleting || driveBusy || Boolean(push?.pending),
   );
   return (
     <Dialog.Root
@@ -258,13 +260,14 @@ export function UserSettings({
               </div>
             </form>
           </FormProvider>
+          {remote && <DriveSettings onBusy={setDriveBusy} />}
           {remote && <PushSettings />}
           <div className="mt-6 border-t pt-4">
             <Button
               type="button"
               variant="outline"
               className="text-destructive hover:text-destructive"
-              disabled={pending || Boolean(push?.pending)}
+              disabled={pending || driveBusy || Boolean(push?.pending)}
               onClick={() => setDeleting(true)}
             >
               <Trash2 aria-hidden="true" />

@@ -143,9 +143,7 @@ for (const [device, viewport] of Object.entries({
     await expect(settings).toContainText("Уведомления подключены");
     await settings.getByRole("button", { name: "Отправить тестовое" }).click();
     await expect(
-      page
-        .getByRole("status")
-        .filter({ hasText: "Тестовое уведомление отправлено" }),
+      page.getByRole("status").filter({ hasText: "Тестовая отправка принята" }),
     ).toBeVisible();
     await page.screenshot({ path: `test-results/${device}-push.png` });
     await settings

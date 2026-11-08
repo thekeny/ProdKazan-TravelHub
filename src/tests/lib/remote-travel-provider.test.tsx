@@ -120,6 +120,9 @@ beforeEach(async () => {
   vi.mocked(sdk.pointsGetPoints).mockResolvedValue(ok([point]));
   vi.mocked(sdk.eventsGetEvents).mockResolvedValue(ok([event]));
   vi.mocked(sdk.transfersGetTransfers).mockResolvedValue(ok([]));
+  vi.mocked(sdk.googleDriveStatus).mockResolvedValue(
+    ok({ enabled: false, status: "disabled" }),
+  );
   container = document.createElement("div");
   document.body.append(container);
   await mount();

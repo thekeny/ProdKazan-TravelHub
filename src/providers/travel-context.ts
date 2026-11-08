@@ -10,6 +10,21 @@ import type {
 } from "@/configs/types/route.type";
 import type { TravelData, TripValues } from "@/configs/types/travel.type";
 export type TravelContextValue = TravelData & {
+  importArchive: (file: File) => Promise<string>;
+  exportArchive: (tripId: string) => Promise<void>;
+  previewTicket: (
+    tripId: string,
+    body: import("@/api/generated/types.gen").BodyTicketsPostTicketPreview,
+  ) => Promise<import("@/api/generated/types.gen").TicketPreview>;
+  applyTicket: (
+    tripId: string,
+    body: import("@/api/generated/types.gen").TicketsPostTicketApplyData["body"],
+  ) => Promise<void>;
+  setPointVisited: (
+    tripId: string,
+    pointId: string,
+    visited: boolean,
+  ) => Promise<void>;
   ready: boolean;
   username: string | null;
   storageWarning: string | null;

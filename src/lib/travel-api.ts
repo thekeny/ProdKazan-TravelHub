@@ -22,6 +22,9 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public detail?: unknown,
+    public retryAt?: number,
+    public validationCodes: string[] = [],
   ) {
     super(message);
   }
@@ -33,6 +36,7 @@ export async function apiResult<T>(
   const result = await operation;
   if (result.error !== undefined || !result.response?.ok) {
     const status = result.response?.status ?? 0;
+    const validationCodes: string[] = [];
     let message =
       status === 401
         ? "Сессия истекла или неверное имя пользователя / пароль. Войдите снова."
@@ -52,6 +56,14 @@ export async function apiResult<T>(
     if (typeof result.error === "object" && result.error) {
       if ("message" in result.error && typeof result.error.message === "string")
         message = result.error.message;
+      if (
+        "error" in result.error &&
+        typeof result.error.error === "object" &&
+        result.error.error &&
+        "message" in result.error.error &&
+        typeof result.error.error.message === "string"
+      )
+        message = result.error.error.message;
       if ("errorCode" in result.error) {
         if (result.error.errorCode === "UsernameIsAlreadyInUse")
           message = "Это имя пользователя уже занято.";
@@ -62,6 +74,14 @@ export async function apiResult<T>(
       }
       if ("errors" in result.error && Array.isArray(result.error.errors)) {
         const details = result.error.errors.flatMap((error: unknown) => {
+          if (typeof error === "string") {
+            validationCodes.push(error);
+            if (error === "ticket_kind_ambiguous")
+              return [
+                "Не удалось определить вид билета. Выберите его вручную и повторите распознавание.",
+              ];
+            return [error];
+          }
           if (
             typeof error !== "object" ||
             !error ||
@@ -71,10 +91,24 @@ export async function apiResult<T>(
             return [];
           return [error.msg];
         });
-        if (details.length) message += ` ${details.join("; ")}`;
+        if (details.length) message = details.join("; ");
       }
     }
-    throw new ApiError(status, message);
+    const detail =
+      typeof result.error === "object" &&
+      result.error &&
+      "detail" in result.error
+        ? result.error.detail
+        : undefined;
+    const retry = result.response?.headers.get("Retry-After");
+    const seconds =
+      retry === null || retry === undefined ? Number.NaN : Number(retry);
+    const retryAt = retry
+      ? Number.isFinite(seconds)
+        ? Date.now() + seconds * 1000
+        : Date.parse(retry)
+      : undefined;
+    throw new ApiError(status, message, detail, retryAt, validationCodes);
   }
   return result.data as T;
 }
@@ -106,6 +140,7 @@ export function mapEvent(event: ApiEvent): TripEvent {
 }
 export function mapPoint(point: Waypoint) {
   return {
+    visited: point.visited ?? false,
     id: requiredId(point.id),
     name: point.name,
     description: point.description ?? "",

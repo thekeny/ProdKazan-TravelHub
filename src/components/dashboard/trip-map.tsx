@@ -20,17 +20,15 @@ import {
   TRANSPORT_STYLES,
   TRANSPORT_TYPES,
 } from "@/configs/consts/transport.const";
+import { images } from "@/configs/paths/images.path";
 import type { RoutePoint, TripLeg } from "@/configs/types/route.type";
 import { useOnline } from "@/lib/connectivity";
 import { mapPointColor } from "@/lib/map-point-color";
 
 const travelerIcon = divIcon({
   className: "",
-  html: `<div class="flex h-10 w-9 items-center justify-center rounded-xl border border-border bg-surface text-primary-strong shadow-md">
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <circle cx="12" cy="5" r="2" />
-      <path d="m6 9 6 2 6-2M12 11v6m-4 5 4-5 4 5" />
-    </svg>
+  html: `<div class="flex h-10 w-9 items-center justify-center rounded-xl bg-surface shadow-md">
+    <img src="${images.POINT}" width="28" height="28" class="object-contain" alt="" aria-hidden="true" />
   </div>`,
   iconSize: [36, 40],
   iconAnchor: [18, 36],

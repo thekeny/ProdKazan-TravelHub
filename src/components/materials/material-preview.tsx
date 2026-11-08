@@ -5,6 +5,7 @@ import { type RefObject, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import type { Material } from "@/configs/types/material.type";
+import { DrivePhotoExport } from "./drive-photo-export";
 export function MaterialPreview({
   material,
   url,
@@ -49,6 +50,7 @@ export function MaterialPreview({
             }}
             className="max-h-[80dvh] w-auto max-w-full rounded-lg object-contain"
           />
+          <DrivePhotoExport material={material} />
           <div className="flex items-center justify-between gap-3 p-2">
             <p className="min-w-0 user-text whitespace-normal text-sm">
               {material.name}

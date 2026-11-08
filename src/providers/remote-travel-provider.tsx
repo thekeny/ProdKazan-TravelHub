@@ -18,6 +18,7 @@ import {
   pointErrors,
   tripErrors,
 } from "@/lib/form-validation";
+import { disconnectDriveBeforeDeletion } from "@/lib/google-drive";
 import { assertValidInput } from "@/lib/input-validation";
 import { deleteMaterialFiles } from "@/lib/material-storage";
 import {
@@ -51,6 +52,8 @@ import {
   pointBody,
   tripBody,
 } from "@/lib/travel-api";
+import { downloadTripArchive, readTripArchive } from "@/lib/trip-archive";
+import { DriveProvider } from "./drive-provider";
 import { PushProvider } from "./push-provider";
 import { TravelContext, type TravelContextValue } from "./travel-context";
 
@@ -335,6 +338,52 @@ export function RemoteTravelProvider({
   }
 
   const value: TravelContextValue = {
+    importArchive: (file) =>
+      mutate(async () => {
+        const trip = await apiResult(
+          sdk.tripsPostTripImport({ body: await readTripArchive(file) }),
+        );
+        const next = await initialize();
+        if (!trip.id || !next)
+          throw new Error("Не удалось обновить список поездок.");
+        persist({ ...next, activeId: trip.id });
+        return trip.id;
+      }),
+    exportArchive: (tripId) => read(() => downloadTripArchive(tripId)),
+    previewTicket: (tripId, body) =>
+      read(() =>
+        apiResult(
+          sdk.ticketsPostTicketPreview({
+            path: { tripId: apiId(tripId) },
+            body,
+          }),
+        ),
+      ),
+    applyTicket: (tripId, body) =>
+      mutate(async () => {
+        await apiResult(
+          sdk.ticketsPostTicketApply({ path: { tripId: apiId(tripId) }, body }),
+        );
+        await initialize();
+      }),
+    setPointVisited: (tripId, pointId, visited) =>
+      mutate(async () => {
+        const trip = findTrip(tripId);
+        const point = mapPoint(
+          await apiResult(
+            sdk.pointsPatchPoint({
+              path: { tripId: apiId(tripId), pointId: apiId(pointId) },
+              body: { visited },
+            }),
+          ),
+        );
+        replace({
+          ...trip,
+          points: (trip.points ?? []).map((item) =>
+            item.id === pointId ? point : item,
+          ),
+        });
+      }),
     ...data,
     user,
     remote: true,
@@ -408,6 +457,7 @@ export function RemoteTravelProvider({
           throw error;
         }
         const accountId = user.id ?? user.username;
+        await disconnectDriveBeforeDeletion();
         await disablePush(accountId, true).catch(() => undefined);
         try {
           await apiResult(sdk.authDeleteSelf());
@@ -805,29 +855,41 @@ export function RemoteTravelProvider({
         return joined?.id ?? null;
       }),
   };
+  const handleIntegrationError = (error: unknown, foreground: boolean) => {
+    if (error instanceof ApiError && error.status === 401) {
+      if (user)
+        void disablePush(user.id ?? user.username, true).catch(() => undefined);
+      void clearOfflineSnapshot();
+      setUser(undefined);
+      setData(empty);
+    } else if (
+      foreground &&
+      error instanceof ApiError &&
+      error.status >= 500 &&
+      error.status < 600
+    ) {
+      setErrorStatus(error.status);
+    }
+  };
   return (
     <TravelContext.Provider value={value}>
-      <PushProvider
-        onRequestError={(error, foreground) => {
-          if (error instanceof ApiError && error.status === 401) {
-            if (user)
-              void disablePush(user.id ?? user.username, true).catch(
-                () => undefined,
-              );
-            void clearOfflineSnapshot();
-            setUser(undefined);
-            setData(empty);
-          } else if (
-            foreground &&
-            error instanceof ApiError &&
-            error.status >= 500 &&
-            error.status < 600
-          ) {
-            setErrorStatus(error.status);
-          }
-        }}
-      >
-        {errorStatus !== null ? <ServerError status={errorStatus} /> : children}
+      <PushProvider onRequestError={handleIntegrationError}>
+        {user && ready ? (
+          <DriveProvider
+            key={user.id ?? user.username}
+            onRequestError={handleIntegrationError}
+          >
+            {errorStatus !== null ? (
+              <ServerError status={errorStatus} />
+            ) : (
+              children
+            )}
+          </DriveProvider>
+        ) : errorStatus !== null ? (
+          <ServerError status={errorStatus} />
+        ) : (
+          children
+        )}
       </PushProvider>
     </TravelContext.Provider>
   );

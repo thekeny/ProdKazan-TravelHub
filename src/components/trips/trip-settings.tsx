@@ -9,6 +9,7 @@ import { DialogPopup } from "@/components/ui/dialog-popup";
 import type { Trip, TripValues } from "@/configs/types/travel.type";
 import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { useTripDeletion } from "@/hooks/use-trip-deletion";
+import { useTripOwner } from "@/hooks/use-trip-owner";
 import { useTravel } from "@/providers/travel-provider";
 export function TripSettings({
   trip,
@@ -22,6 +23,7 @@ export function TripSettings({
   onDeleted?: () => void;
 }) {
   const { saveTrip, remote } = useTravel();
+  const isOwner = useTripOwner(trip.id);
   const deletion = useTripDeletion(trip.id, () => {
     onDeleted?.();
     onClose();
@@ -77,18 +79,20 @@ export function TripSettings({
               }}
             />
           </fieldset>
-          <div className="mt-8 border-t pt-5">
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-11 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              disabled={busy || deletion.pending}
-              onClick={deletion.request}
-            >
-              <Trash2 aria-hidden="true" />
-              Удалить путешествие
-            </Button>
-          </div>
+          {isOwner && (
+            <div className="mt-8 border-t pt-5">
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-11 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                disabled={busy || deletion.pending}
+                onClick={deletion.request}
+              >
+                <Trash2 aria-hidden="true" />
+                Удалить путешествие
+              </Button>
+            </div>
+          )}
           <TripDeleteConfirmation trip={trip} deletion={deletion} />
         </DialogPopup>
       </Dialog.Portal>

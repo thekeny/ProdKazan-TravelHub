@@ -42,6 +42,16 @@ export function resumePush(userId: string) {
 }
 
 export function pushErrorMessage(error: unknown) {
+  if (
+    error instanceof ApiError &&
+    error.detail &&
+    typeof error.detail === "object" &&
+    "reason" in error.detail &&
+    ["push_key_unavailable", "push_not_configured"].includes(
+      String(error.detail.reason),
+    )
+  )
+    return "На сервере не настроен ключ уведомлений. Обратитесь к администратору.";
   if (error instanceof DOMException) {
     if (error.name === "NotAllowedError")
       return "Разрешите уведомления для сайта в настройках браузера.";
@@ -198,10 +208,14 @@ export function disablePush(userId: string | undefined, logout = false) {
         ? await navigator.serviceWorker.getRegistration(OFFLINE.worker)
         : undefined;
     const subscription = await worker?.pushManager.getSubscription();
-    if (subscription) await unsubscribe(subscription);
-    const saved = readPushBinding();
-    if (saved && saved.userId === userId && isConnected())
-      await removeServerBinding(saved.id);
+    try {
+      const saved = readPushBinding();
+      if (saved && saved.userId === userId && isConnected())
+        await removeServerBinding(saved.id);
+    } finally {
+      // Logout must stop browser delivery even if storage or the API fails.
+      if (subscription) await unsubscribe(subscription);
+    }
     writePushBinding(null);
   });
 }
@@ -223,7 +237,11 @@ export function testPush(userId: string) {
       body: { subscriptionId: apiId(saved.id) },
     });
     if (result.response?.status === 429) {
-      const delay = Number(result.response.headers.get("Retry-After"));
+      const retry = result.response.headers.get("Retry-After");
+      const delay =
+        retry && !Number.isFinite(Number(retry))
+          ? (Date.parse(retry) - Date.now()) / 1000
+          : Number(retry);
       throw new PushRateLimitError(
         Date.now() + (Number.isFinite(delay) && delay > 0 ? delay : 60) * 1000,
       );

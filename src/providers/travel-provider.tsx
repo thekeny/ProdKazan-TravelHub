@@ -130,6 +130,21 @@ function LocalTravelProvider({ children }: { children: React.ReactNode }) {
   return (
     <TravelContext.Provider
       value={{
+        importArchive: async () => {
+          throw new Error("Импорт доступен для серверного аккаунта.");
+        },
+        exportArchive: async () => {
+          throw new Error("Экспорт доступен для серверного аккаунта.");
+        },
+        previewTicket: async () => {
+          throw new Error("Распознавание доступно для серверного аккаунта.");
+        },
+        applyTicket: async () => {
+          throw new Error("Импорт доступен для серверного аккаунта.");
+        },
+        setPointVisited: async () => {
+          throw new Error("Отметка доступна для серверного аккаунта.");
+        },
         ...data,
         ready,
         username: state.username,
