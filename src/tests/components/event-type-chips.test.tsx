@@ -5,12 +5,18 @@ import { EventTypeChips } from "@/components/trips/event-type-chips";
 
 let root: Root;
 let container: HTMLDivElement;
-const submit = vi.fn();
-function Form() {
-  const [names, setNames] = useState<string[]>([]);
+const submit = vi.fn((event: React.FormEvent) => event.preventDefault());
+function Form({
+  initial = ["Музей", "Утренний кофе"],
+  disabled = false,
+}: {
+  initial?: string[];
+  disabled?: boolean;
+}) {
+  const [names, setNames] = useState(initial);
   return (
     <form onSubmit={submit}>
-      <EventTypeChips value={names} onChange={setNames} />
+      <EventTypeChips value={names} onChange={setNames} disabled={disabled} />
     </form>
   );
 }
@@ -27,34 +33,8 @@ afterEach(async () => {
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
-async function type(value: string) {
-  await act(async () => {
-    const input = container.querySelector("input");
-    Object.getOwnPropertyDescriptor(
-      HTMLInputElement.prototype,
-      "value",
-    )?.set?.call(input, value);
-    input?.dispatchEvent(new Event("input", { bubbles: true }));
-  });
-}
-async function key(value: string, isComposing = false) {
-  const event = new KeyboardEvent("keydown", {
-    key: value,
-    bubbles: true,
-    cancelable: true,
-    isComposing,
-  });
-  await act(async () => container.querySelector("input")?.dispatchEvent(event));
-  return event;
-}
-it("adds multiword chips only on Enter, prevents submit, and removes chips", async () => {
-  await type("Утренний кофе");
-  expect((await key(" ")).defaultPrevented).toBe(false);
-  expect(
-    container.querySelector('[aria-label="Убрать тег «Утренний кофе»"]'),
-  ).toBeNull();
-  expect((await key("Enter")).defaultPrevented).toBe(true);
-  expect(submit).not.toHaveBeenCalled();
+it("removes only the selected tag without submitting the form", async () => {
+  expect(container.querySelector("input")).toBeNull();
   const remove = container.querySelector<HTMLButtonElement>(
     '[aria-label="Убрать тег «Утренний кофе»"]',
   );
@@ -63,22 +43,23 @@ it("adds multiword chips only on Enter, prevents submit, and removes chips", asy
   expect(
     container.querySelector('[aria-label="Убрать тег «Утренний кофе»"]'),
   ).toBeNull();
+  expect(
+    container.querySelector('[aria-label="Убрать тег «Музей»"]'),
+  ).not.toBeNull();
+  expect(submit).not.toHaveBeenCalled();
 });
-it("rejects duplicates ignoring case, ignores blank input and IME confirmation", async () => {
-  await key("Enter");
-  expect(container.querySelectorAll('[aria-label^="Убрать тег"]')).toHaveLength(
-    0,
+it("blocks tag removal while disabled", async () => {
+  await act(async () => root.render(<Form disabled />));
+  const remove = container.querySelector<HTMLButtonElement>(
+    '[aria-label="Убрать тег «Музей»"]',
   );
-  await type("Музей");
-  await key("Enter", true);
+  expect(remove?.disabled).toBe(true);
+  await act(async () => remove?.click());
   expect(container.querySelectorAll('[aria-label^="Убрать тег"]')).toHaveLength(
-    0,
+    2,
   );
-  await key("Enter");
-  await type(" музей ");
-  await key("Enter");
-  expect(container.querySelectorAll('[aria-label^="Убрать тег"]')).toHaveLength(
-    1,
-  );
-  expect(container.textContent).toContain("Такой тег уже добавлен.");
+});
+it("hides the tag section when the catalog is empty", async () => {
+  await act(async () => root.render(<Form key="empty" initial={[]} />));
+  expect(container.querySelector("form")?.textContent).toBe("");
 });

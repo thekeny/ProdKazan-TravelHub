@@ -42,7 +42,7 @@ async function fill(input: HTMLInputElement | null, value: string) {
     input?.dispatchEvent(new Event("input", { bubbles: true }));
   });
 }
-it("edits chips in the trip form and saves them with the trip", async () => {
+it("preserves existing tags when saving the trip", async () => {
   const save = vi.fn();
   await act(async () =>
     root.render(
@@ -51,7 +51,7 @@ it("edits chips in the trip form and saves them with the trip", async () => {
   );
   expect(
     document.querySelector(
-      'input[placeholder="??????? ???????? ? ??????? Enter"]',
+      'input[placeholder="Введите название и нажмите Enter"]',
     ),
   ).toBeNull();
   await act(async () =>
@@ -60,7 +60,45 @@ it("edits chips in the trip form and saves them with the trip", async () => {
       ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })),
   );
   expect(save).toHaveBeenCalledWith(
-    expect.objectContaining({ eventTypes: ["Музей", "Утренний кофе"] }),
+    expect.objectContaining({ eventTypes: ["Музей"] }),
+  );
+});
+it("requires confirmation before removing a tag and saves the remaining catalog", async () => {
+  const save = vi.fn();
+  await act(async () =>
+    root.render(
+      <TripForm initial={trip} submitLabel="Сохранить" onSubmit={save} />,
+    ),
+  );
+  const remove = container.querySelector<HTMLButtonElement>(
+    '[aria-label="Убрать тег «Музей»"]',
+  );
+  expect(remove).not.toBeNull();
+  const dialogButton = (text: string) => {
+    const button = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button'),
+    ).find((item) => item.textContent === text);
+    expect(button).toBeDefined();
+    return button;
+  };
+  await act(async () => remove?.click());
+  expect(container.contains(remove)).toBe(true);
+  expect(save).not.toHaveBeenCalled();
+  await act(async () => dialogButton("Отмена")?.click());
+  expect(container.contains(remove)).toBe(true);
+  await act(async () => remove?.click());
+  await act(async () => dialogButton("Удалить")?.click());
+  expect(
+    container.querySelector('[aria-label="Убрать тег «Музей»"]'),
+  ).toBeNull();
+  expect(save).not.toHaveBeenCalled();
+  await act(async () =>
+    container
+      .querySelector("form")
+      ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })),
+  );
+  expect(save).toHaveBeenCalledWith(
+    expect.objectContaining({ eventTypes: [] }),
   );
 });
 it("offers one dropdown type from the trip catalog", async () => {
