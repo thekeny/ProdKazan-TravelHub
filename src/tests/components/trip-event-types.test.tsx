@@ -42,7 +42,7 @@ async function fill(input: HTMLInputElement | null, value: string) {
     input?.dispatchEvent(new Event("input", { bubbles: true }));
   });
 }
-it("edits chips in the trip form and saves them with the trip", async () => {
+it("keeps existing tags without offering an input to add more", async () => {
   const save = vi.fn();
   await act(async () =>
     root.render(
@@ -51,7 +51,7 @@ it("edits chips in the trip form and saves them with the trip", async () => {
   );
   expect(
     document.querySelector(
-      'input[placeholder="??????? ???????? ? ??????? Enter"]',
+      'input[placeholder="Введите название и нажмите Enter"]',
     ),
   ).toBeNull();
   await act(async () =>
@@ -60,7 +60,7 @@ it("edits chips in the trip form and saves them with the trip", async () => {
       ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })),
   );
   expect(save).toHaveBeenCalledWith(
-    expect.objectContaining({ eventTypes: ["Музей", "Утренний кофе"] }),
+    expect.objectContaining({ eventTypes: ["Музей"] }),
   );
 });
 it("offers one dropdown type from the trip catalog", async () => {
