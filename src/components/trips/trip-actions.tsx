@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Download,
   EllipsisVertical,
@@ -28,7 +27,6 @@ import { actionToast } from "@/lib/action-toast";
 import { useOnline } from "@/lib/connectivity";
 import { useTravel } from "@/providers/travel-provider";
 import { TicketImport } from "./ticket-import";
-
 export function TripActions({
   trip,
   onSaved,
@@ -40,7 +38,7 @@ export function TripActions({
   onDeleted?: () => void;
   onCheckSchedule?: () => void;
 }) {
-  const { remote, exportArchive } = useTravel();
+  const { exportArchive } = useTravel();
   const isOwner = useTripOwner(trip.id);
   const online = useOnline();
   const [ticketOpen, setTicketOpen] = useState(false);
@@ -49,7 +47,6 @@ export function TripActions({
   const [editorOpen, setEditorOpen] = useState(false);
   const [sharingOpen, setSharingOpen] = useState(false);
   const deletion = useTripDeletion(trip.id, onDeleted);
-
   return (
     <div className="shrink-0">
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
@@ -88,51 +85,47 @@ export function TripActions({
               Проверить расписание
             </DropdownMenuItem>
           )}
-          {remote && (
-            <DropdownMenuItem
-              className="min-h-10 cursor-pointer px-3"
-              onClick={() => {
-                setMenuOpen(false);
-                setSharingOpen(true);
-              }}
-            >
-              <Users />
-              Совместный доступ
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            className="min-h-10 cursor-pointer px-3"
+            onClick={() => {
+              setMenuOpen(false);
+              setSharingOpen(true);
+            }}
+          >
+            <Users />
+            Совместный доступ
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
-          {remote && (
-            <>
-              <DropdownMenuItem
-                disabled={!online}
-                onClick={() => {
-                  setMenuOpen(false);
-                  setTicketOpen(true);
-                }}
-              >
-                <TicketPlus aria-hidden="true" />
-                Импортировать билет
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={exporting || !online}
-                onClick={() => {
-                  if (exporting) return;
-                  setExporting(true);
-                  void actionToast(
-                    () => exportArchive(trip.id),
-                    "Готовим JSON…",
-                    "JSON скачан.",
-                  )
-                    .catch(() => undefined)
-                    .finally(() => setExporting(false));
-                }}
-              >
-                <Download aria-hidden="true" />
-                Скачать JSON
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-            </>
-          )}
+
+          <DropdownMenuItem
+            disabled={!online}
+            onClick={() => {
+              setMenuOpen(false);
+              setTicketOpen(true);
+            }}
+          >
+            <TicketPlus aria-hidden="true" />
+            Импортировать билет
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={exporting || !online}
+            onClick={() => {
+              if (exporting) return;
+              setExporting(true);
+              void actionToast(
+                () => exportArchive(trip.id),
+                "Готовим JSON…",
+                "JSON скачан.",
+              )
+                .catch(() => undefined)
+                .finally(() => setExporting(false));
+            }}
+          >
+            <Download aria-hidden="true" />
+            Скачать JSON
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+
           {isOwner && (
             <DropdownMenuItem
               variant="destructive"

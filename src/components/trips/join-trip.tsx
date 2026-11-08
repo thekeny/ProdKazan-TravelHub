@@ -1,5 +1,4 @@
 "use client";
-
 import { Dialog } from "@base-ui/react/dialog";
 import { ArrowRight, KeyRound, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -12,11 +11,8 @@ import { inviteCodeError } from "@/configs/consts/collaboration.const";
 import { pages } from "@/configs/paths/pages.path";
 import { actionToast } from "@/lib/action-toast";
 import { useTravel } from "@/providers/travel-provider";
-
 export function JoinTripButton() {
-  const { remote } = useTravel();
   const [open, setOpen] = useState(false);
-  if (!remote) return null;
   return (
     <>
       <Button
@@ -31,7 +27,6 @@ export function JoinTripButton() {
     </>
   );
 }
-
 function JoinTripDialog({ onClose }: { onClose: () => void }) {
   const { joinTrip } = useTravel();
   const router = useRouter();
@@ -39,7 +34,6 @@ function JoinTripDialog({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
-
   async function submit() {
     if (pendingRef.current) return;
     const codeError = inviteCodeError(code);
@@ -69,7 +63,6 @@ function JoinTripDialog({ onClose }: { onClose: () => void }) {
       );
     }
   }
-
   return (
     <Dialog.Root
       open

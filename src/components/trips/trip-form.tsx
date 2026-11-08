@@ -1,5 +1,4 @@
 "use client";
-
 import { Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
@@ -18,14 +17,12 @@ import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { tripErrors } from "@/lib/form-validation";
 import { compressCover } from "@/lib/image";
-
 export function TripForm({
   initial,
   submitLabel,
   onSubmit,
   onCancel,
   onStateChange,
-  remote = false,
 }: {
   initial?: TripValues;
   submitLabel: string;
@@ -36,7 +33,6 @@ export function TripForm({
     busy: boolean,
     typeDraft: string,
   ) => void;
-  remote?: boolean;
 }) {
   const [values, setValues, form] = useFormValues<TripValues>(
     () =>
@@ -57,7 +53,7 @@ export function TripForm({
             cover: null,
             eventTypes: [],
           },
-    (values) => tripErrors(values, remote, { initial }),
+    (values) => tripErrors(values, { initial }),
   );
   const [removeCover, setRemoveCover] = useState(false);
   const [typeDraft, setTypeDraft] = useState("");
@@ -68,15 +64,12 @@ export function TripForm({
   const pendingRef = useRef(false);
   const errorId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => {
     onStateChange?.(values, pending || reading, typeDraft);
   }, [values, pending, reading, typeDraft, onStateChange]);
-
   function update<K extends keyof TripValues>(key: K, value: TripValues[K]) {
     setValues((current) => ({ ...current, [key]: value }));
   }
-
   async function handleCover(file: File | undefined) {
     if (!file) return;
     setError(null);
@@ -111,7 +104,6 @@ export function TripForm({
       setReading(false);
     }
   }
-
   return (
     <FormProvider {...form}>
       <ConfirmDelete
@@ -230,11 +222,7 @@ export function TripForm({
           <Field
             name="cover"
             label="Обложка (необязательно)"
-            hint={
-              remote
-                ? "JPEG, PNG или WebP до 12 МБ"
-                : "JPEG, PNG или WebP до 12 МБ"
-            }
+            hint="JPEG, PNG или WebP до 12 МБ"
           >
             {(id, describedBy) => (
               <div>

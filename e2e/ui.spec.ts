@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 for (const [name, viewport] of Object.entries({
   desktop: { width: 1440, height: 1000 },
@@ -10,15 +10,15 @@ for (const [name, viewport] of Object.entries({
     await page.route(/tile\.openstreetmap\.org/, (route) => route.abort());
     await page.addInitScript(() => {
       localStorage.setItem(
-        "travelhub",
+        "travelhub-e2e-fixture",
         JSON.stringify({
           username: "traveler",
           accounts: {
             traveler: {
-              activeId: "trip",
+              activeId: "111",
               trips: [
                 {
-                  id: "trip",
+                  id: "111",
                   name: "Поездка для проверки",
                   description: "Длинное описание\nВторая строка",
                   startDate: "2026-11-07",
@@ -26,7 +26,7 @@ for (const [name, viewport] of Object.entries({
                   cover: null,
                   points: [
                     {
-                      id: "point",
+                      id: "222",
                       name: "Место встречи",
                       description: "",
                       lat: 55.75,
@@ -36,12 +36,12 @@ for (const [name, viewport] of Object.entries({
                   legs: [],
                   events: [
                     {
-                      id: "event",
+                      id: "333",
                       title: "Встреча в городе",
                       type: "meeting",
                       start: "2026-11-08T10:00",
                       end: "2026-11-08T11:00",
-                      pointId: "point",
+                      pointId: "222",
                       description: "Заметка",
                       materials: [],
                       bookingUrl: "https://example.com/ticket",
@@ -54,7 +54,7 @@ for (const [name, viewport] of Object.entries({
         }),
       );
     });
-    await page.goto("/dashboard?day=2026-11-08&event=event");
+    await page.goto("/dashboard?day=2026-11-08&event=333");
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByRole("dialog")).toContainText("Встреча в городе");
     await page
@@ -84,9 +84,9 @@ for (const [name, viewport] of Object.entries({
   test(`${name}: navigation, forms and appearance`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await page.addInitScript(() => {
-      if (localStorage.getItem("travelhub")) return;
+      if (localStorage.getItem("travelhub-e2e-fixture")) return;
       localStorage.setItem(
-        "travelhub",
+        "travelhub-e2e-fixture",
         JSON.stringify({
           username: null,
           accounts: { traveler: { activeId: null, trips: [] } },
@@ -105,8 +105,12 @@ for (const [name, viewport] of Object.entries({
       maxDiffPixelRatio: 0.01,
     });
     await page.getByLabel("Имя пользователя", { exact: true }).fill("traveler");
+    await page.getByLabel("Пароль", { exact: true }).fill("test-password");
     await page.getByRole("button", { name: "Войти", exact: true }).click();
     await expect(page).toHaveURL(/\/trips$/);
+    await expect(
+      page.getByRole("heading", { name: "Ваши путешествия" }),
+    ).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     await expect.soft(page).toHaveScreenshot(`${name}-trips.png`, {
       animations: "disabled",

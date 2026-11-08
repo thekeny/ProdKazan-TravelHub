@@ -5,7 +5,11 @@ import { TripSettings } from "@/components/trips/trip-settings";
 
 const actions = vi.hoisted(() => ({ deleteTrip: vi.fn(), saveTrip: vi.fn() }));
 vi.mock("@/providers/travel-provider", () => ({
-  useTravel: () => ({ ...actions, remote: false }),
+  useTravel: () => ({
+    ...actions,
+    username: "traveler",
+    loadCollaborators: async () => ({ owner: { username: "traveler" } }),
+  }),
 }));
 vi.mock("@/lib/action-toast", () => ({
   actionToast: (action: () => unknown) => action(),

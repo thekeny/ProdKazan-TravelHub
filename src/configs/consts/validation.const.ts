@@ -12,7 +12,6 @@ export const TEXT_LIMITS = {
   USERNAME: 32,
   PASSWORD_MIN: 8,
   REMOTE_PASSWORD: 64,
-  LOCAL_PASSWORD: 128,
 } as const;
 
 export const DATE_LIMITS = { FUTURE_YEARS: 10, TRIP_DAYS: 365 } as const;

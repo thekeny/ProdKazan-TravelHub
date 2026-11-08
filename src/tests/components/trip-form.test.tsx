@@ -6,7 +6,6 @@ import type { TripValues } from "@/configs/types/travel.type";
 import { compressCover } from "@/lib/image";
 
 vi.mock("@/lib/image", () => ({ compressCover: vi.fn() }));
-
 const initial: TripValues = {
   name: "Казань",
   description: "",
@@ -15,10 +14,8 @@ const initial: TripValues = {
   cover: null,
   eventTypes: [],
 };
-
 let root: Root;
 let container: HTMLDivElement;
-
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date(2026, 4, 1, 12));
@@ -27,7 +24,6 @@ beforeEach(() => {
   document.body.append(container);
   root = createRoot(container);
 });
-
 afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
@@ -35,7 +31,6 @@ afterEach(async () => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
-
 describe("trip form", () => {
   it("accepts a file cover for a server trip and submits the compressed image", async () => {
     const cover = "data:image/webp;base64,dGVzdA==";
@@ -44,7 +39,6 @@ describe("trip form", () => {
     await act(async () =>
       root.render(
         <TripForm
-          remote
           initial={initial}
           submitLabel="Сохранить"
           onSubmit={onSubmit}
@@ -68,7 +62,6 @@ describe("trip form", () => {
     });
     expect(onSubmit).toHaveBeenCalledWith({ ...initial, cover });
   });
-
   it("shows validation beneath the invalid fields and does not submit", async () => {
     const onSubmit = vi.fn();
     await act(async () =>
@@ -98,7 +91,6 @@ describe("trip form", () => {
       expect(description?.parentElement).toBe(input.parentElement);
     }
   });
-
   it("keeps entered values and allows retry after a rejected save", async () => {
     const onSubmit = vi
       .fn()
@@ -132,7 +124,6 @@ describe("trip form", () => {
     });
     expect(onSubmit).toHaveBeenCalledTimes(2);
   });
-
   it("submits edited values once even on a double click", async () => {
     const onSubmit = vi.fn();
     await act(async () =>

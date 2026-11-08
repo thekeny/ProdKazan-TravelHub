@@ -1,9 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useTravel } from "@/providers/travel-provider";
-
 export function useTripOwner(tripId: string) {
-  const { remote, user, username, loadCollaborators } = useTravel();
+  const { user, username, loadCollaborators } = useTravel();
   const load = useRef(loadCollaborators);
   load.current = loadCollaborators;
   const [ownerKey, setOwnerKey] = useState<string | null>(null);
@@ -11,7 +10,6 @@ export function useTripOwner(tripId: string) {
   const key = `${identity}:${tripId}`;
   useEffect(() => {
     let active = true;
-    if (!remote) return;
     load
       .current(tripId)
       .then(({ owner }) => {
@@ -27,6 +25,6 @@ export function useTripOwner(tripId: string) {
     return () => {
       active = false;
     };
-  }, [remote, tripId, user?.id, username, key]);
-  return !remote || ownerKey === key;
+  }, [tripId, user?.id, username, key]);
+  return ownerKey === key;
 }

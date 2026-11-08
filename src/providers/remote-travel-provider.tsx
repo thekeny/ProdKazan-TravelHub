@@ -72,7 +72,6 @@ export function RemoteTravelProvider({
   const generation = useRef(0);
   const reconcile = useRef(false);
   const restoredAccount = useRef<string | undefined>(undefined);
-
   const preferences = useCallback((account: User) => {
     try {
       return readRemotePreferences(account.id ?? account.username);
@@ -226,7 +225,6 @@ export function RemoteTravelProvider({
       generation.current++;
     };
   }, [initialize]);
-
   useEffect(() => {
     const reconnect = () => {
       if (busy.current) return;
@@ -236,7 +234,6 @@ export function RemoteTravelProvider({
     window.addEventListener("online", reconnect);
     return () => window.removeEventListener("online", reconnect);
   }, []);
-
   async function mutate<T>(operation: () => Promise<T>): Promise<T> {
     if (!isConnected())
       throw new Error(
@@ -336,7 +333,6 @@ export function RemoteTravelProvider({
       ),
     );
   }
-
   const value: TravelContextValue = {
     importArchive: (file) =>
       mutate(async () => {
@@ -386,7 +382,6 @@ export function RemoteTravelProvider({
       }),
     ...data,
     user,
-    remote: true,
     username: user?.username ?? null,
     ready,
     storageWarning,
@@ -395,11 +390,7 @@ export function RemoteTravelProvider({
       mutate(async () => {
         await clearOfflineSnapshot();
         assertValidInput(
-          authErrors(
-            { username: name, password, confirm: password },
-            true,
-            register,
-          ),
+          authErrors({ username: name, password, confirm: password }, register),
         );
         if (register)
           await apiResult(
@@ -428,11 +419,6 @@ export function RemoteTravelProvider({
         setUser(undefined);
         setData(empty);
       }),
-    renameAccount() {
-      throw new Error(
-        "Бэкенд пока не поддерживает изменение имени пользователя.",
-      );
-    },
     deleteAccount: (password) =>
       mutate(async () => {
         if (!user) throw new Error("Сначала войдите в аккаунт.");
@@ -513,7 +499,7 @@ export function RemoteTravelProvider({
     createTrip: (values) =>
       mutate(async () => {
         if (!user) throw new Error("Сначала войдите в аккаунт.");
-        assertValidInput(tripErrors(values, true));
+        assertValidInput(tripErrors(values));
         const trip = mapTrip(
           await apiResult(sdk.tripsPostTrip({ body: tripBody(values) })),
         );
@@ -540,7 +526,7 @@ export function RemoteTravelProvider({
     saveTrip: (id, values) =>
       mutate(async () => {
         const trip = findTrip(id, false);
-        assertValidInput(tripErrors(values, true, { initial: trip }));
+        assertValidInput(tripErrors(values, { initial: trip }));
         const outside = [...(trip.events ?? []), ...(trip.legs ?? [])].some(
           (item) =>
             item.start.slice(0, 10) < values.startDate ||

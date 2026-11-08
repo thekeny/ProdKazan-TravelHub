@@ -6,9 +6,7 @@ import { ApiError } from "@/lib/travel-api";
 
 const account = vi.hoisted(() => ({
   username: "traveler",
-  remote: true,
   changePassword: vi.fn(),
-  renameAccount: vi.fn(),
   deleteAccount: vi.fn(),
 }));
 vi.mock("@/providers/travel-provider", () => ({ useTravel: () => account }));
@@ -110,7 +108,6 @@ it("submits only current and new passwords and closes on success", async () => {
     "old-pass",
     "new-pass",
   );
-  expect(account.renameAccount).not.toHaveBeenCalled();
   expect(onClose).toHaveBeenCalledOnce();
 });
 

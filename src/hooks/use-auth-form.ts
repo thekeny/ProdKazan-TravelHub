@@ -5,9 +5,8 @@ import { pages } from "@/configs/paths/pages.path";
 import { useFormValues } from "@/hooks/use-form-values";
 import { authErrors } from "@/lib/form-validation";
 import { useTravel } from "@/providers/travel-provider";
-
 export function useAuthForm() {
-  const { ready, username, login, remote, storageWarning } = useTravel();
+  const { ready, username, login, storageWarning } = useTravel();
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +15,7 @@ export function useAuthForm() {
   const errorId = useId();
   const [values, setValues, form] = useFormValues(
     { username: "", password: "", confirm: "" },
-    (values) => authErrors(values, Boolean(remote), mode === "register"),
+    (values) => authErrors(values, mode === "register"),
   );
   useEffect(() => {
     document.title = mode === "login" ? "Вход" : "Регистрация";
@@ -26,7 +25,6 @@ export function useAuthForm() {
   }, [ready, username, router]);
   return {
     ready,
-    remote,
     storageWarning,
     mode,
     setMode,

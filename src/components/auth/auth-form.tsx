@@ -10,11 +10,9 @@ import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import { images } from "@/configs/paths/images.path";
 import { useAuthForm } from "@/hooks/use-auth-form";
 import { actionToast } from "@/lib/action-toast";
-
 export function AuthForm() {
   const {
     ready,
-    remote,
     storageWarning,
     mode,
     setMode,
@@ -58,9 +56,7 @@ export function AuthForm() {
           <p className="mt-2 text-sm text-muted-foreground">
             {mode === "login"
               ? "Войдите, чтобы открыть свои поездки."
-              : remote
-                ? "Создайте аккаунт, чтобы сохранять поездки на сервере."
-                : "Аккаунт создаётся в этом браузере."}
+              : "Создайте аккаунт, чтобы сохранять поездки на сервере."}
           </p>
           <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-muted/80 p-1">
             {MODES.map(({ value, label }) => (
@@ -136,12 +132,8 @@ export function AuthForm() {
                     required
                     minLength={TEXT_LIMITS.USERNAME_MIN}
                     maxLength={TEXT_LIMITS.USERNAME}
-                    pattern={remote ? "[a-zA-Z0-9._]+" : undefined}
-                    title={
-                      remote
-                        ? "Латинские буквы, цифры, точка и подчёркивание"
-                        : undefined
-                    }
+                    pattern="[a-zA-Z0-9._]+"
+                    title="Латинские буквы, цифры, точка и подчёркивание"
                     autoComplete="username"
                     autoCapitalize="none"
                     spellCheck={false}
@@ -164,17 +156,13 @@ export function AuthForm() {
                       }))
                     }
                     type="password"
-                    required={remote || mode === "register"}
+                    required
                     minLength={
                       mode === "register"
                         ? TEXT_LIMITS.PASSWORD_MIN
                         : TEXT_LIMITS.MIN
                     }
-                    maxLength={
-                      remote
-                        ? TEXT_LIMITS.REMOTE_PASSWORD
-                        : TEXT_LIMITS.LOCAL_PASSWORD
-                    }
+                    maxLength={TEXT_LIMITS.REMOTE_PASSWORD}
                     autoComplete={
                       mode === "login" ? "current-password" : "new-password"
                     }
@@ -200,11 +188,7 @@ export function AuthForm() {
                       type="password"
                       required
                       minLength={TEXT_LIMITS.PASSWORD_MIN}
-                      maxLength={
-                        remote
-                          ? TEXT_LIMITS.REMOTE_PASSWORD
-                          : TEXT_LIMITS.LOCAL_PASSWORD
-                      }
+                      maxLength={TEXT_LIMITS.REMOTE_PASSWORD}
                       autoComplete="new-password"
                     />
                   )}

@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import { FormProvider } from "react-hook-form";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
@@ -10,22 +9,19 @@ import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { ApiError } from "@/lib/travel-api";
 import { useTravel } from "@/providers/travel-provider";
-
 export function AccountDeleteConfirmation({
   onClose,
 }: {
   onClose: () => void;
 }) {
-  const { remote, deleteAccount } = useTravel();
+  const { deleteAccount } = useTravel();
   const [values, setValues, form] = useFormValues(
     { password: "" },
     (values) => ({
-      password:
-        remote && !values.password ? "Введите текущий пароль." : undefined,
+      password: !values.password ? "Введите текущий пароль." : undefined,
     }),
   );
   const [error, setError] = useState<string | null>(null);
-
   return (
     <FormProvider {...form}>
       <ConfirmDelete
@@ -59,23 +55,21 @@ export function AccountDeleteConfirmation({
         }}
         content={
           <div className="mt-4 grid gap-4">
-            {remote && (
-              <Field name="password" label="Текущий пароль">
-                {(id) => (
-                  <Input
-                    data-field-control
-                    id={id}
-                    type="password"
-                    autoComplete="current-password"
-                    maxLength={TEXT_LIMITS.REMOTE_PASSWORD}
-                    value={values.password}
-                    onChange={(event) =>
-                      setValues({ password: event.target.value })
-                    }
-                  />
-                )}
-              </Field>
-            )}
+            <Field name="password" label="Текущий пароль">
+              {(id) => (
+                <Input
+                  data-field-control
+                  id={id}
+                  type="password"
+                  autoComplete="current-password"
+                  maxLength={TEXT_LIMITS.REMOTE_PASSWORD}
+                  value={values.password}
+                  onChange={(event) =>
+                    setValues({ password: event.target.value })
+                  }
+                />
+              )}
+            </Field>
             {error && (
               <p role="alert" className="text-sm text-destructive">
                 {error}
@@ -84,9 +78,9 @@ export function AccountDeleteConfirmation({
           </div>
         }
       >
-        {remote
-          ? "Аккаунт будет удалён без возможности восстановления. Вы потеряете доступ к своим поездкам. Для подтверждения введите пароль."
-          : "Локальный аккаунт и все его поездки будут удалены из этого браузера без возможности восстановления. В локальном режиме пароль не используется."}
+        {
+          "Аккаунт будет удалён без возможности восстановления. Вы потеряете доступ к своим поездкам. Для подтверждения введите пароль."
+        }
       </ConfirmDelete>
     </FormProvider>
   );

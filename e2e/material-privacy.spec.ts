@@ -1,9 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test("cover upload keeps its warm palette on hover", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem(
-      "travelhub",
+      "travelhub-e2e-fixture",
       JSON.stringify({
         username: "traveler",
         accounts: { traveler: { activeId: null, trips: [] } },
@@ -37,17 +37,17 @@ for (const [name, viewport] of Object.entries({
   }) => {
     await page.setViewportSize(viewport);
     await page.addInitScript(() => {
-      if (localStorage.getItem("travelhub")) return;
+      if (localStorage.getItem("travelhub-e2e-fixture")) return;
       localStorage.setItem(
-        "travelhub",
+        "travelhub-e2e-fixture",
         JSON.stringify({
           username: "traveler",
           accounts: {
             traveler: {
-              activeId: "trip",
+              activeId: "111",
               trips: [
                 {
-                  id: "trip",
+                  id: "111",
                   name: "Билеты в путешествие",
                   description: "",
                   startDate: "2026-11-08",

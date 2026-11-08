@@ -7,7 +7,6 @@ import type { Trip } from "@/configs/types/travel.type";
 
 const account = vi.hoisted(() => ({
   username: "traveler",
-  remote: true,
   loadCollaborators: vi.fn(),
   generateInviteCode: vi.fn(),
   joinTrip: vi.fn(),
@@ -36,7 +35,6 @@ let container: HTMLDivElement;
 beforeEach(() => {
   vi.resetAllMocks();
   account.username = "traveler";
-  account.remote = true;
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   container = document.createElement("div");
   document.body.append(container);
@@ -195,10 +193,9 @@ it("blocks closing while an invite code is being generated", async () => {
   await act(async () => resolveInvite({ code: "Invite-1", uses: 1 }));
 });
 
-it("does not show join controls in local mode", async () => {
-  account.remote = false;
+it("shows join controls without a mode flag", async () => {
   await act(async () => root.render(<JoinTripButton />));
-  expect(document.querySelector("button")).toBeNull();
+  expect(document.querySelector("button")).not.toBeNull();
 });
 
 it("rejects an empty or unsafe invite code without calling the API", async () => {

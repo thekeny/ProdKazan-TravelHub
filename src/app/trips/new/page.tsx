@@ -7,9 +7,8 @@ import { Logo } from "@/components/layout/logo";
 import { TripForm } from "@/components/trips/trip-form";
 import { pages } from "@/configs/paths/pages.path";
 import { useTravel } from "@/providers/travel-provider";
-
 export default function Page() {
-  const { createTrip, remote } = useTravel();
+  const { createTrip } = useTravel();
   const router = useRouter();
   return (
     <main className="flow-background">
@@ -27,7 +26,6 @@ export default function Page() {
         <h1 className="mt-4 text-4xl leading-tight">Новое путешествие</h1>
         <div className="mt-6">
           <TripForm
-            remote={remote}
             submitLabel="Создать путешествие"
             onSubmit={async (values) => {
               await createTrip(values);

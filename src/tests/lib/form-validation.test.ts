@@ -22,13 +22,11 @@ const point = {
   lat: 55,
   lng: 49,
 };
-
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date(2026, 4, 1, 12));
 });
 afterEach(() => vi.useRealTimers());
-
 describe("form validation", () => {
   it("requires the current password and matching new passwords within limits", () => {
     const values = {
@@ -63,13 +61,14 @@ describe("form validation", () => {
   });
   it("checks text and URL boundaries using the same rules for each domain", () => {
     expect(
-      tripErrors({ ...trip, name: "я", description: "я".repeat(512) }, false),
+      tripErrors({ ...trip, name: "я", description: "я".repeat(512) }),
     ).toEqual({});
     expect(
-      tripErrors(
-        { ...trip, name: "я".repeat(101), description: "я".repeat(513) },
-        false,
-      ),
+      tripErrors({
+        ...trip,
+        name: "я".repeat(101),
+        description: "я".repeat(513),
+      }),
     ).toMatchObject({
       name: expect.any(String),
       description: expect.any(String),
@@ -79,57 +78,55 @@ describe("form validation", () => {
       "name",
     );
     const cover = `https://example.com/${"a".repeat(480)}`;
-    expect(tripErrors({ ...trip, cover }, true)).toEqual({});
-    expect(tripErrors({ ...trip, cover: `${cover}aa` }, true)).toHaveProperty(
+    expect(tripErrors({ ...trip, cover })).toEqual({});
+    expect(tripErrors({ ...trip, cover: `${cover}aa` })).toHaveProperty(
       "cover",
     );
   });
-
   it("validates date syntax before ranges and allows only unchanged saved dates", () => {
     const now = new Date(2026, 10, 7, 12);
-    expect(tripErrors(trip, false, { now })).toMatchObject({
+    expect(tripErrors(trip, { now })).toMatchObject({
       startDate: expect.any(String),
       endDate: expect.any(String),
     });
-    expect(tripErrors(trip, false, { now, initial: trip })).toEqual({});
+    expect(tripErrors(trip, { now, initial: trip })).toEqual({});
     expect(
-      tripErrors({ ...trip, startDate: "2026-05-02" }, false, {
-        now,
-        initial: trip,
-      }),
+      tripErrors(
+        { ...trip, startDate: "2026-05-02" },
+        {
+          now,
+          initial: trip,
+        },
+      ),
     ).toHaveProperty("startDate");
     expect(
-      tripErrors({ ...trip, startDate: "2026-02-30" }, false, { now }),
+      tripErrors({ ...trip, startDate: "2026-02-30" }, { now }),
     ).toHaveProperty("startDate");
     expect(
       tripErrors(
         { ...trip, startDate: "2036-11-07", endDate: "2036-11-07" },
-        false,
         { now },
       ),
     ).toEqual({});
     expect(
       tripErrors(
         { ...trip, startDate: "2036-11-08", endDate: "2036-11-08" },
-        false,
         { now },
       ),
     ).toHaveProperty("endDate");
   });
-
   it("retains account minimums and checks repeated passwords at the maximum", () => {
-    for (const remote of [false, true]) {
+    {
       expect(
         authErrors(
           { username: "abc", password: "short", confirm: "short" },
-          remote,
           true,
         ),
       ).toMatchObject({
         password: expect.any(String),
         confirm: expect.any(String),
       });
-      const max = remote ? 64 : 128;
+      const max = 64;
       expect(
         authErrors(
           {
@@ -137,7 +134,6 @@ describe("form validation", () => {
             password: "a".repeat(max),
             confirm: "a".repeat(max),
           },
-          remote,
           true,
         ),
       ).toEqual({});
@@ -148,7 +144,6 @@ describe("form validation", () => {
             password: "a".repeat(max + 1),
             confirm: "a".repeat(max + 1),
           },
-          remote,
           true,
         ),
       ).toMatchObject({
@@ -157,7 +152,6 @@ describe("form validation", () => {
       });
     }
   });
-
   it("checks event and leg dates against today, the horizon and their trip", () => {
     const now = new Date(2026, 10, 7, 12);
     const dates = { ...trip, startDate: "2026-11-06", endDate: "2026-11-08" };
@@ -190,7 +184,6 @@ describe("form validation", () => {
         now,
       }),
     ).toHaveProperty("description");
-
     const past = { ...leg, start: "2026-11-06T09:00", end: "2026-11-06T10:00" };
     expect(legErrors(past, dates, points, { now })).toMatchObject({
       start: expect.any(String),
@@ -203,7 +196,6 @@ describe("form validation", () => {
         initial: past,
       }),
     ).toHaveProperty("end");
-
     const futureTrip = {
       ...trip,
       startDate: "2036-11-07",
@@ -233,26 +225,25 @@ describe("form validation", () => {
       }),
     ).toHaveProperty("end");
   });
-
-  it("preserves local login rules and validates remote names and registration passwords", () => {
+  it("requires server usernames and passwords for login and registration", () => {
     expect(
       authErrors(
         { username: "Путешественник", password: "", confirm: "" },
         false,
-        false,
       ),
-    ).toEqual({});
+    ).toMatchObject({
+      username: expect.any(String),
+      password: expect.any(String),
+    });
     expect(
       authErrors(
         { username: "Путешественник", password: "short", confirm: "other" },
-        true,
         true,
       ),
     ).toHaveProperty("username");
     expect(
       authErrors(
         { username: "user", password: "short", confirm: "other" },
-        true,
         true,
       ),
     ).toMatchObject({
@@ -262,7 +253,7 @@ describe("form validation", () => {
   });
   it("validates optional URLs and missing coordinates", () => {
     expect(
-      tripErrors({ ...trip, cover: "javascript:alert(1)" }, true),
+      tripErrors({ ...trip, cover: "javascript:alert(1)" }),
     ).toHaveProperty("cover");
     expect(pointErrors({ ...point, lat: Number.NaN, lng: 181 })).toMatchObject({
       lat: expect.any(String),

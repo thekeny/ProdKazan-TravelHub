@@ -1,20 +1,20 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-11-08T12:00:00+03:00"));
   await page.route(/tile\.openstreetmap\.org/, (route) => route.abort());
   await page.addInitScript(() => {
-    if (localStorage.getItem("travelhub")) return;
+    if (localStorage.getItem("travelhub-e2e-fixture")) return;
     localStorage.setItem(
-      "travelhub",
+      "travelhub-e2e-fixture",
       JSON.stringify({
         username: "traveler",
         accounts: {
           traveler: {
-            activeId: "trip",
+            activeId: "111",
             trips: [
               {
-                id: "trip",
+                id: "111",
                 name: "Казань",
                 description: "",
                 startDate: "2026-11-08",
@@ -36,6 +36,7 @@ test.beforeEach(async ({ page }) => {
 for (const width of [390, 1440]) {
   test(`${width}: file picker preserves the event form position`, async ({
     page,
+    backend,
   }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.goto("/dashboard");
@@ -130,11 +131,15 @@ for (const width of [390, 1440]) {
       .getByRole("button", { name: "Сохранить событие", exact: true })
       .click();
     await expect(dialog).not.toBeVisible();
-    const saved = await page.evaluate(
-      () =>
-        JSON.parse(localStorage.getItem("travelhub") ?? "{}").accounts.traveler
-          .trips[0].events[0],
-    );
+    const savedEvent = backend.data.trips[0].events?.[0];
+    if (!savedEvent) throw new Error("Event was not saved to the backend");
+    const materials = await page.evaluate((id) => {
+      const preferences = JSON.parse(
+        localStorage.getItem("travelhub.remote.123") ?? "{}",
+      );
+      return preferences.materials[id] ?? [];
+    }, savedEvent.id);
+    const saved = { ...savedEvent, materials };
     expect(
       saved.materials.filter(
         (material: { kind: string }) => material.kind === "photo",

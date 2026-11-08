@@ -25,6 +25,10 @@ export default defineConfig({
     url: `http://localhost:${port}`,
     reuseExistingServer: false,
     timeout: 120000,
-    env: { NEXT_PUBLIC_API_URL: "", NEXT_TELEMETRY_DISABLED: "1" },
+    env: {
+      API_URL: "https://backend.invalid/api/v1",
+      NEXT_PUBLIC_API_URL: "",
+      NEXT_TELEMETRY_DISABLED: "1",
+    },
   },
 });

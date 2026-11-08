@@ -29,7 +29,6 @@ export type TravelContextValue = TravelData & {
   username: string | null;
   storageWarning: string | null;
   dismissStorageWarning: () => void;
-  remote?: boolean;
   user?: import("@/api/generated/types.gen").User;
   login: (
     name: string,
@@ -38,7 +37,6 @@ export type TravelContextValue = TravelData & {
   ) => void | Promise<void>;
   logout: () => void | Promise<void>;
   deleteAccount: (password: string) => void | Promise<void>;
-  renameAccount: (name: string) => void | Promise<void>;
   changePassword: (
     currentPassword: string,
     newPassword: string,

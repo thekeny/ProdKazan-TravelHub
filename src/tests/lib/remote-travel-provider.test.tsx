@@ -6,8 +6,10 @@ import type { Event, Trip, User, Waypoint } from "@/api/generated/types.gen";
 import { AuthGuard } from "@/components/layout/auth-guard";
 import { COLLABORATION } from "@/configs/consts/collaboration.const";
 import { setConnected } from "@/lib/connectivity";
-import { RemoteTravelProvider } from "@/providers/remote-travel-provider";
-import { useTravel } from "@/providers/travel-provider";
+import {
+  TravelProvider as RemoteTravelProvider,
+  useTravel,
+} from "@/providers/travel-provider";
 
 const offline = vi.hoisted(() => ({ snapshot: null as unknown }));
 vi.mock("@/lib/offline-cache", () => ({
@@ -105,6 +107,8 @@ async function mount() {
   });
 }
 beforeEach(async () => {
+  vi.stubEnv("NEXT_PUBLIC_API_URL", "");
+  vi.stubEnv("API_URL", "");
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date(2026, 10, 7, 12));
   vi.resetAllMocks();
@@ -131,11 +135,18 @@ afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   vi.useRealTimers();
   setConnected(true);
 });
 
 describe("remote travel state", () => {
+  it("restores the server session even without a public API URL", () => {
+    expect(sdk.authGetSelf).toHaveBeenCalled();
+    expect(travel.username).toBe("traveler");
+    expect(travel.ready).toBe(true);
+  });
+
   it("keeps the account signed in and does not delete it after an incorrect password", async () => {
     vi.mocked(sdk.authLogin).mockResolvedValue(fail(401));
     await act(async () => {

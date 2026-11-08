@@ -16,7 +16,3 @@ export type Trip = TripValues & {
   legs?: TripLeg[];
 };
 export type TravelData = { trips: Trip[]; activeId: string | null };
-export type TravelState = {
-  username: string | null;
-  accounts: Record<string, TravelData>;
-};

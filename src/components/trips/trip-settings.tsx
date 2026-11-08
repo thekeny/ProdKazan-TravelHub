@@ -22,7 +22,7 @@ export function TripSettings({
   onSaved?: () => void;
   onDeleted?: () => void;
 }) {
-  const { saveTrip, remote } = useTravel();
+  const { saveTrip } = useTravel();
   const isOwner = useTripOwner(trip.id);
   const deletion = useTripDeletion(trip.id, () => {
     onDeleted?.();
@@ -67,7 +67,6 @@ export function TripSettings({
           </Dialog.Title>
           <fieldset disabled={deletion.pending} className="mt-6 min-w-0">
             <TripForm
-              remote={remote}
               initial={trip}
               submitLabel="Сохранить изменения"
               onStateChange={changed}

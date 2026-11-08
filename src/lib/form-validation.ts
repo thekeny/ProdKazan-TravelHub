@@ -18,7 +18,7 @@ import {
 import { validateBookingUrl, validateMaterials } from "@/lib/materials";
 import { isServerCover, isUploadedCover } from "@/lib/remote-covers";
 import { validDateTime } from "@/lib/travel-events";
-import { validateTrip } from "@/lib/travel-storage";
+import { validateTrip } from "@/lib/trip-validation";
 
 function description(value: string) {
   return text(value, TEXT_LIMITS.DESCRIPTION);
@@ -32,7 +32,6 @@ function httpUrl(value: string) {
 }
 export function tripErrors(
   value: TripValues,
-  remote: boolean,
   context: ValidationContext<TripValues> = {},
 ): FormErrors<TripValues> {
   const errors: FormErrors<TripValues> = {};
@@ -53,7 +52,6 @@ export function tripErrors(
     if (dates) errors.endDate = dates;
   }
   if (
-    remote &&
     value.cover &&
     !isUploadedCover(value.cover) &&
     !(isServerCover(value.cover) && value.cover === context.initial?.cover) &&
@@ -208,22 +206,18 @@ export function passwordErrors(
 }
 export function authErrors(
   value: AuthValues,
-  remote: boolean,
   register: boolean,
 ): FormErrors<AuthValues> {
   const errors: FormErrors<AuthValues> = {};
-  const passwordMax = remote
-    ? TEXT_LIMITS.REMOTE_PASSWORD
-    : TEXT_LIMITS.LOCAL_PASSWORD;
+  const passwordMax = TEXT_LIMITS.REMOTE_PASSWORD;
   if (
     value.username.trim().length < TEXT_LIMITS.USERNAME_MIN ||
     value.username.length > TEXT_LIMITS.USERNAME
   )
     errors.username = "От 3 до 32 символов.";
-  else if (remote && !/^[a-zA-Z0-9._]+$/.test(value.username.trim()))
+  else if (!/^[a-zA-Z0-9._]+$/.test(value.username.trim()))
     errors.username = "Латиница, цифры, точка или подчёркивание.";
-  if ((remote || register) && !value.password)
-    errors.password = "Введите пароль.";
+  if (!value.password) errors.password = "Введите пароль.";
   else if (register && value.password.length < TEXT_LIMITS.PASSWORD_MIN)
     errors.password = "Минимум 8 символов.";
   else if (value.password.length > passwordMax)

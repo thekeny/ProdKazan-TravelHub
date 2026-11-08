@@ -1,5 +1,4 @@
 "use client";
-
 import { Dialog } from "@base-ui/react/dialog";
 import { ChevronRight, MapPin, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
@@ -15,7 +14,6 @@ import { useOnline } from "@/lib/connectivity";
 import { eventTypeLabel } from "@/lib/event-types";
 import { formatEventDate } from "@/lib/travel-events";
 import { useTravel } from "@/providers/travel-provider";
-
 export function PointDetails({
   point,
   events,
@@ -33,7 +31,7 @@ export function PointDetails({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const { remote, activeId, setPointVisited } = useTravel();
+  const { activeId, setPointVisited } = useTravel();
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
   const online = useOnline();
@@ -140,7 +138,7 @@ export function PointDetails({
             )}
           </div>
           <footer className="grid shrink-0 gap-2 border-t p-4">
-            {remote && activeId && (
+            {activeId && (
               <Button
                 variant="outline"
                 disabled={pending || !online}

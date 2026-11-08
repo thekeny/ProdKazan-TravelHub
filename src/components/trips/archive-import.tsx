@@ -7,16 +7,14 @@ import { pages } from "@/configs/paths/pages.path";
 import { actionToast } from "@/lib/action-toast";
 import { useOnline } from "@/lib/connectivity";
 import { useTravel } from "@/providers/travel-provider";
-
 export function ArchiveImport() {
-  const { remote, importArchive } = useTravel();
+  const { importArchive } = useTravel();
   const input = useRef<HTMLInputElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const busy = useRef(false);
   const [pending, setPending] = useState(false);
   const online = useOnline();
   const router = useRouter();
-  if (!remote) return null;
   return (
     <div className="mt-4 grid gap-2">
       <input

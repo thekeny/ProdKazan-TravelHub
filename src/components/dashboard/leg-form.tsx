@@ -24,8 +24,6 @@ import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { legErrors } from "@/lib/form-validation";
-import { useTravel } from "@/providers/travel-provider";
-
 export function LegForm({
   trip,
   points,
@@ -41,7 +39,6 @@ export function LegForm({
   onClose: () => void;
   onSave: (values: TripLegValues) => void | Promise<void>;
 }) {
-  const { remote } = useTravel();
   const [values, setValues, form] = useFormValues<TripLegValues>(
     leg ?? {
       fromPointId: points[0]?.id ?? "",
@@ -191,7 +188,7 @@ export function LegForm({
                       name="description"
                       label="Описание (необязательно)"
                       hint={
-                        remote && leg
+                        leg
                           ? "API пока не поддерживает изменение описания перемещения."
                           : undefined
                       }
@@ -204,7 +201,7 @@ export function LegForm({
                           aria-describedby={error ? errorId : describedBy}
                           minLength={TEXT_LIMITS.MIN}
                           maxLength={TEXT_LIMITS.DESCRIPTION}
-                          readOnly={Boolean(remote && leg)}
+                          readOnly={Boolean(leg)}
                           value={values.description}
                           onChange={(event) =>
                             update("description", event.target.value)

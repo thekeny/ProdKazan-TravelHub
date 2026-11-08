@@ -105,8 +105,8 @@ deploy:
       set -euo pipefail
       cd '${FRONTEND_DIR}'
       export DOCKER_CONFIG='${DEPLOY_DIR}/.docker' IMAGE='${IMAGE_REPO}' IMAGE_TAG='${IMAGE_TAG}' FRONTEND_PORT='${FRONTEND_PORT}' API_URL='${API_URL:-$NEXT_PUBLIC_API_URL}' NEXT_PUBLIC_API_URL='${NEXT_PUBLIC_API_URL}'
-      if [ -z "\${NEXT_PUBLIC_API_URL:-}" ]; then
-        echo "NEXT_PUBLIC_API_URL must be set for the client build and runtime proxy (API_URL is an optional runtime override)" >&2
+      if [ -z "\${API_URL:-}" ]; then
+        echo "API_URL (or legacy NEXT_PUBLIC_API_URL) must be set for the runtime proxy" >&2
         exit 1
       fi
       docker compose pull web

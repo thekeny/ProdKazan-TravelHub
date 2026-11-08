@@ -13,7 +13,7 @@ import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import { useDiscardConfirmation } from "@/hooks/use-discard-confirmation";
 import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
-import { authErrors, passwordErrors } from "@/lib/form-validation";
+import { passwordErrors } from "@/lib/form-validation";
 import { ApiError } from "@/lib/travel-api";
 import { usePush } from "@/providers/push-provider";
 import { useTravel } from "@/providers/travel-provider";
@@ -25,7 +25,7 @@ export function UserSettings({
   onClose: () => void;
   onSaved?: () => void;
 }) {
-  const { username, renameAccount, changePassword, remote, user } = useTravel();
+  const { username, changePassword, user } = useTravel();
   const push = usePush();
   const [driveBusy, setDriveBusy] = useState(false);
   const [values, setValues, form] = useFormValues(
@@ -35,16 +35,7 @@ export function UserSettings({
       newPassword: "",
       confirmPassword: "",
     },
-    (values) =>
-      remote
-        ? passwordErrors(values)
-        : {
-            username: authErrors(
-              { ...values, password: "", confirm: "" },
-              false,
-              false,
-            ).username,
-          },
+    (values) => passwordErrors(values),
   );
   const name = values.username;
   const [error, setError] = useState<string | null>(null);
@@ -89,23 +80,17 @@ export function UserSettings({
                 try {
                   await actionToast(
                     () =>
-                      remote
-                        ? changePassword(
-                            values.currentPassword,
-                            values.newPassword,
-                          )
-                        : renameAccount(name),
+                      changePassword(
+                        values.currentPassword,
+                        values.newPassword,
+                      ),
                     "Сохраняем…",
-                    remote ? "Пароль изменён." : "Изменения сохранены.",
+                    "Пароль изменён.",
                   );
                   onSaved?.();
                   onClose();
                 } catch (error) {
-                  if (
-                    remote &&
-                    error instanceof ApiError &&
-                    error.status === 403
-                  ) {
+                  if (error instanceof ApiError && error.status === 403) {
                     form.setError(
                       "currentPassword",
                       { message: error.message },
@@ -126,7 +111,7 @@ export function UserSettings({
               <Field
                 name="username"
                 label="Имя пользователя"
-                hint={remote ? "Изменение имени пока недоступно." : undefined}
+                hint="Изменение имени пока недоступно."
               >
                 {(id) => (
                   <Input
@@ -134,7 +119,7 @@ export function UserSettings({
                     id={id}
                     className={inputClass}
                     value={name}
-                    readOnly={remote}
+                    readOnly
                     disabled={pending}
                     required
                     minLength={TEXT_LIMITS.USERNAME_MIN}
@@ -146,96 +131,75 @@ export function UserSettings({
                   />
                 )}
               </Field>
-              {remote ? (
-                <>
-                  <Field name="currentPassword" label="Текущий пароль">
-                    {(id) => (
-                      <Input
-                        data-field-control
-                        id={id}
-                        type="password"
-                        className={inputClass}
-                        value={values.currentPassword}
-                        disabled={pending}
-                        autoComplete="current-password"
-                        maxLength={TEXT_LIMITS.REMOTE_PASSWORD}
-                        onChange={(event) =>
-                          setValues({
-                            ...values,
-                            currentPassword: event.target.value,
-                          })
-                        }
-                      />
-                    )}
-                  </Field>
-                  <Field
-                    name="newPassword"
-                    label="Новый пароль"
-                    hint={`От ${TEXT_LIMITS.PASSWORD_MIN} до ${TEXT_LIMITS.REMOTE_PASSWORD} символов.`}
-                  >
-                    {(id, describedBy) => (
-                      <Input
-                        data-field-control
-                        id={id}
-                        type="password"
-                        className={inputClass}
-                        value={values.newPassword}
-                        disabled={pending}
-                        autoComplete="new-password"
-                        aria-describedby={describedBy}
-                        minLength={TEXT_LIMITS.PASSWORD_MIN}
-                        maxLength={TEXT_LIMITS.REMOTE_PASSWORD}
-                        onChange={(event) =>
-                          setValues({
-                            ...values,
-                            newPassword: event.target.value,
-                          })
-                        }
-                      />
-                    )}
-                  </Field>
-                  <Field name="confirmPassword" label="Повторите новый пароль">
-                    {(id) => (
-                      <Input
-                        data-field-control
-                        id={id}
-                        type="password"
-                        className={inputClass}
-                        value={values.confirmPassword}
-                        disabled={pending}
-                        autoComplete="new-password"
-                        maxLength={TEXT_LIMITS.REMOTE_PASSWORD}
-                        onChange={(event) =>
-                          setValues({
-                            ...values,
-                            confirmPassword: event.target.value,
-                          })
-                        }
-                      />
-                    )}
-                  </Field>
-                </>
-              ) : (
-                <Field
-                  name="password"
-                  label="Пароль"
-                  hint={
-                    "Смена пароля станет доступна после подключения авторизации."
-                  }
-                >
-                  {(id, describedBy) => (
-                    <Input
-                      data-field-control
-                      id={id}
-                      type="password"
-                      disabled
-                      className={inputClass}
-                      aria-describedby={describedBy}
-                    />
-                  )}
-                </Field>
-              )}
-              {remote && user?.createdAt && (
+
+              <Field name="currentPassword" label="Текущий пароль">
+                {(id) => (
+                  <Input
+                    data-field-control
+                    id={id}
+                    type="password"
+                    className={inputClass}
+                    value={values.currentPassword}
+                    disabled={pending}
+                    autoComplete="current-password"
+                    maxLength={TEXT_LIMITS.REMOTE_PASSWORD}
+                    onChange={(event) =>
+                      setValues({
+                        ...values,
+                        currentPassword: event.target.value,
+                      })
+                    }
+                  />
+                )}
+              </Field>
+              <Field
+                name="newPassword"
+                label="Новый пароль"
+                hint={`От ${TEXT_LIMITS.PASSWORD_MIN} до ${TEXT_LIMITS.REMOTE_PASSWORD} символов.`}
+              >
+                {(id, describedBy) => (
+                  <Input
+                    data-field-control
+                    id={id}
+                    type="password"
+                    className={inputClass}
+                    value={values.newPassword}
+                    disabled={pending}
+                    autoComplete="new-password"
+                    aria-describedby={describedBy}
+                    minLength={TEXT_LIMITS.PASSWORD_MIN}
+                    maxLength={TEXT_LIMITS.REMOTE_PASSWORD}
+                    onChange={(event) =>
+                      setValues({
+                        ...values,
+                        newPassword: event.target.value,
+                      })
+                    }
+                  />
+                )}
+              </Field>
+              <Field name="confirmPassword" label="Повторите новый пароль">
+                {(id) => (
+                  <Input
+                    data-field-control
+                    id={id}
+                    type="password"
+                    className={inputClass}
+                    value={values.confirmPassword}
+                    disabled={pending}
+                    autoComplete="new-password"
+                    maxLength={TEXT_LIMITS.REMOTE_PASSWORD}
+                    onChange={(event) =>
+                      setValues({
+                        ...values,
+                        confirmPassword: event.target.value,
+                      })
+                    }
+                  />
+                )}
+              </Field>
+
+              {user?.createdAt && (
                 <p className="text-sm text-muted-foreground">
                   Аккаунт создан:{" "}
                   {new Date(user.createdAt).toLocaleDateString("ru-RU")}
@@ -248,20 +212,16 @@ export function UserSettings({
               )}
               <div className="flex justify-end gap-3">
                 <Button type="button" variant="outline" onClick={requestClose}>
-                  {remote ? "Закрыть" : "Отмена"}
+                  {"Закрыть"}
                 </Button>
                 <Button type="submit" disabled={pending}>
-                  {pending
-                    ? "Сохраняем…"
-                    : remote
-                      ? "Изменить пароль"
-                      : "Сохранить"}
+                  {pending ? "Сохраняем…" : "Изменить пароль"}
                 </Button>
               </div>
             </form>
           </FormProvider>
-          {remote && <DriveSettings onBusy={setDriveBusy} />}
-          {remote && <PushSettings />}
+          <DriveSettings onBusy={setDriveBusy} />
+          <PushSettings />
           <div className="mt-6 border-t pt-4">
             <Button
               type="button"
