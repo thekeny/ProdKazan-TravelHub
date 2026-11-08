@@ -48,6 +48,7 @@ for (const [device, viewport] of Object.entries({
     await page.setViewportSize(viewport);
     const registrations: unknown[] = [];
     const subscriptionId = "9223372036854775806";
+    let keyAvailable = device !== "desktop";
     await page.route("**/api/v1/**", async (route) => {
       const request = route.request();
       const path = new URL(request.url()).pathname.replace("/api/v1", "");
@@ -59,7 +60,12 @@ for (const [device, viewport] of Object.entries({
         return route.fulfill({ json: [] });
       if (path === "/integrations/google-drive")
         return route.fulfill({ json: { enabled: false, status: "disabled" } });
-      if (path === "/push/vapid-public-key")
+      if (path === "/push/vapid-public-key") {
+        if (!keyAvailable)
+          return route.fulfill({
+            status: 503,
+            json: { detail: { reason: "push_key_unavailable" } },
+          });
         return route.fulfill({
           json: {
             publicKey: Buffer.from([
@@ -68,6 +74,7 @@ for (const [device, viewport] of Object.entries({
             ]).toString("base64url"),
           },
         });
+      }
       if (path === "/push/subscriptions") {
         registrations.push(request.postDataJSON());
         return route.fulfill({ json: { id: subscriptionId } });
@@ -134,9 +141,17 @@ for (const [device, viewport] of Object.entries({
     await page.getByRole("button", { name: "Меню аккаунта" }).click();
     await page.getByRole("menuitem", { name: "Настройки аккаунта" }).click();
     const settings = page.getByRole("region", { name: "Уведомления" });
-    await settings
-      .getByRole("button", { name: "Включить уведомления" })
-      .click();
+    const enable = settings.getByRole("button", {
+      name: "Включить уведомления",
+    });
+    if (!keyAvailable) {
+      await enable.click();
+      await expect(settings.getByRole("alert")).toContainText(
+        "На сервере не настроен ключ уведомлений",
+      );
+      keyAvailable = true;
+    }
+    await enable.click();
     await expect(settings).toContainText("Уведомления подключены");
     expect(registrations).toEqual([
       {

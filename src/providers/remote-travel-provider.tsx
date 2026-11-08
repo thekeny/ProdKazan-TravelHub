@@ -900,7 +900,9 @@ export function RemoteTravelProvider({
   };
   return (
     <TravelContext.Provider value={value}>
-      <PushProvider onRequestError={handleIntegrationError}>
+      <PushProvider
+        onRequestError={(error) => handleIntegrationError(error, false)}
+      >
         {user && ready ? (
           <DriveProvider
             key={user.id ?? user.username}
