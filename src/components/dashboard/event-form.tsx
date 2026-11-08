@@ -11,6 +11,7 @@ import { Field } from "@/components/ui/field";
 import { Input, inputClass } from "@/components/ui/input";
 import { TextSelect } from "@/components/ui/text-select";
 import { Textarea } from "@/components/ui/textarea";
+import { EVENT_TYPES } from "@/configs/consts/events.const";
 import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import type { EventValues, TripEvent } from "@/configs/types/event.type";
 import type { Material } from "@/configs/types/material.type";
@@ -29,7 +30,6 @@ export function EventForm({
   initialPointId,
   onClose,
   onSave,
-  onAddEventType,
 }: {
   trip: Trip;
   event?: TripEvent;
@@ -38,7 +38,6 @@ export function EventForm({
   initialPointId?: string | null;
   onClose: () => void;
   onSave: (values: EventValues) => void | Promise<void>;
-  onAddEventType: (name: string) => void | Promise<void>;
 }) {
   const [values, setValues, form] = useFormValues<EventValues>(
     event
@@ -60,9 +59,6 @@ export function EventForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [typeDraft, setTypeDraft] = useState("");
-  const [addingType, setAddingType] = useState(false);
-  const addingTypeRef = useRef(false);
   const pendingRef = useRef(false);
   const uploadingRef = useRef(false);
   const errorId = useId();
@@ -71,8 +67,7 @@ export function EventForm({
   const removedMaterialIds = useRef<string[]>([]);
 
   function close() {
-    if (pendingRef.current || uploadingRef.current || addingTypeRef.current)
-      return;
+    if (pendingRef.current || uploadingRef.current) return;
     if (newMaterialIds.current.length)
       void deleteMaterialFiles(newMaterialIds.current);
     newMaterialIds.current = [];
@@ -82,11 +77,6 @@ export function EventForm({
   function setUploadBusy(busy: boolean) {
     uploadingRef.current = busy;
     setUploading(busy);
-  }
-
-  function setTypeBusy(busy: boolean) {
-    addingTypeRef.current = busy;
-    setAddingType(busy);
   }
 
   function update<K extends keyof EventValues>(key: K, value: EventValues[K]) {
@@ -117,9 +107,9 @@ export function EventForm({
   }
 
   const { requestClose, confirmation } = useDiscardConfirmation(
-    { values, typeDraft },
+    { values },
     close,
-    pending || uploading || addingType,
+    pending || uploading,
   );
   const describedBy = error ? errorId : undefined;
 
@@ -138,23 +128,13 @@ export function EventForm({
             <form
               noValidate
               className="flex min-h-0 flex-1 flex-col"
-              aria-busy={pending || uploading || addingType}
+              aria-busy={pending || uploading}
               onSubmit={async (e) => {
                 e.preventDefault();
-                if (
-                  pendingRef.current ||
-                  uploadingRef.current ||
-                  addingTypeRef.current
-                )
-                  return;
+                if (pendingRef.current || uploadingRef.current) return;
                 if (!(await form.trigger(undefined, { shouldFocus: true })))
                   return;
-                if (
-                  pendingRef.current ||
-                  uploadingRef.current ||
-                  addingTypeRef.current
-                )
-                  return;
+                if (pendingRef.current || uploadingRef.current) return;
                 pendingRef.current = true;
                 setPending(true);
                 setError(null);
@@ -177,10 +157,7 @@ export function EventForm({
                 }
               }}
             >
-              <fieldset
-                disabled={pending || uploading || addingType}
-                className="contents"
-              >
+              <fieldset disabled={pending || uploading} className="contents">
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 [overflow-anchor:none] sm:p-7">
                   <Dialog.Title className="pr-10 text-xl font-semibold">
                     {event ? "Редактировать событие" : "Новое событие"}
@@ -204,16 +181,29 @@ export function EventForm({
                         />
                       )}
                     </Field>
+                    <Field name="type" label="Тип события">
+                      {(id) => (
+                        <TextSelect
+                          data-field-control
+                          id={id}
+                          value={values.type}
+                          disabled={pending || uploading}
+                          options={Object.entries(EVENT_TYPES).map(
+                            ([value, label]) => ({ value, label }),
+                          )}
+                          onValueChange={(value) => {
+                            if (Object.hasOwn(EVENT_TYPES, value))
+                              update("type", value as EventValues["type"]);
+                          }}
+                        />
+                      )}
+                    </Field>
                     <EventTypeField
                       catalog={trip.eventTypes ?? []}
                       event={event}
                       value={values.customType}
-                      draft={typeDraft}
-                      onDraftChange={setTypeDraft}
                       onChange={(value) => update("customType", value)}
-                      onAdd={onAddEventType}
-                      onBusyChange={setTypeBusy}
-                      disabled={pending || uploading || addingType}
+                      disabled={pending || uploading}
                     />
                     <DateRangeFields
                       start={values.start}
@@ -225,7 +215,7 @@ export function EventForm({
                       trip={trip}
                       withTime
                       optionalEnd
-                      disabled={pending || uploading || addingType}
+                      disabled={pending || uploading}
                       onChange={(start, end) =>
                         setValues((current) => ({ ...current, start, end }))
                       }
@@ -276,7 +266,7 @@ export function EventForm({
                       onUploaded={addMaterial}
                       onRemove={removeMaterial}
                       onBusyChange={setUploadBusy}
-                      disabled={pending || uploading || addingType}
+                      disabled={pending || uploading}
                       error={form.formState.errors.materials?.message}
                     />
                     {error && (
@@ -295,7 +285,7 @@ export function EventForm({
                     variant="outline"
                     className="h-11"
                     type="button"
-                    disabled={pending || uploading || addingType}
+                    disabled={pending || uploading}
                     onClick={requestClose}
                   >
                     Отмена
@@ -303,7 +293,7 @@ export function EventForm({
                   <Button
                     type="submit"
                     className="h-11"
-                    disabled={pending || uploading || addingType}
+                    disabled={pending || uploading}
                   >
                     {uploading
                       ? "Дождитесь загрузки…"

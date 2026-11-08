@@ -29,11 +29,7 @@ export function TripForm({
   submitLabel: string;
   onSubmit: (values: TripValues) => void | Promise<void>;
   onCancel?: () => void;
-  onStateChange?: (
-    values: TripValues,
-    busy: boolean,
-    typeDraft: string,
-  ) => void;
+  onStateChange?: (values: TripValues, busy: boolean) => void;
 }) {
   const [values, setValues, form] = useFormValues<TripValues>(
     () =>
@@ -58,7 +54,6 @@ export function TripForm({
   );
   const coverPreview = useCoverPreview(values.cover);
   const [removeCover, setRemoveCover] = useState(false);
-  const [typeDraft, setTypeDraft] = useState("");
   const [removingTypes, setRemovingTypes] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
@@ -67,8 +62,8 @@ export function TripForm({
   const errorId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    onStateChange?.(values, pending || reading, typeDraft);
-  }, [values, pending, reading, typeDraft, onStateChange]);
+    onStateChange?.(values, pending || reading);
+  }, [values, pending, reading, onStateChange]);
   function update<K extends keyof TripValues>(key: K, value: TripValues[K]) {
     setValues((current) => ({ ...current, [key]: value }));
   }
@@ -111,14 +106,14 @@ export function TripForm({
       <ConfirmDelete
         open={removingTypes !== null}
         busy={pending || reading}
-        title="Убрать тип события?"
+        title="Убрать тег события?"
         onClose={() => setRemovingTypes(null)}
         onConfirm={() => {
           if (removingTypes) update("eventTypes", removingTypes);
           setRemovingTypes(null);
         }}
       >
-        Тип исчезнет из списка после сохранения путешествия. В существующих
+        Тег исчезнет из списка после сохранения путешествия. В существующих
         событиях он сохранится.
       </ConfirmDelete>
       <ConfirmDelete
@@ -195,7 +190,6 @@ export function TripForm({
           <EventTypeChips
             value={values.eventTypes ?? []}
             disabled={pending || reading}
-            onDraftChange={setTypeDraft}
             onChange={(names) => {
               if (names.length < (values.eventTypes?.length ?? 0))
                 setRemovingTypes(names);

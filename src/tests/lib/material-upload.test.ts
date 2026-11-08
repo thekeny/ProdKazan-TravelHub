@@ -7,6 +7,9 @@ vi.mock("@/lib/material-storage", () => ({
   putMaterialFile: vi.fn(),
   deleteMaterialFiles: vi.fn(),
 }));
+vi.mock("@/lib/file-storage", () => ({
+  putRemoteFile: vi.fn(),
+}));
 vi.mock("@/lib/image", () => ({ compressMaterial: vi.fn() }));
 beforeEach(() => vi.clearAllMocks());
 

@@ -3,9 +3,10 @@ import {
   MATERIAL_LIMITS,
 } from "@/configs/consts/materials.const";
 import type { Material, MaterialKind } from "@/configs/types/material.type";
+import { putRemoteFile } from "@/lib/file-storage";
 import { createId } from "@/lib/id";
 import { compressMaterial } from "@/lib/image";
-import { deleteMaterialFiles, putMaterialFile } from "@/lib/material-storage";
+import { putMaterialFile } from "@/lib/material-storage";
 import { validateMaterial, validateMaterialInput } from "@/lib/materials";
 
 export async function uploadMaterial(
@@ -27,8 +28,7 @@ export async function uploadMaterial(
     throw new Error(
       "После сжатия файл всё ещё слишком большой. Выберите изображение меньше.",
     );
-  const id = createId();
-  await putMaterialFile(id, blob);
+  const id = kind === "photo" ? crypto.randomUUID() : createId();
   const material: Material = {
     id,
     name: file.name || "Изображение",
@@ -39,8 +39,14 @@ export async function uploadMaterial(
   };
   const error = validateMaterial(material);
   if (error) {
-    await deleteMaterialFiles([id]);
     throw new Error(error);
+  }
+  if (kind === "photo") await putRemoteFile(id, blob);
+  try {
+    await putMaterialFile(id, blob);
+  } catch (error) {
+    if (kind !== "photo") throw error;
+    // Серверная копия уже сохранена; локальный кэш необязателен.
   }
   return material;
 }

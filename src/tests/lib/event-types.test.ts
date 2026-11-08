@@ -76,7 +76,7 @@ it("accepts only this trip's types while preserving removed types on existing ev
   ).toBeUndefined();
   expect(
     eventErrors({ ...event, customType: null }, trip, []).customType,
-  ).toBeTruthy();
+  ).toBeUndefined();
   expect(
     eventErrors(event, trip, [], { initial: event }).customType,
   ).toBeUndefined();

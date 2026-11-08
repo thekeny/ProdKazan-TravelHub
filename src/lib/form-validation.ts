@@ -127,18 +127,14 @@ export function eventErrors(
   if (desc) errors.description = desc;
   if (!Object.hasOwn(EVENT_TYPES, value.type))
     errors.type = "Выберите тип события.";
-  if (value.customType === null)
-    errors.customType = trip.eventTypes?.length
-      ? "Выберите тип события."
-      : "Добавьте тип события.";
-  else if (value.customType !== undefined) {
+  if (value.customType != null) {
     const typeError = eventTypesError([value.customType]);
     if (typeError) errors.customType = typeError;
     else if (
       !trip.eventTypes?.includes(value.customType) &&
       value.customType !== context.initial?.customType
     )
-      errors.customType = "Выберите тип из списка этого путешествия.";
+      errors.customType = "Выберите тег из списка этого путешествия.";
   }
   if (value.pointId && !points.some((point) => point.id === value.pointId))
     errors.pointId = "Выберите существующую точку.";

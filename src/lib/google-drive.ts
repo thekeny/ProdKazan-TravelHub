@@ -1,6 +1,7 @@
 import * as sdk from "@/api/generated/sdk.gen";
 import { INTEGRATIONS } from "@/configs/consts/integrations.const";
 import type { Material } from "@/configs/types/material.type";
+import { getRemoteFile } from "@/lib/file-storage";
 import { getMaterialFile } from "@/lib/material-storage";
 import { apiResult } from "@/lib/travel-api";
 
@@ -20,7 +21,9 @@ export async function disconnectDriveBeforeDeletion() {
 }
 
 export async function drivePhoto(material: Material): Promise<File> {
-  const blob = await getMaterialFile(material.id);
+  const blob =
+    (await getRemoteFile(material.id).catch(() => null)) ??
+    (await getMaterialFile(material.id));
   if (!blob) throw new Error("Фото недоступно в этом браузере.");
   const bitmap = await createImageBitmap(blob);
   try {

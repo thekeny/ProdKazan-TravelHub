@@ -37,17 +37,12 @@ export function TripSettings({
     eventTypes: trip.eventTypes ?? [],
   }));
   const [busy, setBusy] = useState(false);
-  const [typeDraft, setTypeDraft] = useState("");
-  const changed = useCallback(
-    (next: TripValues, pending: boolean, draft: string) => {
-      setValues(next);
-      setBusy(pending);
-      setTypeDraft(draft);
-    },
-    [],
-  );
+  const changed = useCallback((next: TripValues, pending: boolean) => {
+    setValues(next);
+    setBusy(pending);
+  }, []);
   const { requestClose, confirmation } = useDiscardConfirmation(
-    { values, typeDraft },
+    { values },
     onClose,
     busy || deletion.pending,
   );

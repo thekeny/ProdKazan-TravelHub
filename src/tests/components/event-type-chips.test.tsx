@@ -51,34 +51,34 @@ it("adds multiword chips only on Enter, prevents submit, and removes chips", asy
   await type("Утренний кофе");
   expect((await key(" ")).defaultPrevented).toBe(false);
   expect(
-    container.querySelector('[aria-label="Убрать тип «Утренний кофе»"]'),
+    container.querySelector('[aria-label="Убрать тег «Утренний кофе»"]'),
   ).toBeNull();
   expect((await key("Enter")).defaultPrevented).toBe(true);
   expect(submit).not.toHaveBeenCalled();
   const remove = container.querySelector<HTMLButtonElement>(
-    '[aria-label="Убрать тип «Утренний кофе»"]',
+    '[aria-label="Убрать тег «Утренний кофе»"]',
   );
   expect(remove).not.toBeNull();
   await act(async () => remove?.click());
   expect(
-    container.querySelector('[aria-label="Убрать тип «Утренний кофе»"]'),
+    container.querySelector('[aria-label="Убрать тег «Утренний кофе»"]'),
   ).toBeNull();
 });
 it("rejects duplicates ignoring case, ignores blank input and IME confirmation", async () => {
   await key("Enter");
-  expect(container.querySelectorAll('[aria-label^="Убрать тип"]')).toHaveLength(
+  expect(container.querySelectorAll('[aria-label^="Убрать тег"]')).toHaveLength(
     0,
   );
   await type("Музей");
   await key("Enter", true);
-  expect(container.querySelectorAll('[aria-label^="Убрать тип"]')).toHaveLength(
+  expect(container.querySelectorAll('[aria-label^="Убрать тег"]')).toHaveLength(
     0,
   );
   await key("Enter");
   await type(" музей ");
   await key("Enter");
-  expect(container.querySelectorAll('[aria-label^="Убрать тип"]')).toHaveLength(
+  expect(container.querySelectorAll('[aria-label^="Убрать тег"]')).toHaveLength(
     1,
   );
-  expect(container.textContent).toContain("Такой тип уже добавлен.");
+  expect(container.textContent).toContain("Такой тег уже добавлен.");
 });

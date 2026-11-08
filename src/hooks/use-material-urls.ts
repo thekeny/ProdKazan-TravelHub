@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Material } from "@/configs/types/material.type";
+import { getRemoteFile } from "@/lib/file-storage";
 import { getMaterialFile } from "@/lib/material-storage";
 
 export type MaterialUrls = Record<string, string | null>;
@@ -23,7 +24,15 @@ export function useMaterialUrls(materials: readonly Material[]): MaterialUrls {
     Promise.all(
       materials.map(async (material) => {
         try {
-          const blob = await getMaterialFile(material.id);
+          let blob: Blob | null = null;
+          if (material.kind === "photo") {
+            try {
+              blob = await getRemoteFile(material.id);
+            } catch {
+              // Старые материалы и офлайн-просмотр остаются доступны из IndexedDB.
+            }
+          }
+          if (!blob) blob = await getMaterialFile(material.id);
           if (!blob || cancelled) return [material.id, null] as const;
           const url = URL.createObjectURL(blob);
           created.push(url);
