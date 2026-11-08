@@ -104,20 +104,16 @@ deploy:
       tsh ssh "${DEPLOY_SSH_USER}@${DEPLOY_VM}" "sudo bash -s" <<EOF
       set -euo pipefail
       cd '${FRONTEND_DIR}'
-      export DOCKER_CONFIG='${DEPLOY_DIR}/.docker' IMAGE='${IMAGE_REPO}' IMAGE_TAG='${IMAGE_TAG}' FRONTEND_PORT='${FRONTEND_PORT}' API_URL='${API_URL:-$NEXT_PUBLIC_API_URL}' NEXT_PUBLIC_API_URL='${NEXT_PUBLIC_API_URL}'
-      if [ -z "\${API_URL:-}" ]; then
-        echo "API_URL (or legacy NEXT_PUBLIC_API_URL) must be set for the runtime proxy" >&2
-        exit 1
-      fi
+      export DOCKER_CONFIG='${DEPLOY_DIR}/.docker' IMAGE='${IMAGE_REPO}' IMAGE_TAG='${IMAGE_TAG}' FRONTEND_PORT='${FRONTEND_PORT}'
       docker compose pull web
       docker compose up -d --wait web
       for i in 1 2 3 4 5 6 7 8 9 10; do
-        if curl -fsS -o /dev/null http://127.0.0.1:${FRONTEND_PORT}/ && curl -fsS -o /dev/null http://127.0.0.1:${FRONTEND_PORT}/gateway/backend/health; then
+        if curl -fsS -o /dev/null http://127.0.0.1:${FRONTEND_PORT}/; then
           echo "deployed ${IMAGE_TAG}"
           exit 0
         fi
         sleep 3
       done
-      echo "smoke test failed: http://127.0.0.1:${FRONTEND_PORT}/ or /gateway/backend/health is not responding"
+      echo "smoke test failed: http://127.0.0.1:${FRONTEND_PORT}/ is not responding"
       exit 1
       EOF

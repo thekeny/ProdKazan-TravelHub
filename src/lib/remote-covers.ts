@@ -1,5 +1,5 @@
 import { COVER_LIMITS, MATERIAL_TYPES } from "@/configs/consts/materials.const";
-import { GATEWAY } from "@/configs/paths/gateway.path";
+import { API_BASE } from "@/configs/paths/backend.path";
 import { readBlobAsDataUrl } from "@/lib/image";
 import { getMaterialFile, putMaterialFile } from "@/lib/material-storage";
 
@@ -29,7 +29,7 @@ export async function loadRemoteCover(userId: string, tripId: string) {
   return blob ? readBlobAsDataUrl(blob) : null;
 }
 
-// Browser image requests use the cookie-authenticated proxy with session refresh.
+// Keep stable backend paths in trip data; previews load authenticated blobs.
 export function serverCoverUrl(cover: string | null): string | null {
   if (!cover) return null;
   const path = cover.replace(
@@ -37,14 +37,14 @@ export function serverCoverUrl(cover: string | null): string | null {
     "",
   );
   return /^\/trips\/\d+\/cover\/[a-zA-Z0-9._-]+$/.test(path)
-    ? `${GATEWAY.backend}${path}`
+    ? `${API_BASE}${path}`
     : cover;
 }
 export function isServerCover(cover: string | null): cover is string {
   return Boolean(
-    cover?.startsWith(GATEWAY.backend) &&
+    cover?.startsWith(API_BASE) &&
       /^\/trips\/\d+\/cover\/[a-zA-Z0-9._-]+$/.test(
-        cover.slice(GATEWAY.backend.length),
+        cover.slice(API_BASE.length),
       ),
   );
 }

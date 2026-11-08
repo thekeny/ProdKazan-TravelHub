@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { COVER_LIMITS, MATERIAL_TYPES } from "@/configs/consts/materials.const";
 import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import type { TripValues } from "@/configs/types/travel.type";
+import { useCoverPreview } from "@/hooks/use-cover-preview";
 import { useFormValues } from "@/hooks/use-form-values";
 import { actionToast } from "@/lib/action-toast";
 import { tripErrors } from "@/lib/form-validation";
@@ -55,6 +56,7 @@ export function TripForm({
           },
     (values) => tripErrors(values, { initial }),
   );
+  const coverPreview = useCoverPreview(values.cover);
   const [removeCover, setRemoveCover] = useState(false);
   const [typeDraft, setTypeDraft] = useState("");
   const [removingTypes, setRemovingTypes] = useState<string[] | null>(null);
@@ -229,14 +231,16 @@ export function TripForm({
                 <div className="relative overflow-hidden rounded-lg border border-dashed bg-muted">
                   {values.cover && (
                     <div className="relative h-40">
-                      <Image
-                        src={values.cover}
-                        alt="Предпросмотр обложки"
-                        fill
-                        unoptimized
-                        sizes="100vw"
-                        className="object-cover"
-                      />
+                      {coverPreview && (
+                        <Image
+                          src={coverPreview}
+                          alt="Предпросмотр обложки"
+                          fill
+                          unoptimized
+                          sizes="100vw"
+                          className="object-cover"
+                        />
+                      )}
                       <Button
                         variant="outline"
                         size="icon"

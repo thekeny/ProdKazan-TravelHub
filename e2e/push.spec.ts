@@ -3,11 +3,13 @@ import { expect, test } from "@playwright/test";
 test("blocked permission shows instructions without prompting again", async ({
   page,
 }) => {
-  await page.route("**/gateway/backend/**", (route) =>
+  await page.route("**/api/v1/**", (route) =>
     route.fulfill({
-      json: route.request().url().endsWith("/auth/me")
-        ? { id: "123", username: "traveler" }
-        : [],
+      json: route.request().url().endsWith("/auth/refresh")
+        ? { access_token: "fixture-token" }
+        : route.request().url().endsWith("/auth/me")
+          ? { id: "123", username: "traveler" }
+          : [],
     }),
   );
   await page.addInitScript(() => {
@@ -46,16 +48,17 @@ for (const [device, viewport] of Object.entries({
     await page.setViewportSize(viewport);
     const registrations: unknown[] = [];
     const subscriptionId = "9223372036854775806";
-    await page.route("**/gateway/backend/**", async (route) => {
+    await page.route("**/api/v1/**", async (route) => {
       const request = route.request();
-      const path = new URL(request.url()).pathname.replace(
-        "/gateway/backend",
-        "",
-      );
+      const path = new URL(request.url()).pathname.replace("/api/v1", "");
+      if (path === "/auth/refresh")
+        return route.fulfill({ json: { access_token: "fixture-token" } });
       if (path === "/auth/me")
         return route.fulfill({ json: { id: "123", username: "traveler" } });
       if (path.replace(/\/$/, "") === "/trips")
         return route.fulfill({ json: [] });
+      if (path === "/integrations/google-drive")
+        return route.fulfill({ json: { enabled: false, status: "disabled" } });
       if (path === "/push/vapid-public-key")
         return route.fulfill({
           json: {
@@ -128,25 +131,24 @@ for (const [device, viewport] of Object.entries({
       });
     });
     await page.goto("/trips");
-    const prompt = page.getByRole("complementary", {
-      name: "Подключение уведомлений",
-    });
-    await expect(prompt).toBeVisible();
-    await prompt.getByRole("button", { name: "Включить уведомления" }).click();
-    await expect(prompt).not.toBeVisible();
+    await page.getByRole("button", { name: "Меню аккаунта" }).click();
+    await page.getByRole("menuitem", { name: "Настройки аккаунта" }).click();
+    const settings = page.getByRole("region", { name: "Уведомления" });
+    await settings
+      .getByRole("button", { name: "Включить уведомления" })
+      .click();
+    await expect(settings).toContainText("Уведомления подключены");
     expect(registrations).toEqual([
       {
         endpoint: "https://push.test/device",
         keys: { p256Dh: "key", auth: "auth" },
       },
     ]);
-    await page.getByRole("button", { name: "Меню аккаунта" }).click();
-    await page.getByRole("menuitem", { name: "Настройки аккаунта" }).click();
-    const settings = page.getByRole("region", { name: "Уведомления" });
-    await expect(settings).toContainText("Уведомления подключены");
     await settings.getByRole("button", { name: "Отправить тестовое" }).click();
     await expect(
-      page.getByRole("status").filter({ hasText: "Тестовая отправка принята" }),
+      page
+        .getByRole("status", { includeHidden: true })
+        .filter({ hasText: "Тестовая отправка принята" }),
     ).toBeVisible();
     await page.screenshot({ path: `test-results/${device}-push.png` });
     await settings
@@ -164,6 +166,10 @@ for (const [device, viewport] of Object.entries({
       ),
     ).toBe("true");
     await page.reload();
-    await expect(prompt).not.toBeVisible();
+    await page.getByRole("button", { name: "Меню аккаунта" }).click();
+    await page.getByRole("menuitem", { name: "Настройки аккаунта" }).click();
+    await expect(
+      settings.getByRole("button", { name: "Включить уведомления" }),
+    ).toBeEnabled();
   });
 }

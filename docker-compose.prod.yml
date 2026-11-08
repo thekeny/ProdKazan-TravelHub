@@ -3,9 +3,5 @@ name: frontend
 services:
   web:
     image: ${IMAGE:?IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
-    environment:
-      # The Next.js proxy reads these at runtime. At least one must be set.
-      API_URL: ${API_URL:-}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
     ports: ["${FRONTEND_PORT:-3000}:3000"]
     restart: unless-stopped

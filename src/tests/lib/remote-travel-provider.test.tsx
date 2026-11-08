@@ -696,11 +696,11 @@ describe("remote travel state", () => {
         headers: { "Content-Type": "image/webp" },
       }),
     );
-    expect(travel.trips[0].cover).toBe(`/gateway/backend${serverTrip.cover}`);
+    expect(travel.trips[0].cover).toBe(`/api/v1${serverTrip.cover}`);
     vi.mocked(sdk.tripsGetTrips).mockResolvedValue(ok([serverTrip]));
     await act(async () => root.unmount());
     await mount();
-    expect(travel.trips[0].cover).toBe(`/gateway/backend${serverTrip.cover}`);
+    expect(travel.trips[0].cover).toBe(`/api/v1${serverTrip.cover}`);
     await act(async () =>
       travel.saveTrip(trip.id, { ...values, cover: travel.trips[0].cover }),
     );

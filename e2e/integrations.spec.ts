@@ -4,11 +4,13 @@ test("photo export converts WebP once and preserves the operation across retries
   page,
 }) => {
   const requests: { key: string; bytes: Buffer }[] = [];
-  await page.route("**/gateway/backend/**", async (route) => {
+  await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname
-      .replace("/gateway/backend", "")
+      .replace("/api/v1", "")
       .replace(/\/$/, "");
+    if (path === "/auth/refresh")
+      return route.fulfill({ json: { access_token: "fixture-token" } });
     if (path === "/auth/me")
       return route.fulfill({ json: { id: "123", username: "traveler" } });
     if (path === "/trips")
@@ -157,11 +159,13 @@ for (const viewport of [
       latitude: 55.79,
       longitude: 49.12,
     };
-    await page.route("**/gateway/backend/**", async (route) => {
+    await page.route("**/api/v1/**", async (route) => {
       const request = route.request();
       const path = new URL(request.url()).pathname
-        .replace("/gateway/backend", "")
+        .replace("/api/v1", "")
         .replace(/\/$/, "");
+      if (path === "/auth/refresh")
+        return route.fulfill({ json: { access_token: "fixture-token" } });
       if (path === "/auth/me") return route.fulfill({ json: owner });
       if (path === "/trips" && request.method() === "GET")
         return route.fulfill({
