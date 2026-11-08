@@ -20,15 +20,19 @@ export function MaterialPreview({
   return (
     <Dialog.Root
       open
+      modal
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className="dialog-backdrop fixed inset-0 z-[60] bg-overlay/70" />
+        <Dialog.Backdrop
+          forceRender
+          className="dialog-backdrop fixed inset-0 z-[70] bg-overlay/60 backdrop-blur-md"
+        />
         <DialogPopup
           finalFocus={returnFocus}
-          className="dialog-popup fixed inset-0 z-[60] m-auto h-fit max-h-[calc(100dvh-2rem)] w-fit max-w-[min(56rem,calc(100vw-2rem))] overflow-auto rounded-xl bg-surface p-2"
+          className="dialog-popup fixed inset-0 z-[70] m-auto h-fit max-h-[calc(100dvh-2rem)] w-fit max-w-[min(56rem,calc(100vw-2rem))] overflow-auto rounded-xl bg-surface p-2"
         >
           <Dialog.Title className="sr-only">{material.name}</Dialog.Title>
           <Image

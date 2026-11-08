@@ -134,7 +134,7 @@ try {
     {
       title: "Museum",
       type: "tour",
-      startedAt: "2026-11-07T10:00",
+      startedAt: "2026-11-07T10:00:00Z",
       endedAt: null,
       waypointId: point.id,
       bookingUrl: "https://example.com/ticket",

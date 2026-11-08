@@ -4,10 +4,12 @@ import { ExternalLink, FileText, Images, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 import { StorageWarning } from "@/components/layout/storage-warning";
+import { DocumentVisibilityToggle } from "@/components/materials/document-visibility-toggle";
 import { MaterialGrid } from "@/components/materials/material-grid";
 import { buttonVariants } from "@/components/ui/button";
 import { pages } from "@/configs/paths/pages.path";
 import type { Material, MaterialKind } from "@/configs/types/material.type";
+import { useDocumentVisibility } from "@/hooks/use-document-visibility";
 import { formatDayLabel } from "@/lib/travel-format";
 import { useTravel } from "@/providers/travel-provider";
 
@@ -39,6 +41,9 @@ function EmptyState({ kind }: { kind: MaterialKind }) {
 export function TripGallery({ kind }: { kind: MaterialKind }) {
   const { trips, activeId } = useTravel();
   const trip = trips.find((item) => item.id === activeId);
+  const documentVisibility = useDocumentVisibility(
+    (trip?.events ?? []).flatMap((event) => event.materials),
+  );
   const groups = useMemo(() => {
     if (!trip) return [];
     const byDay = new Map<
@@ -96,8 +101,11 @@ export function TripGallery({ kind }: { kind: MaterialKind }) {
   return (
     <div className="h-full overflow-y-auto bg-background">
       <div className="w-full px-4 py-5 sm:px-6">
-        <header className="mb-6">
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-display text-3xl leading-tight">{title}</h1>
+          {kind === "document" && (
+            <DocumentVisibilityToggle visibility={documentVisibility} />
+          )}
         </header>
         <StorageWarning className="mb-6" />
         {bookingLinks.length > 0 && (
@@ -169,7 +177,12 @@ export function TripGallery({ kind }: { kind: MaterialKind }) {
                           {entry.start.slice(11, 16)}
                         </p>
                       </header>
-                      <MaterialGrid materials={entry.materials} />
+                      <MaterialGrid
+                        materials={entry.materials}
+                        documentVisibility={
+                          kind === "document" ? documentVisibility : undefined
+                        }
+                      />
                     </article>
                   ))}
                 </div>

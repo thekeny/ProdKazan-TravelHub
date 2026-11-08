@@ -168,8 +168,10 @@ export function eventBody(values: EventValues) {
     title: values.title.trim(),
     type: values.type,
     description: values.description.trim() || null,
-    startedAt: values.start,
-    endedAt: values.end || null,
+    // The API requires an offset. Preserve the trip's local clock digits,
+    // using the same fixed offset as transfers rather than the browser timezone.
+    startedAt: `${values.start}:00Z`,
+    endedAt: values.end ? `${values.end}:00Z` : null,
     bookingUrl: values.bookingUrl.trim() || null,
     waypointId: values.pointId ? apiId(values.pointId) : null,
   };
@@ -178,7 +180,6 @@ export function legBody(values: TripLegValues) {
   return {
     transportType: values.transport,
     description: values.description.trim() || null,
-    // Transfers require aware timestamps, while events require naive timestamps.
     // Use a fixed offset to preserve the trip's wall-clock digits in any browser.
     startedAt: `${values.start}:00Z`,
     endedAt: values.end ? `${values.end}:00Z` : null,

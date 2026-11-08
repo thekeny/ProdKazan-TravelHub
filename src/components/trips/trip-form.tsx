@@ -18,7 +18,6 @@ import { actionToast } from "@/lib/action-toast";
 import { tripErrors } from "@/lib/form-validation";
 import { compressCover } from "@/lib/image";
 import { dateInputBounds } from "@/lib/input-validation";
-import { isServerCover, isUploadedCover } from "@/lib/remote-covers";
 
 export function TripForm({
   initial,
@@ -252,42 +251,13 @@ export function TripForm({
               )}
             </Field>
           </div>
-          {remote && (
-            <Field
-              name="cover"
-              label="Ссылка на обложку (необязательно)"
-              hint="Можно указать ссылку или выбрать файл ниже."
-            >
-              {(id, describedBy) => (
-                <Input
-                  data-field-control
-                  id={id}
-                  className={inputClass}
-                  type="url"
-                  minLength={TEXT_LIMITS.MIN}
-                  maxLength={TEXT_LIMITS.URL}
-                  pattern="https?://.*"
-                  value={
-                    isUploadedCover(values.cover) || isServerCover(values.cover)
-                      ? ""
-                      : (values.cover ?? "")
-                  }
-                  aria-describedby={describedBy}
-                  onChange={(event) =>
-                    update("cover", event.target.value || null)
-                  }
-                  placeholder="https://…"
-                />
-              )}
-            </Field>
-          )}
           <Field
             name="cover"
             label="Обложка (необязательно)"
             hint={
               remote
-                ? "JPEG, PNG или WebP до 12 МБ. Обложка сжимается и загружается на сервер."
-                : "JPEG, PNG или WebP до 12 МБ. Обложка сжимается автоматически."
+                ? "JPEG, PNG или WebP до 12 МБ"
+                : "JPEG, PNG или WebP до 12 МБ"
             }
           >
             {(id, describedBy) => (
@@ -306,7 +276,7 @@ export function TripForm({
                       <Button
                         variant="outline"
                         size="icon"
-                        className="absolute right-2 top-2 z-10 size-11 bg-surface text-foreground hover:text-destructive"
+                        className="absolute right-2 top-2 z-10 size-11 bg-surface text-foreground"
                         type="button"
                         aria-label="Убрать обложку"
                         onClick={() => setRemoveCover(true)}
@@ -317,7 +287,7 @@ export function TripForm({
                   )}
                   <label
                     htmlFor={id}
-                    className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 p-4 text-sm outline-none hover:bg-accent focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+                    className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 p-4 text-sm outline-none hover:bg-muted-hover focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
                   >
                     <Upload className="size-5" />
                     {reading

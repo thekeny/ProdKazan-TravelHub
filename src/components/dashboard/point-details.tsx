@@ -90,7 +90,7 @@ export function PointDetails({
                       variant="plain"
                       type="button"
                       onClick={() => onSelectEvent(event)}
-                      className="flex w-full items-center gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      className="flex w-full items-center gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     >
                       <span
                         className="grid size-8 shrink-0 place-items-center rounded-md bg-secondary"

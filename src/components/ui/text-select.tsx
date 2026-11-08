@@ -65,7 +65,7 @@ export function TextSelect({
                 <Select.Item
                   key={option.value}
                   value={option.value}
-                  className="flex min-h-11 cursor-default items-center gap-2 rounded-lg px-3 py-2 outline-none data-highlighted:bg-accent"
+                  className="flex min-h-11 cursor-default items-center gap-2 rounded-lg px-3 py-2 outline-none data-highlighted:bg-surface-hover"
                 >
                   <Select.ItemText className="min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere]">
                     {option.label}

@@ -67,7 +67,7 @@ export function LegItem({
           <Button
             variant="ghost"
             size="icon"
-            className="size-9 text-muted-foreground hover:text-destructive focus-visible:text-destructive"
+            className="size-9 text-muted-foreground"
             aria-label="Удалить перемещение"
             onClick={onDelete}
           >

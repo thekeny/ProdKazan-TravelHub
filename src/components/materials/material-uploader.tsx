@@ -100,7 +100,7 @@ export function MaterialUploader({
         ref={buttonRef}
         type="button"
         variant="plain"
-        className={`flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted p-4 text-center text-sm transition-colors outline-none hover:bg-accent focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
+        className={`flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted p-4 text-center text-sm transition-colors outline-none hover:bg-muted-hover focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
           disabled ? "pointer-events-none opacity-50" : ""
         }`}
         disabled={disabled}

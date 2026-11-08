@@ -17,7 +17,7 @@ import { formatTripDates } from "@/lib/travel-format";
 import { useTravel } from "@/providers/travel-provider";
 
 const itemClassName =
-  "min-h-14 w-full cursor-pointer rounded-md px-3 py-2.5 transition-colors duration-150 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground";
+  "min-h-14 w-full cursor-pointer rounded-md px-3 py-2.5 transition-colors duration-150 hover:bg-surface-hover focus:bg-surface-hover";
 
 export function TripSwitcher({
   onNavigate,
@@ -48,7 +48,7 @@ export function TripSwitcher({
     <div className={compact ? "" : "mt-8"}>
       <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
         <DropdownMenuTrigger
-          className={`group flex w-full items-center gap-3 rounded-lg bg-muted p-3 text-left outline-none transition-colors duration-150 hover:bg-accent data-[popup-open]:bg-accent focus-visible:ring-2 focus-visible:ring-ring ${compact ? "min-h-12" : "min-h-16"}`}
+          className={`group flex w-full items-center gap-3 rounded-lg bg-muted p-3 text-left outline-none transition-colors duration-150 hover:bg-muted-hover data-[popup-open]:bg-muted-hover focus-visible:ring-2 focus-visible:ring-ring ${compact ? "min-h-12" : "min-h-16"}`}
         >
           <span className="min-w-0 flex-1">
             <span className="block user-text whitespace-normal text-sm font-medium">

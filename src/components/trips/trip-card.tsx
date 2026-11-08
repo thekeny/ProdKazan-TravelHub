@@ -15,7 +15,7 @@ export function TripCard({
   onSelect: () => void;
 }) {
   return (
-    <article className="relative flex min-h-64 flex-col overflow-hidden rounded-3xl border border-border! bg-card transition-colors duration-150 hover:border-primary/60! hover:bg-secondary/20">
+    <article className="relative flex min-h-64 flex-col overflow-hidden rounded-3xl border border-border! bg-card transition-colors duration-150 hover:border-border! hover:bg-surface-hover">
       <Button
         variant="plain"
         type="button"
