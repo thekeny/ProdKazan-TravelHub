@@ -36,7 +36,9 @@ export function PwaRegistration() {
       const url = new URL(anchor.href);
       if (
         url.origin !== location.origin ||
-        !OFFLINE.routes.some((route) => route === url.pathname)
+        !OFFLINE.routes.some(
+          (route) => route === (url.pathname.replace(/\/+$/, "") || "/"),
+        )
       )
         return;
       event.preventDefault();
