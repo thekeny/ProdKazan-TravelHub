@@ -19,9 +19,6 @@ export function PushPrompt() {
       className="shrink-0 border-b bg-surface px-4 py-3"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm">
-          Включите уведомления TravelHub на этом устройстве.
-        </p>
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"

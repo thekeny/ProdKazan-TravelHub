@@ -16,7 +16,7 @@ export function ArchiveImport() {
   const online = useOnline();
   const router = useRouter();
   return (
-    <div className="mt-4 grid gap-2">
+    <>
       <input
         ref={input}
         type="file"
@@ -47,12 +47,13 @@ export function ArchiveImport() {
       <Button
         ref={button}
         variant="outline"
+        className="h-auto min-h-12 min-w-0 whitespace-normal py-2"
         disabled={pending || !online}
         onClick={() => input.current?.click()}
       >
         <FileUp aria-hidden="true" />
-        Импортировать JSON
+        <span className="min-w-0">Импортировать JSON</span>
       </Button>
-    </div>
+    </>
   );
 }
