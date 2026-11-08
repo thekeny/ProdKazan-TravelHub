@@ -7,6 +7,8 @@ export default defineConfig({
   // Component tests need CSS imports, without Next.js's PostCSS pipeline.
   css: { postcss: { plugins: [] } },
   test: {
+    // Fixtures use same-origin API paths regardless of the deployment environment.
+    env: { NEXT_PUBLIC_API_URL: "" },
     environment: "jsdom",
     globals: true,
     include: ["src/tests/**/*.{test,spec}.{ts,tsx}"],
