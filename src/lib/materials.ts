@@ -1,9 +1,10 @@
 import {
+  DOCUMENT_MIME_TYPE,
   MATERIAL_LIMITS,
   MATERIAL_TYPES,
 } from "@/configs/consts/materials.const";
 import { TEXT_LIMITS } from "@/configs/consts/validation.const";
-import type { Material } from "@/configs/types/material.type";
+import type { Material, MaterialKind } from "@/configs/types/material.type";
 import { textError } from "@/lib/input-validation";
 
 const allowedTypes = new Set<string>(MATERIAL_TYPES);
@@ -12,9 +13,23 @@ function isAllowedImageType(value: string) {
   return allowedTypes.has(value);
 }
 
-export function validateMaterialInput(file: File): string | null {
+export function validateMaterialInput(
+  file: File,
+  kind: MaterialKind = "photo",
+): string | null {
   const nameError = textError(file.name, TEXT_LIMITS.FILE_NAME, true);
   if (nameError) return `Имя файла: ${nameError.toLowerCase()}`;
+  if (file.size <= 0) return "Файл пустой.";
+  if (kind === "document") {
+    if (
+      !file.name.toLowerCase().endsWith(".pdf") ||
+      (file.type !== DOCUMENT_MIME_TYPE && file.type !== "")
+    )
+      return "Билеты и документы можно загрузить только в формате PDF.";
+    if (file.size > MATERIAL_LIMITS.MAX_DOCUMENT_SIZE)
+      return "Файл слишком большой. Выберите PDF до 12 МБ.";
+    return null;
+  }
   if (!isAllowedImageType(file.type))
     return "Поддерживаются только JPEG, PNG и WebP.";
   if (file.size > MATERIAL_LIMITS.MAX_SOURCE_SIZE)
@@ -44,12 +59,17 @@ export function normalizeBookingUrl(value: string | undefined) {
 export function validateMaterial(value: Material): string | null {
   if (!value.id) return "Некорректный материал.";
   if (!value.name.trim()) return "У материала должно быть имя файла.";
-  if (!isAllowedImageType(value.mimeType))
+  const pdf =
+    value.kind === "document" && value.mimeType === DOCUMENT_MIME_TYPE;
+  if (!isAllowedImageType(value.mimeType) && !pdf)
     return "Неподдерживаемый тип материала.";
   if (
     !Number.isFinite(value.size) ||
     value.size <= 0 ||
-    value.size > MATERIAL_LIMITS.MAX_STORED_SIZE
+    value.size >
+      (pdf
+        ? MATERIAL_LIMITS.MAX_DOCUMENT_SIZE
+        : MATERIAL_LIMITS.MAX_STORED_SIZE)
   )
     return "Некорректный размер материала.";
   if (value.kind !== "photo" && value.kind !== "document")

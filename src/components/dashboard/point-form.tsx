@@ -6,7 +6,7 @@ import { FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { DialogPopup } from "@/components/ui/dialog-popup";
 import { Field } from "@/components/ui/field";
-import { Input, inputClass } from "@/components/ui/input";
+import { inputClass } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { TEXT_LIMITS } from "@/configs/consts/validation.const";
 import type { RoutePoint, RoutePointValues } from "@/configs/types/route.type";
@@ -45,23 +45,16 @@ export function PointForm({
     lat: number;
     lng: number;
   } | null>(null);
-  const [lat, setLat] = useState(point ? String(point.lat) : "");
-  const [lng, setLng] = useState(point ? String(point.lng) : "");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
   const errorId = useId();
   const coordinates =
-    lat.trim() !== "" &&
-    lng.trim() !== "" &&
-    Number.isFinite(Number(lat)) &&
-    Number.isFinite(Number(lng)) &&
-    Math.abs(Number(lat)) <= 90 &&
-    Math.abs(Number(lng)) <= 180
-      ? { lat: Number(lat), lng: Number(lng) }
+    Number.isFinite(values.lat) && Number.isFinite(values.lng)
+      ? { lat: values.lat, lng: values.lng }
       : null;
   const { requestClose, confirmation } = useDiscardConfirmation(
-    { values, lat, lng },
+    values,
     onClose,
     pending,
   );
@@ -86,17 +79,12 @@ export function PointForm({
                 if (!(await form.trigger(undefined, { shouldFocus: true })))
                   return;
                 if (pendingRef.current) return;
-                const next = {
-                  ...values,
-                  lat: lat.trim() ? Number(lat) : Number.NaN,
-                  lng: lng.trim() ? Number(lng) : Number.NaN,
-                };
                 pendingRef.current = true;
                 setPending(true);
                 setError(null);
                 try {
                   await actionToast(
-                    () => onSave(next),
+                    () => onSave(values),
                     "Сохраняем…",
                     "Изменения сохранены.",
                   );
@@ -116,10 +104,6 @@ export function PointForm({
                   <Dialog.Title className="pr-10 text-xl font-semibold">
                     {point ? "Редактировать точку" : "Новая точка маршрута"}
                   </Dialog.Title>
-                  <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-                    Найдите место по названию, нажмите на карту или введите
-                    координаты.
-                  </Dialog.Description>
                   <div className="mt-6 grid gap-4">
                     <Field name="name" label="Название точки">
                       {(id) => (
@@ -138,8 +122,6 @@ export function PointForm({
                               lat: place.lat,
                               lng: place.lng,
                             }));
-                            setLat(String(place.lat));
-                            setLng(String(place.lng));
                             setFocusPlace({ lat: place.lat, lng: place.lng });
                           }}
                         />
@@ -174,62 +156,19 @@ export function PointForm({
                           lat: place.lat,
                           lng: place.lng,
                         }));
-                        setLat(String(place.lat));
-                        setLng(String(place.lng));
                       }}
                       draftPlace={coordinates}
                       focusPlace={focusPlace}
                     />
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field name="lat" label="Широта">
-                        {(id) => (
-                          <Input
-                            data-field-control
-                            id={id}
-                            required
-                            type="number"
-                            step="any"
-                            min={-90}
-                            max={90}
-                            className={inputClass}
-                            value={lat}
-                            onChange={(event) => {
-                              setLat(event.target.value);
-                              setValues((current) => ({
-                                ...current,
-                                lat: event.target.value.trim()
-                                  ? Number(event.target.value)
-                                  : Number.NaN,
-                              }));
-                            }}
-                          />
-                        )}
-                      </Field>
-                      <Field name="lng" label="Долгота">
-                        {(id) => (
-                          <Input
-                            data-field-control
-                            id={id}
-                            required
-                            type="number"
-                            step="any"
-                            min={-180}
-                            max={180}
-                            className={inputClass}
-                            value={lng}
-                            onChange={(event) => {
-                              setLng(event.target.value);
-                              setValues((current) => ({
-                                ...current,
-                                lng: event.target.value.trim()
-                                  ? Number(event.target.value)
-                                  : Number.NaN,
-                              }));
-                            }}
-                          />
-                        )}
-                      </Field>
-                    </div>
+                    {(form.formState.errors.lat ||
+                      form.formState.errors.lng) && (
+                      <p
+                        role="alert"
+                        className="text-xs leading-4 text-destructive"
+                      >
+                        Выберите место через поиск или нажмите на карту.
+                      </p>
+                    )}
                     {error && (
                       <p
                         id={errorId}

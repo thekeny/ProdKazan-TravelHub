@@ -4,8 +4,10 @@ import { EyeOff, ImageOff, LoaderCircle } from "lucide-react";
 import Image from "next/image";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { DOCUMENT_MIME_TYPE } from "@/configs/consts/materials.const";
 import type { Material } from "@/configs/types/material.type";
 import { useMaterialUrls } from "@/hooks/use-material-urls";
+import { PdfThumbnail, PdfThumbnailSkeleton } from "./pdf-thumbnail";
 
 export function MaterialThumbnail({
   material,
@@ -25,16 +27,26 @@ export function MaterialThumbnail({
   const url = urls[material.id];
   const hidden = material.kind === "document" && !revealed;
   const content = url ? (
-    <Image
-      unoptimized
-      width={1600}
-      height={1600}
-      src={url}
-      alt={material.name}
-      loading="lazy"
-      decoding="async"
-      className={`${imageClassName} ${hidden ? "blur-xl select-none" : ""}`}
-    />
+    material.mimeType === DOCUMENT_MIME_TYPE ? (
+      <PdfThumbnail
+        url={url}
+        name={material.name}
+        className={`h-full w-full object-cover object-top ${hidden ? "blur-xl select-none" : ""}`}
+      />
+    ) : (
+      <Image
+        unoptimized
+        width={1600}
+        height={1600}
+        src={url}
+        alt={material.name}
+        loading="lazy"
+        decoding="async"
+        className={`${imageClassName} ${hidden ? "blur-xl select-none" : ""}`}
+      />
+    )
+  ) : url === undefined && material.mimeType === DOCUMENT_MIME_TYPE ? (
+    <PdfThumbnailSkeleton />
   ) : (
     <span className="grid h-full w-full place-items-center bg-muted text-muted-foreground">
       {url === undefined ? (

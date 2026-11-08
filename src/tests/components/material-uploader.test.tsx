@@ -51,15 +51,15 @@ it("uses one toast for a batch and keeps successful files when another upload fa
     ),
   );
   await select([
-    new File(["x"], "failed.png", { type: "image/png" }),
-    new File(["y"], "ticket.png", { type: "image/png" }),
+    new File(["%PDF-x"], "failed.pdf", { type: "application/pdf" }),
+    new File(["%PDF-y"], "ticket.pdf", { type: "application/pdf" }),
   ]);
   expect(uploads.toast).toHaveBeenCalledTimes(1);
   expect(added).toHaveBeenCalledTimes(1);
   expect(added).toHaveBeenCalledWith(
-    expect.objectContaining({ name: "ticket.png", kind: "document" }),
+    expect.objectContaining({ name: "ticket.pdf", kind: "document" }),
   );
-  expect(error).toHaveBeenLastCalledWith("failed.png: Нет места");
+  expect(error).toHaveBeenLastCalledWith("failed.pdf: Нет места");
   expect(busy.mock.calls).toEqual([[true], [false]]);
   expect(
     container.querySelector<HTMLInputElement>('input[type="file"]')?.value,

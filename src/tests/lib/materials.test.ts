@@ -56,6 +56,59 @@ describe("materials", () => {
     expect(validateMaterials([material])).toBeNull();
   });
 
+  it("accepts only PDF documents while keeping old image documents readable", () => {
+    expect(
+      validateMaterialInput(
+        new File(["%PDF-1.7"], "ticket.PDF", { type: "application/pdf" }),
+        "document",
+      ),
+    ).toBeNull();
+    expect(
+      validateMaterialInput(new File(["%PDF-1.7"], "ticket.pdf"), "document"),
+    ).toBeNull();
+    expect(
+      validateMaterialInput(
+        new File(["x"], "ticket.png", { type: "image/png" }),
+        "document",
+      ),
+    ).toContain("PDF");
+    expect(
+      validateMaterialInput(
+        new File(["x"], "ticket.pdf", { type: "image/png" }),
+        "document",
+      ),
+    ).toContain("PDF");
+    expect(
+      validateMaterialInput(
+        new File([], "empty.pdf", { type: "application/pdf" }),
+        "document",
+      ),
+    ).toBeTruthy();
+    expect(
+      validateMaterialInput(
+        new File([new Uint8Array(12 * 1024 * 1024 + 1)], "large.pdf", {
+          type: "application/pdf",
+        }),
+        "document",
+      ),
+    ).toBeTruthy();
+    expect(
+      validateMaterial({
+        ...material,
+        mimeType: "application/pdf",
+        size: 12 * 1024 * 1024,
+      }),
+    ).toBeNull();
+    expect(
+      validateMaterial({
+        ...material,
+        mimeType: "application/pdf",
+        kind: "photo",
+      }),
+    ).toBeTruthy();
+    expect(validateMaterial(material)).toBeNull();
+  });
+
   it("allows only http links for tickets and bookings", () => {
     expect(validateBookingUrl("")).toBeNull();
     expect(validateBookingUrl("https://example.com/booking")).toBeNull();

@@ -141,6 +141,54 @@ afterEach(async () => {
 });
 
 describe("remote travel state", () => {
+  it("persists trip materials independently of events and removes their files", async () => {
+    const material = {
+      id: "pdf",
+      name: "ticket.pdf",
+      mimeType: "application/pdf",
+      size: 100,
+      kind: "document" as const,
+      createdAt: "2026-11-08T10:00:00Z",
+    };
+    files.set(material.id, new Blob(["%PDF-1.7"]));
+    await act(async () => travel.addTripMaterials(trip.id, [material]));
+    expect(travel.trips[0].materials).toEqual([material]);
+    expect(sdk.eventsPostEvent).not.toHaveBeenCalled();
+    expect(sdk.tripsPatchTrip).not.toHaveBeenCalled();
+    await act(async () => root.unmount());
+    await mount();
+    expect(travel.trips[0].materials).toEqual([material]);
+    await act(async () => travel.deleteTripMaterial(trip.id, material.id));
+    expect(travel.trips[0].materials).toEqual([]);
+    expect(files.has(material.id)).toBe(false);
+  });
+
+  it("keeps trip materials unchanged when local metadata cannot be saved", async () => {
+    const writer = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("Quota exceeded");
+      });
+    try {
+      await act(async () => {
+        await expect(
+          travel.addTripMaterials(trip.id, [
+            {
+              id: "pdf",
+              name: "ticket.pdf",
+              mimeType: "application/pdf",
+              size: 100,
+              kind: "document",
+              createdAt: "2026-11-08T10:00:00Z",
+            },
+          ]),
+        ).rejects.toThrow("браузере");
+      });
+      expect(travel.trips[0].materials).toEqual([]);
+    } finally {
+      writer.mockRestore();
+    }
+  });
   it("restores the server session even without a public API URL", () => {
     expect(sdk.authGetSelf).toHaveBeenCalled();
     expect(travel.username).toBe("traveler");
@@ -203,7 +251,7 @@ describe("remote travel state", () => {
     try {
       await act(async () => {
         await expect(travel.addEventType(trip.id, "Музей")).rejects.toThrow(
-          "Не удалось сохранить типы событий",
+          "Не удалось сохранить материалы или типы событий",
         );
       });
       expect(travel.trips[0].eventTypes).toEqual(["Утренний кофе"]);
@@ -271,7 +319,7 @@ describe("remote travel state", () => {
             cover: null,
             eventTypes: ["Музей"],
           }),
-        ).rejects.toThrow("Не удалось сохранить типы событий");
+        ).rejects.toThrow("Не удалось сохранить материалы или типы событий");
       });
       expect(travel.trips).toBe(previous);
       expect(sdk.tripsPatchTrip).not.toHaveBeenCalled();

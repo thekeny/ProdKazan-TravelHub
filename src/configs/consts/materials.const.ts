@@ -15,6 +15,8 @@ export const MATERIAL_TYPES = [
 ] as const;
 
 export const MATERIAL_LIMITS = {
+  MAX_DOCUMENT_SIZE: 12 * 1024 * 1024,
+  MAX_PER_TRIP: 100,
   MAX_SOURCE_SIZE: 12 * 1024 * 1024,
   MAX_STORED_SIZE: 2 * 1024 * 1024,
   MAX_DIMENSION: 1600,
@@ -29,3 +31,6 @@ export const COVER_LIMITS = {
 } as const;
 
 export const MATERIAL_ACCEPT = MATERIAL_TYPES.join(",");
+export const DOCUMENT_MIME_TYPE = "application/pdf";
+export const DOCUMENT_ACCEPT = ".pdf,application/pdf";
+export const PDF_PREVIEW = { MAX_WIDTH: 600, MAX_HEIGHT: 900 } as const;

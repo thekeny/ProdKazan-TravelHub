@@ -1,4 +1,7 @@
-import { MATERIAL_LIMITS } from "@/configs/consts/materials.const";
+import {
+  DOCUMENT_MIME_TYPE,
+  MATERIAL_LIMITS,
+} from "@/configs/consts/materials.const";
 import type { Material, MaterialKind } from "@/configs/types/material.type";
 import { createId } from "@/lib/id";
 import { compressMaterial } from "@/lib/image";
@@ -9,10 +12,18 @@ export async function uploadMaterial(
   file: File,
   kind: MaterialKind,
 ): Promise<Material> {
-  const inputError = validateMaterialInput(file);
+  const inputError = validateMaterialInput(file, kind);
   if (inputError) throw new Error(inputError);
-  const blob = await compressMaterial(file);
-  if (blob.size > MATERIAL_LIMITS.MAX_STORED_SIZE)
+  if (kind === "document") {
+    const signature = await file.slice(0, 5).text();
+    if (signature !== "%PDF-")
+      throw new Error("Файл не является корректным PDF.");
+  }
+  const blob =
+    kind === "document"
+      ? new Blob([file], { type: DOCUMENT_MIME_TYPE })
+      : await compressMaterial(file);
+  if (kind === "photo" && blob.size > MATERIAL_LIMITS.MAX_STORED_SIZE)
     throw new Error(
       "После сжатия файл всё ещё слишком большой. Выберите изображение меньше.",
     );

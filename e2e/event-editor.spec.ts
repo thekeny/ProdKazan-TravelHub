@@ -94,9 +94,13 @@ for (const width of [390, 1440]) {
     await dialog
       .getByLabel("Ссылка на билет", { exact: false })
       .fill("broken link");
-    await dialog
-      .locator('input[type="file"]')
-      .setInputFiles([{ ...files[0], name: "ticket.png" }]);
+    await dialog.locator('input[type="file"]').setInputFiles([
+      {
+        name: "ticket.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from("%PDF-1.7\n%%EOF"),
+      },
+    ]);
     await expect(
       dialog.getByRole("button", { name: /Открыть материал/ }),
     ).toHaveCount(1);

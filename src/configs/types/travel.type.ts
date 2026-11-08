@@ -1,4 +1,5 @@
 import type { TripEvent } from "./event.type";
+import type { Material } from "./material.type";
 import type { RoutePoint, TripLeg } from "./route.type";
 
 export type TripValues = {
@@ -11,6 +12,7 @@ export type TripValues = {
 };
 export type Trip = TripValues & {
   id: string;
+  materials?: Material[];
   events?: TripEvent[];
   points?: RoutePoint[];
   legs?: TripLeg[];
