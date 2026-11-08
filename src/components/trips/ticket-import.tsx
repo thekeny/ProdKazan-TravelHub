@@ -66,16 +66,19 @@ export function TicketImport({
     if (busy.current || !online) return;
     if (kindError && !kind) return;
     setError(null);
-    if (
-      source === "file" &&
-      (!file ||
-        file.size > INTEGRATIONS.ticketBytes ||
-        !file.name.toLowerCase().endsWith(".pdf"))
-    ) {
-      setError(
-        "Выберите PDF с текстовым слоем до 900 КиБ, не больше 8 страниц.",
-      );
-      return;
+    if (source === "file") {
+      if (!file) {
+        setError("Выберите PDF-файл с билетом.");
+        return;
+      }
+      if (!file.name.toLowerCase().endsWith(".pdf")) {
+        setError("Поддерживаются только PDF-файлы.");
+        return;
+      }
+      if (file.size > INTEGRATIONS.ticketBytes) {
+        setError("Файл слишком большой. Выберите PDF размером до 900 КиБ.");
+        return;
+      }
     }
     if (source === "url") {
       try {

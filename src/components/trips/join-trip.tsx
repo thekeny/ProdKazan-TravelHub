@@ -27,7 +27,7 @@ export function JoinTripButton() {
     </>
   );
 }
-function JoinTripDialog({ onClose }: { onClose: () => void }) {
+export function JoinTripDialog({ onClose }: { onClose: () => void }) {
   const { joinTrip } = useTravel();
   const router = useRouter();
   const [code, setCode] = useState("");

@@ -201,15 +201,10 @@ export function TripSharing({
             {canInvite ? (
               <section className="mt-6 border-t pt-5">
                 <h2 className="text-sm font-medium">Пригласить по коду</h2>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Отправьте код попутчику. Он введёт его в разделе «Поездки» →
-                  «Присоединиться по коду».
-                </p>
                 <div className="mt-3 flex items-end gap-2">
                   <div className="min-w-0 flex-1">
                     <Field
                       label="Сколько раз можно использовать код"
-                      hint={`От 1 до ${COLLABORATION.MAX_USES}.`}
                       error={usesError ?? undefined}
                     >
                       {(id) => (

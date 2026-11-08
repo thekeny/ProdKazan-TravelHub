@@ -1,7 +1,8 @@
 "use client";
-import { Check, ChevronsUpDown, Plus, Settings } from "lucide-react";
+import { Check, ChevronsUpDown, KeyRound, Plus, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { JoinTripDialog } from "@/components/trips/join-trip";
 import { TripSettings } from "@/components/trips/trip-settings";
 import {
   DropdownMenu,
@@ -29,6 +30,7 @@ export function TripSwitcher({
   const { trips, activeId, selectTrip } = useTravel();
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const active = trips.find((trip) => trip.id === activeId);
@@ -109,6 +111,16 @@ export function TripSwitcher({
           <DropdownMenuItem
             onClick={() => {
               setOpen(false);
+              setJoinOpen(true);
+            }}
+            className={itemClassName}
+          >
+            <KeyRound className="size-4 shrink-0" />
+            Присоединиться по коду
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              setOpen(false);
               setSettingsOpen(true);
             }}
             className={itemClassName}
@@ -118,6 +130,7 @@ export function TripSwitcher({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      {joinOpen && <JoinTripDialog onClose={() => setJoinOpen(false)} />}
       {settingsOpen && active && (
         <TripSettings
           key={active.id}
