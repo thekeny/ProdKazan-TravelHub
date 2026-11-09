@@ -4,6 +4,8 @@
 
 2 МЕСТО, сука ура, первая победа (фронт 7.5/10, балл снижен за работоспособность из-за того что я в последний день чинил фронт 4 часа)
 
+**Backend: [eliseydudin/prod-hack-kzn-2026-backend](https://github.com/eliseydudin/prod-hack-kzn-2026-backend)**
+
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-087EA4?style=flat-square&logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
