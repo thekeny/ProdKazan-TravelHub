@@ -2,23 +2,19 @@
 
 Планировщик путешествий: маршрут на карте, события, перемещения, фотографии, билеты и заметки в одной хронологии.
 
-## Режимы работы
 
-- Аккаунты и поездки используют SDK напрямую по `${NEXT_PUBLIC_API_URL}/api/v1`.
-
-Refresh-cookie управляет бэкенд; access token хранится только в памяти страницы. Общий клиент обновляет сессию после 401 и повторяет запрос один раз.
-
-Материалы событий — фотографии и изображения билетов — пока хранятся в IndexedDB `travelhub-materials`: API не принимает файлы материалов. Метаданные материалов серверных поездок лежат в `travelhub.remote.<userId>`, поэтому они не синхронизируются между устройствами. Обложка серверной поездки загружается на сервер отдельным запросом.
-
-## Стек
-
-- Next.js 15 (App Router, Turbopack), React 19, TypeScript
-- Tailwind CSS v4, Base UI / Shadcn
-- Leaflet / React Leaflet
-- Ky и сгенерированный OpenAPI SDK
-- Biome для проверок и форматирования, Vitest для тестов
-- Playwright для браузерных проверок
-- Docker и GitLab CI
+![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-19-087EA4?style=flat-square&logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![Base UI](https://img.shields.io/badge/ShadcnUI-000000?style=flat-square&logo=shadcnui&logoColor=white)
+![Leaflet](https://img.shields.io/badge/Leaflet_/_React_Leaflet-199900?style=flat-square&logo=leaflet&logoColor=white)
+![Ky](https://img.shields.io/badge/Ky_/_OpenAPI_SDK-FF6F61?style=flat-square)
+![Biome](https://img.shields.io/badge/Biome-60A5FA?style=flat-square&logo=biome&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-2EAD33?style=flat-square&logo=playwright&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
+![GitLab CI](https://img.shields.io/badge/GitLab_CI-FC6D26?style=flat-square&logo=gitlab&logoColor=white)
 
 ## Запуск
 
