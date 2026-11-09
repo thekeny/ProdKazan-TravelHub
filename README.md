@@ -2,6 +2,7 @@
 
 Планировщик путешествий: маршрут на карте, события, перемещения, фотографии, билеты и заметки в одной хронологии.
 
+2 МЕСТО, сука ура, первая победа (фронт 7.5/10, балл снижен за работоспособность из-за того что я в последний день чинил фронт 4 часа)
 
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-087EA4?style=flat-square&logo=react&logoColor=white)
